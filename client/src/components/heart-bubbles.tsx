@@ -11,22 +11,25 @@ export default function HeartBubbles({ trigger, onComplete }: HeartBubblesProps)
 
   useEffect(() => {
     if (trigger) {
-      // Create 5 hearts with random positions, same size as button heart (text-2xl = 24px)
-      const newHearts = Array.from({ length: 5 }, (_, i) => ({
-        id: Date.now() + i,
-        x: Math.random() * 80 - 40, // -40 to 40px from center (much wider spread)
-        y: Math.random() * 30 - 15, // Add vertical variation too
-        size: 24, // Exact same size as like button heart (text-2xl)
-        delay: Math.random() * 0.4, // Random delay for staggered animation
-      }));
-
-      setHearts(newHearts);
-
-      // Clear after longer animation
+      // Wait for card to fully exit the swipe area (350ms) before releasing hearts
       setTimeout(() => {
-        setHearts([]);
-        onComplete?.();
-      }, 2500);
+        // Create 5 hearts with random positions, same size as button heart (text-2xl = 24px)
+        const newHearts = Array.from({ length: 5 }, (_, i) => ({
+          id: Date.now() + i,
+          x: Math.random() * 80 - 40, // -40 to 40px from center (much wider spread)
+          y: Math.random() * 30 - 15, // Add vertical variation too
+          size: 24, // Exact same size as like button heart (text-2xl)
+          delay: Math.random() * 0.4, // Random delay for staggered animation
+        }));
+
+        setHearts(newHearts);
+
+        // Clear after longer animation
+        setTimeout(() => {
+          setHearts([]);
+          onComplete?.();
+        }, 2500);
+      }, 350); // Wait for card swipe animation to complete
     }
   }, [trigger, onComplete]);
 
