@@ -136,6 +136,18 @@ export function ObjectUploader({
         </div>
       )}
 
+      {showModal && <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center">
+        <div className="bg-white p-4 rounded-lg max-w-md w-full mx-4">
+          <p className="mb-4">🔍 DEBUG: Modal should be visible now</p>
+          <button 
+            onClick={() => setShowModal(false)}
+            className="bg-red-500 text-white px-4 py-2 rounded"
+          >
+            Close Debug Modal
+          </button>
+        </div>
+      </div>}
+
       <DashboardModal
         uppy={uppy}
         open={showModal}
