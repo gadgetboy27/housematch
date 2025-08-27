@@ -48,7 +48,7 @@ export default function BottomNavigation() {
               onClick={() => setLocation(item.path)}
               className={`flex flex-col items-center space-y-1 transition-all duration-300 ${
                 isActive 
-                  ? "text-blue-600 scale-110" 
+                  ? "text-purple-700 scale-110" 
                   : "text-gray-500 hover:text-gray-700"
               }`}
               data-testid={item.testId}
