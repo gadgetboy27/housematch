@@ -105,7 +105,7 @@ export default function Home() {
       </div>
       
       {/* Floating Action Buttons - Independent and Overlapping Both Areas */}
-      <div className="fixed bottom-[71px] left-1/2 transform -translate-x-1/2 z-50">
+      <div className="fixed bottom-[68px] left-1/2 transform -translate-x-1/2 z-50">
         <ActionButtons
           onReject={handleReject}
           onLike={handleLike}
