@@ -165,7 +165,7 @@ export default function SwipeContainer({ properties, onPropertySelect, onSwipe }
       </motion.div>
 
       {/* Professional Action Buttons */}
-      <div className="absolute bottom-[-1.625rem] left-1/2 transform -translate-x-1/2 flex items-center space-x-4 z-30">
+      <div className="absolute bottom-[4.5rem] left-1/2 transform -translate-x-1/2 flex items-center space-x-4 z-30">
         {/* Reject Button */}
         <motion.button
           className="relative group"
@@ -174,15 +174,16 @@ export default function SwipeContainer({ properties, onPropertySelect, onSwipe }
           whileTap={{ scale: 0.95 }}
           data-testid="button-reject"
         >
-          <div className="w-16 h-12 bg-gradient-to-b from-slate-600 to-slate-800 rounded-lg flex items-center justify-center
-                          shadow-[0_6px_12px_rgba(0,0,0,0.3),0_2px_4px_rgba(0,0,0,0.2),inset_0_1px_2px_rgba(255,255,255,0.1)]
-                          border border-slate-500/50 backdrop-blur-sm
-                          group-active:shadow-[0_2px_6px_rgba(0,0,0,0.4),inset_0_2px_4px_rgba(0,0,0,0.2)]
-                          group-active:transform group-active:translate-y-0.5
-                          transition-all duration-150">
-            <i className="fas fa-times text-white text-lg drop-shadow-sm group-active:scale-90 transition-transform"></i>
+          <div className="w-16 h-12 bg-gradient-to-b from-slate-500 to-slate-700 rounded-lg flex items-center justify-center
+                          shadow-[0_12px_24px_rgba(0,0,0,0.5),0_8px_16px_rgba(0,0,0,0.3),0_4px_8px_rgba(0,0,0,0.2),inset_0_2px_4px_rgba(255,255,255,0.2)]
+                          border border-slate-400/60 backdrop-blur-sm
+                          group-active:shadow-[0_6px_12px_rgba(0,0,0,0.6),inset_0_3px_6px_rgba(0,0,0,0.3)]
+                          group-active:transform group-active:translate-y-1
+                          transition-all duration-200">
+            <i className="fas fa-times text-white text-lg drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] 
+                          group-active:scale-90 transition-transform text-shadow-[0_0_8px_rgba(255,255,255,0.3)]"></i>
           </div>
-          <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black/20 rounded-lg pointer-events-none"></div>
+          <div className="absolute inset-0 bg-gradient-to-b from-white/10 via-transparent to-black/30 rounded-lg pointer-events-none"></div>
         </motion.button>
         
         {/* Like Button - Premium Gold */}
@@ -193,15 +194,16 @@ export default function SwipeContainer({ properties, onPropertySelect, onSwipe }
           whileTap={{ scale: 0.95 }}
           data-testid="button-like"
         >
-          <div className="w-20 h-14 bg-gradient-to-b from-amber-400 via-yellow-500 to-amber-600 rounded-lg flex items-center justify-center
-                          shadow-[0_8px_16px_rgba(245,158,11,0.4),0_4px_8px_rgba(0,0,0,0.3),inset_0_2px_4px_rgba(255,255,255,0.3)]
-                          border border-amber-300/70 backdrop-blur-sm
-                          group-active:shadow-[0_3px_8px_rgba(245,158,11,0.5),inset_0_3px_6px_rgba(0,0,0,0.2)]
-                          group-active:transform group-active:translate-y-0.5
-                          transition-all duration-150">
-            <i className="fas fa-heart text-white text-xl drop-shadow-md group-active:scale-90 transition-transform"></i>
+          <div className="w-20 h-14 bg-gradient-to-b from-amber-300 via-yellow-400 to-amber-500 rounded-lg flex items-center justify-center
+                          shadow-[0_16px_32px_rgba(245,158,11,0.6),0_12px_24px_rgba(245,158,11,0.4),0_8px_16px_rgba(0,0,0,0.4),inset_0_3px_6px_rgba(255,255,255,0.4)]
+                          border border-amber-200/80 backdrop-blur-sm
+                          group-active:shadow-[0_8px_16px_rgba(245,158,11,0.7),inset_0_4px_8px_rgba(0,0,0,0.3)]
+                          group-active:transform group-active:translate-y-1
+                          transition-all duration-200">
+            <i className="fas fa-heart text-white text-xl drop-shadow-[0_3px_6px_rgba(0,0,0,0.8)] 
+                          group-active:scale-90 transition-transform filter drop-shadow-[0_0_12px_rgba(255,255,255,0.4)]"></i>
           </div>
-          <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-amber-700/30 rounded-lg pointer-events-none"></div>
+          <div className="absolute inset-0 bg-gradient-to-b from-white/20 via-transparent to-amber-600/40 rounded-lg pointer-events-none"></div>
         </motion.button>
         
         {/* Super Like Button - Professional Navy */}
@@ -212,15 +214,16 @@ export default function SwipeContainer({ properties, onPropertySelect, onSwipe }
           whileTap={{ scale: 0.95 }}
           data-testid="button-super-like"
         >
-          <div className="w-16 h-12 bg-gradient-to-b from-blue-600 via-blue-700 to-blue-900 rounded-lg flex items-center justify-center
-                          shadow-[0_6px_12px_rgba(29,78,216,0.4),0_2px_4px_rgba(0,0,0,0.2),inset_0_1px_2px_rgba(255,255,255,0.2)]
-                          border border-blue-500/60 backdrop-blur-sm
-                          group-active:shadow-[0_2px_6px_rgba(29,78,216,0.5),inset_0_2px_4px_rgba(0,0,0,0.2)]
-                          group-active:transform group-active:translate-y-0.5
-                          transition-all duration-150">
-            <i className="fas fa-star text-yellow-300 text-lg drop-shadow-sm group-active:scale-90 transition-transform"></i>
+          <div className="w-16 h-12 bg-gradient-to-b from-blue-500 via-blue-600 to-blue-800 rounded-lg flex items-center justify-center
+                          shadow-[0_12px_24px_rgba(29,78,216,0.6),0_8px_16px_rgba(29,78,216,0.4),0_4px_8px_rgba(0,0,0,0.3),inset_0_2px_4px_rgba(255,255,255,0.3)]
+                          border border-blue-400/70 backdrop-blur-sm
+                          group-active:shadow-[0_6px_12px_rgba(29,78,216,0.7),inset_0_3px_6px_rgba(0,0,0,0.3)]
+                          group-active:transform group-active:translate-y-1
+                          transition-all duration-200">
+            <i className="fas fa-star text-yellow-200 text-lg drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] 
+                          group-active:scale-90 transition-transform filter drop-shadow-[0_0_10px_rgba(255,255,100,0.6)]"></i>
           </div>
-          <div className="absolute inset-0 bg-gradient-to-b from-transparent to-blue-900/40 rounded-lg pointer-events-none"></div>
+          <div className="absolute inset-0 bg-gradient-to-b from-white/15 via-transparent to-blue-800/40 rounded-lg pointer-events-none"></div>
         </motion.button>
       </div>
     </div>
