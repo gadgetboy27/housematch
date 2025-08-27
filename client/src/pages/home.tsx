@@ -81,7 +81,7 @@ export default function Home() {
   return (
     <div className="max-w-sm mx-auto h-screen bg-gradient-to-br from-blue-500 via-purple-500 to-purple-700 relative overflow-hidden">
       {/* Main Swiping Area - Raised to avoid navbar cutoff */}
-      <div className="relative h-[calc(100vh-80px)] overflow-hidden">
+      <div className="relative h-[calc(100vh-90px)] overflow-hidden">
         <SwipeContainer 
           ref={swipeContainerRef}
           properties={properties}
