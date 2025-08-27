@@ -50,7 +50,7 @@ export default function PropertyCard({ property, isBackground = false }: Propert
       )}
       
       {/* Property Info */}
-      <div className="absolute bottom-0 left-0 right-0 p-6 text-white">
+      <div className="absolute bottom-5 left-0 right-0 p-6 text-white">
         <div className="space-y-3">
           <div>
             <h2 className="text-2xl font-bold leading-tight" data-testid="text-property-title">
