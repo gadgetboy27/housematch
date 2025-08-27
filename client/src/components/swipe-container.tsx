@@ -69,7 +69,7 @@ const SwipeContainer = forwardRef<{ handleSwipe: (direction: "left" | "right" | 
       y.set(0);
       setIsSwipingDisabled(false);
       onSwipe();
-    }, 600);
+    }, 300);
 
     // Call the external action handler
     onSwipeAction(direction, action);
