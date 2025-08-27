@@ -39,14 +39,28 @@ export default function AddProperty() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
+  // Create form schema that accepts strings and transforms to correct types
+  const formSchema = z.object({
+    title: z.string().min(1, "Title is required"),
+    address: z.string().min(1, "Address is required"),
+    suburb: z.string().min(1, "Suburb is required"),
+    price: z.string().min(1, "Price is required"),
+    propertyType: z.string(),
+    bedrooms: z.string().transform(val => parseInt(val) || 0),
+    bathrooms: z.string().transform(val => parseInt(val) || 0),
+    floorArea: z.string().transform(val => parseInt(val) || 0),
+    landArea: z.string().transform(val => parseInt(val) || 0),
+    carSpaces: z.string().transform(val => parseInt(val) || 0).optional(),
+    lotNumber: z.string().optional(),
+    certificateOfTitle: z.string().optional(),
+    zoning: z.string().optional(),
+    yearBuilt: z.string().transform(val => parseInt(val) || new Date().getFullYear()),
+    imageUrl: z.string().optional(),
+    description: z.string().optional(),
+  });
+
   const form = useForm({
-    resolver: zodResolver(insertPropertySchema.extend({
-      floorArea: z.string().transform(val => parseInt(val) || 0),
-      landArea: z.string().transform(val => parseInt(val) || 0),
-      bedrooms: z.string().transform(val => parseInt(val) || 0),
-      bathrooms: z.string().transform(val => parseInt(val) || 0),
-      yearBuilt: z.string().transform(val => parseInt(val) || 0),
-    })),
+    resolver: zodResolver(formSchema),
     defaultValues: {
       title: "",
       address: "",
@@ -57,6 +71,7 @@ export default function AddProperty() {
       bathrooms: "2",
       floorArea: "120",
       landArea: "400",
+      carSpaces: "1",
       lotNumber: "",
       certificateOfTitle: "",
       zoning: "Residential",
@@ -89,11 +104,22 @@ export default function AddProperty() {
   });
 
   const onSubmit = (data: any) => {
-    createPropertyMutation.mutate({
+    // Transform data to match backend schema
+    const propertyData = {
       ...data,
       propertyType: selectedPropertyType || data.propertyType,
       imageUrl: uploadedImageUrl || data.imageUrl,
-    });
+      // Ensure numeric fields are actually numbers
+      bedrooms: parseInt(data.bedrooms) || 0,
+      bathrooms: parseInt(data.bathrooms) || 0,
+      floorArea: parseInt(data.floorArea) || 0,
+      landArea: parseInt(data.landArea) || 0,
+      carSpaces: parseInt(data.carSpaces) || 0,
+      yearBuilt: parseInt(data.yearBuilt) || new Date().getFullYear(),
+    };
+
+    console.log("Submitting property data:", propertyData);
+    createPropertyMutation.mutate(propertyData);
   };
 
   // Handle getting upload URL from backend
