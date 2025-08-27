@@ -20,11 +20,11 @@ export default function HeartBubbles({ trigger, onComplete }: HeartBubblesProps)
 
       setHearts(newHearts);
 
-      // Clear after animation
+      // Clear after longer animation
       setTimeout(() => {
         setHearts([]);
         onComplete?.();
-      }, 1500);
+      }, 2500);
     }
   }, [trigger, onComplete]);
 
@@ -41,8 +41,8 @@ export default function HeartBubbles({ trigger, onComplete }: HeartBubblesProps)
               fontSize: `${heart.size}px`,
             }}
             initial={{ y: 0, opacity: 1, scale: 0.8 }}
-            animate={{ y: -100, opacity: 0, scale: 1.2 }}
-            transition={{ duration: 1.2, ease: "easeOut" }}
+            animate={{ y: -200, opacity: 0, scale: 1.2 }}
+            transition={{ duration: 2.0, ease: "easeOut" }}
           >
             ❤️
           </motion.div>
