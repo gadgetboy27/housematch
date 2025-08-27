@@ -3,6 +3,10 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { insertPropertySchema, insertUserSwipeSchema, insertPurchaseOrderSchema } from "@shared/schema";
 import { analyzeUserPreferences, generatePropertyRecommendations, generateMarketInsights } from "./services/openai";
+import {
+  ObjectStorageService,
+  ObjectNotFoundError,
+} from "./objectStorage";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   
@@ -262,6 +266,74 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ message: "Order status updated successfully" });
     } catch (error) {
       res.status(500).json({ message: "Failed to update order status" });
+    }
+  });
+
+  // Object Storage routes for file uploads
+  
+  // This endpoint is used to serve public assets.
+  app.get("/public-objects/:filePath(*)", async (req, res) => {
+    const filePath = req.params.filePath;
+    const objectStorageService = new ObjectStorageService();
+    try {
+      const file = await objectStorageService.searchPublicObject(filePath);
+      if (!file) {
+        return res.status(404).json({ error: "File not found" });
+      }
+      objectStorageService.downloadObject(file, res);
+    } catch (error) {
+      console.error("Error searching for public object:", error);
+      return res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // This endpoint is used to serve private objects that can be accessed publicly
+  app.get("/objects/:objectPath(*)", async (req, res) => {
+    const objectStorageService = new ObjectStorageService();
+    try {
+      const objectFile = await objectStorageService.getObjectEntityFile(
+        req.path,
+      );
+      objectStorageService.downloadObject(objectFile, res);
+    } catch (error) {
+      console.error("Error checking object access:", error);
+      if (error instanceof ObjectNotFoundError) {
+        return res.sendStatus(404);
+      }
+      return res.sendStatus(500);
+    }
+  });
+
+  // This endpoint is used to get the upload URL for an object entity.
+  app.post("/api/objects/upload", async (req, res) => {
+    const objectStorageService = new ObjectStorageService();
+    try {
+      const uploadURL = await objectStorageService.getObjectEntityUploadURL();
+      res.json({ uploadURL });
+    } catch (error) {
+      console.error("Error getting upload URL:", error);
+      res.status(500).json({ error: "Failed to get upload URL" });
+    }
+  });
+
+  // An example endpoint for updating the model state after an object entity is uploaded (property image in this case).
+  app.put("/api/property-images", async (req, res) => {
+    if (!req.body.imageURL) {
+      return res.status(400).json({ error: "imageURL is required" });
+    }
+
+    try {
+      const objectStorageService = new ObjectStorageService();
+      const objectPath = objectStorageService.normalizeObjectEntityPath(
+        req.body.imageURL,
+      );
+
+      res.status(200).json({
+        objectPath: objectPath,
+      });
+    } catch (error) {
+      console.error("Error setting property image:", error);
+      res.status(500).json({ error: "Internal server error" });
     }
   });
 

@@ -13,6 +13,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ObjectUploader } from "@/components/ObjectUploader";
+import type { UploadResult } from "@uppy/core";
 import { z } from "zod";
 
 const propertyTypeOptions = [
@@ -32,6 +34,7 @@ const zoningOptions = [
 
 export default function AddProperty() {
   const [selectedPropertyType, setSelectedPropertyType] = useState<string>("");
+  const [uploadedImageUrl, setUploadedImageUrl] = useState<string>("");
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -89,7 +92,53 @@ export default function AddProperty() {
     createPropertyMutation.mutate({
       ...data,
       propertyType: selectedPropertyType || data.propertyType,
+      imageUrl: uploadedImageUrl || data.imageUrl,
     });
+  };
+
+  // Handle getting upload URL from backend
+  const handleGetUploadParameters = async () => {
+    try {
+      const response = await apiRequest("POST", "/api/objects/upload", {});
+      const data = await response.json();
+      return {
+        method: "PUT" as const,
+        url: data.uploadURL,
+      };
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to get upload URL",
+        variant: "destructive",
+      });
+      throw error;
+    }
+  };
+
+  // Handle upload completion
+  const handleUploadComplete = async (result: UploadResult<Record<string, unknown>, Record<string, unknown>>) => {
+    if (result.successful && result.successful.length > 0) {
+      const uploadedFile = result.successful[0];
+      const imageURL = uploadedFile.uploadURL;
+      
+      try {
+        // Normalize the path on the backend
+        const response = await apiRequest("PUT", "/api/property-images", { imageURL });
+        const data = await response.json();
+        setUploadedImageUrl(data.objectPath);
+        
+        toast({
+          title: "Success",
+          description: "Image uploaded successfully!",
+        });
+      } catch (error) {
+        toast({
+          title: "Error", 
+          description: "Failed to process uploaded image",
+          variant: "destructive",
+        });
+      }
+    }
   };
 
   return (
@@ -407,23 +456,30 @@ export default function AddProperty() {
                 <CardTitle className="text-base">Additional Details</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <FormField
-                  control={form.control}
-                  name="imageUrl"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Image URL</FormLabel>
-                      <FormControl>
-                        <Input 
-                          placeholder="https://example.com/image.jpg" 
-                          {...field}
-                          data-testid="input-image-url"
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
+                <div>
+                  <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 mb-2 block">
+                    Property Image
+                  </label>
+                  <ObjectUploader
+                    maxNumberOfFiles={1}
+                    maxFileSize={10485760} // 10MB
+                    allowedFileTypes={['image/*']}
+                    onGetUploadParameters={handleGetUploadParameters}
+                    onComplete={handleUploadComplete}
+                    buttonClassName="w-full bg-primary/10 border-2 border-dashed border-primary/30 text-primary hover:bg-primary/20 h-24 flex flex-col items-center justify-center space-y-2"
+                  >
+                    <div className="flex flex-col items-center space-y-1">
+                      <i className="fas fa-camera text-xl"></i>
+                      <span className="font-medium">Upload Property Image</span>
+                      <span className="text-xs text-muted-foreground">Camera, Gallery, or Files</span>
+                    </div>
+                  </ObjectUploader>
+                  {uploadedImageUrl && (
+                    <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded-md">
+                      <p className="text-sm text-green-700">✅ Image uploaded successfully!</p>
+                    </div>
                   )}
-                />
+                </div>
 
                 <FormField
                   control={form.control}
