@@ -68,6 +68,9 @@ export default function Liked() {
 
   return (
     <div className="max-w-sm mx-auto min-h-screen bg-white relative">
+      {/* Gradient transition overlay for smooth blending */}
+      <div className="fixed bottom-0 left-1/2 transform -translate-x-1/2 max-w-sm w-full h-32 bg-gradient-to-t from-white/95 via-white/60 to-transparent pointer-events-none z-40"></div>
+      
       {/* Header */}
       <header className="bg-white border-b border-border px-4 py-3">
         <div className="flex items-center justify-between">

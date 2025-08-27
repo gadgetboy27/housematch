@@ -114,8 +114,8 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Background Extension for Navbar Area */}
-      <div className="absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-black/80 to-transparent"></div>
+      {/* Smooth Gradient Transition for Better Blending */}
+      <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-white/95 via-white/60 via-white/30 to-transparent backdrop-blur-sm"></div>
 
       {/* AI Brain Popup */}
       {showAIBrain && (

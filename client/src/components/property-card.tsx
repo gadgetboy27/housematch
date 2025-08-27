@@ -28,8 +28,8 @@ export default function PropertyCard({ property, isBackground = false, onPropert
         data-testid="img-property"
       />
       
-      {/* Gradient Overlay */}
-      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
+      {/* Enhanced Gradient Overlay with Softer Blending */}
+      <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/40 via-black/20 to-transparent backdrop-blur-[1px]"></div>
       
       {!isBackground && (
         <>
