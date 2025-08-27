@@ -51,34 +51,8 @@ export default function Home() {
 
   return (
     <div className="max-w-sm mx-auto min-h-screen bg-gradient-to-br from-blue-500 via-purple-500 to-purple-700 relative overflow-hidden">
-      {/* Header */}
-      <header className="relative z-50 bg-white/90 backdrop-blur-lg border-b border-border px-4 py-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-2">
-            <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-              <i className="fas fa-home text-white text-sm"></i>
-            </div>
-            <h1 className="text-lg font-bold text-secondary">PropertySwipe</h1>
-          </div>
-          <div className="flex items-center space-x-3">
-            <button 
-              className="w-8 h-8 bg-muted rounded-full flex items-center justify-center"
-              data-testid="button-notifications"
-            >
-              <i className="fas fa-bell text-muted-foreground text-sm"></i>
-            </button>
-            <button 
-              className="w-8 h-8 bg-muted rounded-full flex items-center justify-center"
-              data-testid="button-profile"
-            >
-              <i className="fas fa-user text-muted-foreground text-sm"></i>
-            </button>
-          </div>
-        </div>
-      </header>
-
-      {/* Main Swiping Area */}
-      <div className="relative h-[calc(100vh-140px)] overflow-hidden">
+      {/* Main Swiping Area - Full Height */}
+      <div className="relative h-[calc(100vh-70px)] overflow-hidden">
         <SwipeContainer 
           properties={properties}
           onPropertySelect={handlePropertySelect}
