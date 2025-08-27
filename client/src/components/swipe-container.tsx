@@ -6,6 +6,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { LocalStorageService } from "@/lib/local-storage";
+import HeartBubbles from "./heart-bubbles";
 
 interface SwipeContainerProps {
   properties: Property[];
@@ -19,6 +20,7 @@ const SwipeContainer = forwardRef<{ handleSwipe: (direction: "left" | "right" | 
   ({ properties, onPropertySelect, onSwipe, onSwipeAction, onPropertyTypeFilter }, ref) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isSwipingDisabled, setIsSwipingDisabled] = useState(false);
+  const [showHeartBubbles, setShowHeartBubbles] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
   const x = useMotionValue(0);
   const y = useMotionValue(0);
@@ -54,6 +56,12 @@ const SwipeContainer = forwardRef<{ handleSwipe: (direction: "left" | "right" | 
     if (action === "like" || action === "super_like") {
       try {
         LocalStorageService.addLikedProperty(currentProperty, action as "like" | "super_like");
+        
+        // Trigger heart bubbles for like actions
+        if (action === "like") {
+          setShowHeartBubbles(true);
+        }
+        
         toast({
           title: action === "super_like" ? "Super Liked!" : "Liked!",
           description: `${currentProperty.title} saved to your favorites`,
@@ -227,6 +235,14 @@ const SwipeContainer = forwardRef<{ handleSwipe: (direction: "left" | "right" | 
           </div>
         </motion.div>
       </motion.div>
+
+      {/* Heart Bubbles Effect for Swipes */}
+      <div className="absolute inset-0 pointer-events-none">
+        <HeartBubbles
+          isTriggered={showHeartBubbles}
+          onComplete={() => setShowHeartBubbles(false)}
+        />
+      </div>
 
     </div>
   );
