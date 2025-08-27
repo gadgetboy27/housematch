@@ -93,8 +93,8 @@ export default function Home() {
 
   return (
     <div className="max-w-sm mx-auto h-screen bg-gradient-to-br from-blue-500 via-purple-500 to-purple-700 relative overflow-hidden">
-      {/* Main Swiping Area - Raised to avoid navbar cutoff */}
-      <div className="relative h-[calc(100vh-70px)] overflow-hidden">
+      {/* Main Swiping Area - Full height */}
+      <div className="relative h-full overflow-hidden">
         <SwipeContainer 
           ref={swipeContainerRef}
           properties={properties}
@@ -102,16 +102,16 @@ export default function Home() {
           onSwipe={handleSwipe}
           onSwipeAction={handleSwipeAction}
         />
-        
-        {/* Action Buttons Overlay */}
-        <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 z-40">
-          <ActionButtons
-            onReject={handleReject}
-            onLike={handleLike}
-            onSuperLike={handleSuperLike}
-            disabled={isSwipingDisabled}
-          />
-        </div>
+      </div>
+      
+      {/* Floating Action Buttons - Independent and Overlapping Both Areas */}
+      <div className="fixed bottom-24 left-1/2 transform -translate-x-1/2 z-50">
+        <ActionButtons
+          onReject={handleReject}
+          onLike={handleLike}
+          onSuperLike={handleSuperLike}
+          disabled={isSwipingDisabled}
+        />
       </div>
 
       {/* Smooth Gradient Transition for Better Blending */}
