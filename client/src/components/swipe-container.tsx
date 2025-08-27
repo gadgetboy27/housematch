@@ -54,7 +54,7 @@ export default function SwipeContainer({ properties, onPropertySelect, onSwipe }
     });
 
     // Animate card out
-    const targetX = direction === "left" ? -300 : direction === "right" ? 300 : 0;
+    const targetX = direction === "left" ? -600 : direction === "right" ? 600 : 0;
     const targetY = direction === "up" ? -300 : 0;
     
     x.set(targetX);
