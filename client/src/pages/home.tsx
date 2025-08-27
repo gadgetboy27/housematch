@@ -91,7 +91,7 @@ export default function Home() {
         />
         
         {/* Action Buttons Overlay */}
-        <div className="absolute bottom-24 left-1/2 transform -translate-x-1/2 z-40">
+        <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 z-40">
           <ActionButtons
             onReject={handleReject}
             onLike={handleLike}
@@ -102,7 +102,7 @@ export default function Home() {
       </div>
 
       {/* Background Extension for Navbar Area */}
-      <div className="absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-purple-700 to-transparent"></div>
+      <div className="absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-black/80 to-transparent"></div>
 
       {/* AI Brain Popup */}
       {showAIBrain && (
