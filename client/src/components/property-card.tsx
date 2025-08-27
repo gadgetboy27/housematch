@@ -45,7 +45,11 @@ export default function PropertyCard({ property, isBackground = false, onPropert
           {/* Property Type Dropdown */}
           <div className="absolute top-4 left-4 z-50">
             {onPropertyTypeFilter ? (
-              <div onClick={(e) => e.stopPropagation()}>
+              <div onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                e.nativeEvent.stopImmediatePropagation();
+              }}>
                 <PropertyTypeDropdown 
                   currentType={property.propertyType}
                   onTypeChange={onPropertyTypeFilter}

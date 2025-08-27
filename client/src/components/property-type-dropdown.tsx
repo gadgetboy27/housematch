@@ -61,6 +61,7 @@ export default function PropertyTypeDropdown({ currentType, onTypeChange }: Prop
   const handleButtonClick = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
+    e.nativeEvent.stopImmediatePropagation();
     setIsOpen(!isOpen);
   };
 
