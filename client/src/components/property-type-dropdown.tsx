@@ -69,7 +69,7 @@ export default function PropertyTypeDropdown({ currentType, onTypeChange }: Prop
       {/* Dropdown Button */}
       <button
         onClick={handleButtonClick}
-        className={`px-3 py-1 rounded-full text-xs font-medium flex items-center gap-1 transition-all duration-300 
+        className={`px-2 py-0.5 rounded-full text-xs font-medium flex items-center gap-1 transition-all duration-300 
                    backdrop-blur-md bg-white/35 border border-white/20 shadow-lg
                    hover:bg-white/45 hover:shadow-xl hover:border-white/30 hover:scale-105
                    active:scale-95 active:bg-white/25
