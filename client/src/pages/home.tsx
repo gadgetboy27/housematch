@@ -94,7 +94,7 @@ export default function Home() {
   return (
     <div className="max-w-sm mx-auto h-screen bg-gradient-to-br from-blue-500 via-grey-500 to-grey-700 relative overflow-hidden">
       {/* Main Swiping Area - Account for navbar space */}
-      <div className="relative h-[calc(100vh-80px)] overflow-hidden">
+      <div className="relative h-[calc(100vh-80px)] overflow-hidden mt-5">
         <SwipeContainer 
           ref={swipeContainerRef}
           properties={properties}
@@ -105,7 +105,7 @@ export default function Home() {
       </div>
       
       {/* Floating Action Buttons - Independent and Overlapping Both Areas */}
-      <div className="fixed bottom-[76px] left-1/2 transform -translate-x-1/2 z-50">
+      <div className="fixed bottom-[81px] left-1/2 transform -translate-x-1/2 z-50">
         <ActionButtons
           onReject={handleReject}
           onLike={handleLike}
