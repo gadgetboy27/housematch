@@ -6,10 +6,10 @@ import { analyzeUserPreferences, generatePropertyRecommendations, generateMarket
 
 export async function registerRoutes(app: Express): Promise<Server> {
   
-  // Property routes
+  // Property routes with personalization
   app.get("/api/properties", async (req, res) => {
     try {
-      const { type, suburb } = req.query;
+      const { type, suburb, userId = "demo-user" } = req.query;
       let properties;
       
       if (type) {
@@ -17,11 +17,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } else if (suburb) {
         properties = await storage.searchProperties({ suburb: suburb as string });
       } else {
-        properties = await storage.getAllProperties();
+        // Use personalized properties for the demo user
+        if (userId === "demo-user") {
+          try {
+            const { AnalyticsService } = await import("./services/analytics");
+            const analyticsService = new AnalyticsService(storage);
+            const personalizedProperties = await analyticsService.getPersonalizedProperties(userId as string);
+            properties = personalizedProperties.map(p => p.property);
+          } catch (error) {
+            console.error("Analytics fallback to all properties:", error);
+            properties = await storage.getAllProperties();
+          }
+        } else {
+          properties = await storage.getAllProperties();
+        }
       }
       
       res.json(properties);
     } catch (error) {
+      console.error("Failed to fetch properties:", error);
       res.status(500).json({ message: "Failed to fetch properties" });
     }
   });
@@ -110,40 +124,64 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const swipes = await storage.getUserSwipes(userId);
-      const likedProperties = [];
-      const dislikedProperties = [];
-
-      for (const swipe of swipes) {
-        const property = await storage.getProperty(swipe.propertyId!);
-        if (property) {
-          if (swipe.action === 'like' || swipe.action === 'super_like') {
-            likedProperties.push(property);
-          } else if (swipe.action === 'dislike') {
-            dislikedProperties.push(property);
-          }
-        }
+      
+      if (swipes.length < 3) {
+        return res.json({
+          summary: "Keep swiping to discover your preferences! We'll analyze your choices as you go.",
+          preferredPropertyTypes: [],
+          priceRange: { min: 0, max: 10000000 },
+          preferredLocations: [],
+          analysisCount: swipes.length
+        });
       }
 
-      if (likedProperties.length === 0 && dislikedProperties.length === 0) {
-        return res.status(400).json({ message: "Not enough swipe data for analysis" });
-      }
-
-      const insights = await analyzeUserPreferences(likedProperties, dislikedProperties);
+      // Use local analytics instead of OpenAI
+      const { AnalyticsService } = await import("./services/analytics");
+      const analyticsService = new AnalyticsService(storage);
+      const preferences = await analyticsService.analyzeUserPreferences(userId);
+      
+      // Format insights for the UI
+      const insights = {
+        summary: `Based on ${preferences.totalSwipes} swipes, you prefer ${preferences.preferredPropertyTypes.join(', ') || 'various'} properties with ${preferences.preferredBedrooms.join(' or ') || 'any'} bedrooms.`,
+        preferredPropertyTypes: preferences.preferredPropertyTypes,
+        priceRange: preferences.preferredPriceRange,
+        preferredLocations: preferences.preferredSuburbs,
+        analysisCount: preferences.totalSwipes,
+        likeRatio: Math.round(preferences.likeRatio * 100),
+        recommendations: [
+          `You tend to like ${preferences.preferredPropertyTypes[0] || 'residential'} properties`,
+          preferences.preferredSuburbs.length > 0 ? `Areas like ${preferences.preferredSuburbs.slice(0, 2).join(', ')} appeal to you` : 'You\'re exploring various locations',
+          preferences.likeRatio > 0.6 ? 'You have refined taste in properties' : 'You\'re exploring many options to find your perfect match'
+        ]
+      };
       
       // Save insights to user preferences
-      await storage.createOrUpdateUserPreferences({
-        userId,
-        preferredPropertyTypes: insights.preferredPropertyTypes,
-        priceRangeMin: insights.priceRange.min.toString(),
-        priceRangeMax: insights.priceRange.max.toString(),
-        preferredSuburbs: insights.preferredLocations,
-        aiInsights: insights,
-      });
+      try {
+        await storage.createOrUpdateUserPreferences({
+          userId,
+          preferredPropertyTypes: preferences.preferredPropertyTypes,
+          priceRangeMin: preferences.preferredPriceRange.min.toString(),
+          priceRangeMax: preferences.preferredPriceRange.max.toString(),
+          preferredSuburbs: preferences.preferredSuburbs,
+          aiInsights: insights,
+        });
+      } catch (error) {
+        console.warn("Failed to save user preferences:", error);
+      }
 
       res.json(insights);
     } catch (error) {
-      console.error("AI analysis error:", error);
-      res.status(500).json({ message: "Failed to analyze preferences" });
+      console.error("Analytics analysis error:", error);
+      
+      // Fallback response
+      res.json({
+        summary: "Your preferences are being analyzed. Keep swiping for more insights!",
+        preferredPropertyTypes: [],
+        priceRange: { min: 0, max: 10000000 },
+        preferredLocations: [],
+        analysisCount: 0,
+        recommendations: ["Continue exploring properties", "Try different areas", "Consider various property types"]
+      });
     }
   });
 
