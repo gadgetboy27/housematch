@@ -165,7 +165,7 @@ export default function SwipeContainer({ properties, onPropertySelect, onSwipe }
       </motion.div>
 
       {/* Professional Action Buttons */}
-      <div className="absolute bottom-[4.5rem] left-1/2 transform -translate-x-1/2 flex items-center space-x-4 z-30">
+      <div className="absolute bottom-[2.25rem] left-1/2 transform -translate-x-1/2 flex items-center space-x-4 z-30">
         {/* Reject Button */}
         <motion.button
           className="relative group"
@@ -180,8 +180,8 @@ export default function SwipeContainer({ properties, onPropertySelect, onSwipe }
                           group-active:shadow-[0_6px_12px_rgba(0,0,0,0.6),inset_0_3px_6px_rgba(0,0,0,0.3)]
                           group-active:transform group-active:translate-y-1
                           transition-all duration-200">
-            <i className="fas fa-times text-white text-lg drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] 
-                          group-active:scale-90 transition-transform text-shadow-[0_0_8px_rgba(255,255,255,0.3)]"></i>
+            <span className="text-white text-2xl font-bold drop-shadow-[0_3px_6px_rgba(0,0,0,0.8)] 
+                          group-active:scale-90 transition-transform filter drop-shadow-[0_0_8px_rgba(255,255,255,0.3)]">✕</span>
           </div>
           <div className="absolute inset-0 bg-gradient-to-b from-white/10 via-transparent to-black/30 rounded-lg pointer-events-none"></div>
         </motion.button>
@@ -200,8 +200,8 @@ export default function SwipeContainer({ properties, onPropertySelect, onSwipe }
                           group-active:shadow-[0_8px_16px_rgba(245,158,11,0.7),inset_0_4px_8px_rgba(0,0,0,0.3)]
                           group-active:transform group-active:translate-y-1
                           transition-all duration-200">
-            <i className="fas fa-heart text-white text-xl drop-shadow-[0_3px_6px_rgba(0,0,0,0.8)] 
-                          group-active:scale-90 transition-transform filter drop-shadow-[0_0_12px_rgba(255,255,255,0.4)]"></i>
+            <span className="text-white text-2xl font-bold drop-shadow-[0_4px_8px_rgba(0,0,0,0.8)] 
+                          group-active:scale-90 transition-transform filter drop-shadow-[0_0_12px_rgba(255,255,255,0.4)]">❤️</span>
           </div>
           <div className="absolute inset-0 bg-gradient-to-b from-white/20 via-transparent to-amber-600/40 rounded-lg pointer-events-none"></div>
         </motion.button>
@@ -220,8 +220,8 @@ export default function SwipeContainer({ properties, onPropertySelect, onSwipe }
                           group-active:shadow-[0_6px_12px_rgba(29,78,216,0.7),inset_0_3px_6px_rgba(0,0,0,0.3)]
                           group-active:transform group-active:translate-y-1
                           transition-all duration-200">
-            <i className="fas fa-star text-yellow-200 text-lg drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] 
-                          group-active:scale-90 transition-transform filter drop-shadow-[0_0_10px_rgba(255,255,100,0.6)]"></i>
+            <span className="text-yellow-200 text-2xl font-bold drop-shadow-[0_3px_6px_rgba(0,0,0,0.8)] 
+                          group-active:scale-90 transition-transform filter drop-shadow-[0_0_10px_rgba(255,255,100,0.6)]">⭐️</span>
           </div>
           <div className="absolute inset-0 bg-gradient-to-b from-white/15 via-transparent to-blue-800/40 rounded-lg pointer-events-none"></div>
         </motion.button>
