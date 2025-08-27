@@ -1,0 +1,100 @@
+import { Property } from "@shared/schema";
+import PropertyMetrics from "./property-metrics";
+
+interface PropertyCardProps {
+  property: Property;
+  isBackground?: boolean;
+}
+
+const propertyTypeColors = {
+  residential: "border-blue-500 bg-blue-50 text-blue-700",
+  rental: "border-green-500 bg-green-50 text-green-700",
+  commercial: "border-orange-500 bg-orange-50 text-orange-700",
+  lease: "border-purple-500 bg-purple-50 text-purple-700",
+};
+
+export default function PropertyCard({ property, isBackground = false }: PropertyCardProps) {
+  const typeColor = propertyTypeColors[property.propertyType as keyof typeof propertyTypeColors] || propertyTypeColors.residential;
+
+  return (
+    <div className="w-full h-full relative">
+      {/* Property Image */}
+      <img
+        src={property.imageUrl || "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=600"}
+        alt={property.title}
+        className="w-full h-full object-cover"
+        data-testid="img-property"
+      />
+      
+      {/* Gradient Overlay */}
+      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
+      
+      {!isBackground && (
+        <>
+          {/* TikTok-style Metrics */}
+          <div className="absolute top-4 right-4">
+            <PropertyMetrics 
+              views={property.views}
+              likes={property.likes}
+              saves={property.saves}
+            />
+          </div>
+          
+          {/* Property Type Badge */}
+          <div className="absolute top-4 left-4">
+            <div className={`px-3 py-1 rounded-full text-xs font-medium backdrop-blur-sm bg-white/90 border ${typeColor}`}>
+              {property.propertyType.charAt(0).toUpperCase() + property.propertyType.slice(1)}
+            </div>
+          </div>
+        </>
+      )}
+      
+      {/* Property Info */}
+      <div className="absolute bottom-0 left-0 right-0 p-6 text-white">
+        <div className="space-y-3">
+          <div>
+            <h2 className="text-2xl font-bold leading-tight" data-testid="text-property-title">
+              {property.title}
+            </h2>
+            <p className="text-white/80 text-sm" data-testid="text-property-address">
+              {property.address}
+            </p>
+          </div>
+          
+          <div className="flex items-center justify-between">
+            <div className="text-xl font-bold" data-testid="text-property-price">
+              {property.price}
+            </div>
+            <div className="flex items-center space-x-4 text-sm">
+              {property.bedrooms > 0 && (
+                <span className="flex items-center space-x-1" data-testid="text-bedrooms">
+                  <i className="fas fa-bed"></i>
+                  <span>{property.bedrooms}</span>
+                </span>
+              )}
+              {property.bathrooms > 0 && (
+                <span className="flex items-center space-x-1" data-testid="text-bathrooms">
+                  <i className="fas fa-bath"></i>
+                  <span>{property.bathrooms}</span>
+                </span>
+              )}
+              {property.floorArea > 0 && (
+                <span className="flex items-center space-x-1" data-testid="text-floor-area">
+                  <i className="fas fa-ruler-combined"></i>
+                  <span>{property.floorArea}m²</span>
+                </span>
+              )}
+            </div>
+          </div>
+          
+          <div className="flex items-center justify-between text-xs text-white/70">
+            <span data-testid="text-suburb">{property.suburb}</span>
+            {property.lotNumber && (
+              <span data-testid="text-lot-number">{property.lotNumber}</span>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
