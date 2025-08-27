@@ -9,7 +9,7 @@ interface ActionButtonsProps {
 
 export default function ActionButtons({ onReject, onLike, onSuperLike, disabled = false }: ActionButtonsProps) {
   return (
-    <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex items-center space-x-4 z-30">
+    <div className="flex items-center space-x-4">
       {/* Reject Button */}
       <motion.button
         className="relative group"

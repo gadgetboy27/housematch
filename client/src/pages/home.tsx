@@ -80,8 +80,8 @@ export default function Home() {
 
   return (
     <div className="max-w-sm mx-auto min-h-screen bg-gradient-to-br from-blue-500 via-purple-500 to-purple-700 relative overflow-hidden">
-      {/* Main Swiping Area */}
-      <div className="relative h-[calc(100vh-140px)] overflow-hidden">
+      {/* Main Swiping Area - Full Height */}
+      <div className="relative h-screen overflow-hidden">
         <SwipeContainer 
           ref={swipeContainerRef}
           properties={properties}
@@ -89,16 +89,16 @@ export default function Home() {
           onSwipe={handleSwipe}
           onSwipeAction={handleSwipeAction}
         />
-      </div>
-
-      {/* Action Buttons Container */}
-      <div className="relative h-[70px] flex items-center justify-center">
-        <ActionButtons
-          onReject={handleReject}
-          onLike={handleLike}
-          onSuperLike={handleSuperLike}
-          disabled={isSwipingDisabled}
-        />
+        
+        {/* Action Buttons Overlay */}
+        <div className="absolute bottom-20 left-1/2 transform -translate-x-1/2 z-40">
+          <ActionButtons
+            onReject={handleReject}
+            onLike={handleLike}
+            onSuperLike={handleSuperLike}
+            disabled={isSwipingDisabled}
+          />
+        </div>
       </div>
 
       {/* AI Brain Popup */}
