@@ -1,15 +1,199 @@
+import { useState, useEffect } from "react";
+import { useToast } from "@/hooks/use-toast";
 import BottomNavigation from "@/components/bottom-navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
+import { LocalStorageService, UserSession } from "@/lib/local-storage";
 
 export default function Profile() {
+  const [userSession, setUserSession] = useState<UserSession>({ isLoggedIn: false });
+  const [likedCount, setLikedCount] = useState(0);
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
+  const [isSigningUp, setIsSigningUp] = useState(false);
+  const [showLoginForm, setShowLoginForm] = useState(false);
+  const [showSignupForm, setShowSignupForm] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [loginForm, setLoginForm] = useState({ email: "", password: "" });
+  const [signupForm, setSignupForm] = useState({ name: "", email: "", password: "" });
+  const { toast } = useToast();
+
+  useEffect(() => {
+    // Load user session and liked properties count
+    const session = LocalStorageService.getUserSession();
+    const likedProperties = LocalStorageService.getLikedProperties();
+    setUserSession(session);
+    setLikedCount(likedProperties.length);
+  }, []);
+
+  const handleLogin = async () => {
+    if (!loginForm.email || !loginForm.password) {
+      toast({
+        title: "Error",
+        description: "Please fill in all fields",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsLoggingIn(true);
+    
+    try {
+      // Simulate login API call (in real app, this would be actual authentication)
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Create user session
+      const session: UserSession = {
+        isLoggedIn: true,
+        userId: `user_${Date.now()}`,
+        email: loginForm.email,
+        name: loginForm.email.split('@')[0],
+      };
+
+      // Save session
+      LocalStorageService.setUserSession(session);
+      setUserSession(session);
+      
+      // Sync liked properties to server
+      if (likedCount > 0) {
+        setIsSyncing(true);
+        try {
+          await LocalStorageService.syncLikedPropertiesToServer(session.userId!);
+          toast({
+            title: "Synced!",
+            description: `${likedCount} liked properties synced to your account`,
+          });
+        } catch (error) {
+          console.error("Sync error:", error);
+          toast({
+            title: "Sync Warning",
+            description: "Login successful, but couldn't sync all data",
+            variant: "destructive",
+          });
+        }
+        setIsSyncing(false);
+      }
+
+      toast({
+        title: "Welcome back!",
+        description: "Successfully logged in",
+      });
+
+      setShowLoginForm(false);
+      setLoginForm({ email: "", password: "" });
+    } catch (error) {
+      toast({
+        title: "Login failed",
+        description: "Please check your credentials and try again",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoggingIn(false);
+    }
+  };
+
+  const handleSignup = async () => {
+    if (!signupForm.name || !signupForm.email || !signupForm.password) {
+      toast({
+        title: "Error",
+        description: "Please fill in all fields",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsSigningUp(true);
+    
+    try {
+      // Simulate signup API call
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Create user session
+      const session: UserSession = {
+        isLoggedIn: true,
+        userId: `user_${Date.now()}`,
+        email: signupForm.email,
+        name: signupForm.name,
+      };
+
+      // Save session
+      LocalStorageService.setUserSession(session);
+      setUserSession(session);
+      
+      // Sync liked properties to server
+      if (likedCount > 0) {
+        setIsSyncing(true);
+        try {
+          await LocalStorageService.syncLikedPropertiesToServer(session.userId!);
+          toast({
+            title: "Account created & synced!",
+            description: `Welcome! ${likedCount} liked properties saved to your account`,
+          });
+        } catch (error) {
+          toast({
+            title: "Account created",
+            description: "Welcome! Your likes will sync next time.",
+          });
+        }
+        setIsSyncing(false);
+      } else {
+        toast({
+          title: "Account created!",
+          description: "Welcome to PropertySwipe NZ",
+        });
+      }
+
+      setShowSignupForm(false);
+      setSignupForm({ name: "", email: "", password: "" });
+    } catch (error) {
+      toast({
+        title: "Signup failed",
+        description: "Please try again later",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSigningUp(false);
+    }
+  };
+
+  const handleLogout = () => {
+    LocalStorageService.clearUserSession();
+    setUserSession({ isLoggedIn: false });
+    toast({
+      title: "Logged out",
+      description: "Your liked properties are still saved locally",
+    });
+  };
+
+  const handleSyncData = async () => {
+    if (!userSession.userId) return;
+    
+    setIsSyncing(true);
+    try {
+      await LocalStorageService.syncLikedPropertiesFromServer(userSession.userId);
+      const updatedProperties = LocalStorageService.getLikedProperties();
+      setLikedCount(updatedProperties.length);
+      toast({
+        title: "Data synced",
+        description: "Your liked properties are up to date",
+      });
+    } catch (error) {
+      toast({
+        title: "Sync failed",
+        description: "Could not sync data from server",
+        variant: "destructive",
+      });
+    }
+    setIsSyncing(false);
+  };
+
   return (
     <div className="max-w-sm mx-auto min-h-screen bg-white relative">
       {/* Header */}
       <header className="bg-white border-b border-border px-4 py-3">
         <div className="flex items-center space-x-2">
-          <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
+          <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg flex items-center justify-center">
             <i className="fas fa-user text-white text-sm"></i>
           </div>
           <h1 className="text-lg font-bold text-secondary">Profile</h1>
@@ -19,52 +203,189 @@ export default function Profile() {
       {/* Content */}
       <div className="p-4 pb-20 space-y-6">
         
-        {/* User Info */}
-        <Card>
-          <CardContent className="p-6 text-center">
-            <div className="w-20 h-20 bg-primary rounded-full flex items-center justify-center mx-auto mb-4">
-              <i className="fas fa-user text-white text-2xl"></i>
-            </div>
-            <h2 className="text-xl font-bold text-secondary mb-1" data-testid="text-user-name">
-              Demo User
-            </h2>
-            <p className="text-muted-foreground text-sm" data-testid="text-user-email">
-              demo@propertyswipe.co.nz
-            </p>
-            <Button variant="outline" className="mt-4" data-testid="button-edit-profile">
-              Edit Profile
-            </Button>
-          </CardContent>
-        </Card>
+        {!userSession.isLoggedIn ? (
+          <>
+            {/* Not Logged In */}
+            <Card>
+              <CardContent className="p-6 text-center">
+                <div className="w-20 h-20 bg-gradient-to-r from-blue-100 to-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <i className="fas fa-user text-purple-500 text-2xl"></i>
+                </div>
+                <h2 className="text-xl font-bold text-secondary mb-2">
+                  Sign In to Save Your Likes
+                </h2>
+                <p className="text-muted-foreground text-sm mb-6">
+                  You have {likedCount} properties saved locally. Sign in to sync them across devices.
+                </p>
+                
+                <div className="space-y-3">
+                  <Button 
+                    onClick={() => setShowLoginForm(true)}
+                    className="w-full"
+                    data-testid="button-login"
+                  >
+                    <i className="fas fa-sign-in-alt mr-2"></i>
+                    Sign In
+                  </Button>
+                  <Button 
+                    variant="outline"
+                    onClick={() => setShowSignupForm(true)}
+                    className="w-full"
+                    data-testid="button-signup"
+                  >
+                    Create Account
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
 
-        {/* Statistics */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Your Activity</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-3 gap-4 text-center">
-              <div>
-                <div className="text-2xl font-bold text-primary" data-testid="text-stat-swipes">
-                  156
+            {/* Login Form */}
+            {showLoginForm && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">Sign In</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <Input
+                    type="email"
+                    placeholder="Email"
+                    value={loginForm.email}
+                    onChange={(e) => setLoginForm({ ...loginForm, email: e.target.value })}
+                    data-testid="input-login-email"
+                  />
+                  <Input
+                    type="password"
+                    placeholder="Password"
+                    value={loginForm.password}
+                    onChange={(e) => setLoginForm({ ...loginForm, password: e.target.value })}
+                    data-testid="input-login-password"
+                  />
+                  <div className="flex space-x-3">
+                    <Button 
+                      onClick={handleLogin}
+                      disabled={isLoggingIn || isSyncing}
+                      className="flex-1"
+                      data-testid="button-confirm-login"
+                    >
+                      {isLoggingIn ? "Signing in..." : isSyncing ? "Syncing..." : "Sign In"}
+                    </Button>
+                    <Button 
+                      variant="outline"
+                      onClick={() => setShowLoginForm(false)}
+                      className="flex-1"
+                    >
+                      Cancel
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Signup Form */}
+            {showSignupForm && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">Create Account</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <Input
+                    type="text"
+                    placeholder="Full Name"
+                    value={signupForm.name}
+                    onChange={(e) => setSignupForm({ ...signupForm, name: e.target.value })}
+                    data-testid="input-signup-name"
+                  />
+                  <Input
+                    type="email"
+                    placeholder="Email"
+                    value={signupForm.email}
+                    onChange={(e) => setSignupForm({ ...signupForm, email: e.target.value })}
+                    data-testid="input-signup-email"
+                  />
+                  <Input
+                    type="password"
+                    placeholder="Password"
+                    value={signupForm.password}
+                    onChange={(e) => setSignupForm({ ...signupForm, password: e.target.value })}
+                    data-testid="input-signup-password"
+                  />
+                  <div className="flex space-x-3">
+                    <Button 
+                      onClick={handleSignup}
+                      disabled={isSigningUp || isSyncing}
+                      className="flex-1"
+                      data-testid="button-confirm-signup"
+                    >
+                      {isSigningUp ? "Creating..." : isSyncing ? "Syncing..." : "Create Account"}
+                    </Button>
+                    <Button 
+                      variant="outline"
+                      onClick={() => setShowSignupForm(false)}
+                      className="flex-1"
+                    >
+                      Cancel
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </>
+        ) : (
+          <>
+            {/* Logged In User Info */}
+            <Card>
+              <CardContent className="p-6 text-center">
+                <div className="w-20 h-20 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <i className="fas fa-user text-white text-2xl"></i>
                 </div>
-                <div className="text-xs text-muted-foreground">Swipes</div>
-              </div>
-              <div>
-                <div className="text-2xl font-bold text-green-500" data-testid="text-stat-liked">
-                  23
+                <h2 className="text-xl font-bold text-secondary mb-1" data-testid="text-user-name">
+                  {userSession.name}
+                </h2>
+                <p className="text-muted-foreground text-sm mb-4" data-testid="text-user-email">
+                  {userSession.email}
+                </p>
+                <div className="flex space-x-3">
+                  <Button 
+                    variant="outline" 
+                    onClick={handleSyncData}
+                    disabled={isSyncing}
+                    className="flex-1" 
+                    data-testid="button-sync-data"
+                  >
+                    <i className={`fas ${isSyncing ? 'fa-spinner fa-spin' : 'fa-sync'} mr-2`}></i>
+                    {isSyncing ? 'Syncing...' : 'Sync Data'}
+                  </Button>
+                  <Button variant="outline" className="flex-1" data-testid="button-edit-profile">
+                    Edit Profile
+                  </Button>
                 </div>
-                <div className="text-xs text-muted-foreground">Liked</div>
-              </div>
-              <div>
-                <div className="text-2xl font-bold text-orange-500" data-testid="text-stat-saved">
-                  8
+              </CardContent>
+            </Card>
+
+            {/* Statistics */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Your Activity</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 gap-4 text-center">
+                  <div>
+                    <div className="text-2xl font-bold text-pink-500" data-testid="text-stat-liked">
+                      {likedCount}
+                    </div>
+                    <div className="text-xs text-muted-foreground">Liked Properties</div>
+                  </div>
+                  <div>
+                    <div className="text-2xl font-bold text-blue-500" data-testid="text-stat-synced">
+                      <i className="fas fa-cloud text-lg"></i>
+                    </div>
+                    <div className="text-xs text-muted-foreground">Cloud Synced</div>
+                  </div>
                 </div>
-                <div className="text-xs text-muted-foreground">Saved</div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+              </CardContent>
+            </Card>
+          </>
+        )}
 
         {/* Preferences */}
         <Card>
@@ -130,62 +451,21 @@ export default function Profile() {
               <i className="fas fa-bell mr-3"></i>
               Price Alerts
             </Button>
-            
-            <Button 
-              variant="outline" 
-              className="w-full justify-start"
-              data-testid="button-market-reports"
-            >
-              <i className="fas fa-chart-line mr-3"></i>
-              Market Reports
-            </Button>
           </CardContent>
         </Card>
 
-        {/* Support */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Support</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <Button 
-              variant="ghost" 
-              className="w-full justify-start text-muted-foreground"
-              data-testid="button-help-center"
-            >
-              <i className="fas fa-question-circle mr-3"></i>
-              Help Center
-            </Button>
-            
-            <Button 
-              variant="ghost" 
-              className="w-full justify-start text-muted-foreground"
-              data-testid="button-contact-us"
-            >
-              <i className="fas fa-envelope mr-3"></i>
-              Contact Us
-            </Button>
-            
-            <Button 
-              variant="ghost" 
-              className="w-full justify-start text-muted-foreground"
-              data-testid="button-privacy-policy"
-            >
-              <i className="fas fa-shield-alt mr-3"></i>
-              Privacy Policy
-            </Button>
-          </CardContent>
-        </Card>
-
-        {/* Sign Out */}
-        <Button 
-          variant="destructive" 
-          className="w-full"
-          data-testid="button-sign-out"
-        >
-          <i className="fas fa-sign-out-alt mr-2"></i>
-          Sign Out
-        </Button>
+        {/* Sign Out (only if logged in) */}
+        {userSession.isLoggedIn && (
+          <Button 
+            variant="destructive" 
+            onClick={handleLogout}
+            className="w-full"
+            data-testid="button-sign-out"
+          >
+            <i className="fas fa-sign-out-alt mr-2"></i>
+            Sign Out
+          </Button>
+        )}
       </div>
 
       <BottomNavigation />

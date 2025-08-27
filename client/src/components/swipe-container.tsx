@@ -5,6 +5,7 @@ import { Property } from "@shared/schema";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { LocalStorageService } from "@/lib/local-storage";
 
 interface SwipeContainerProps {
   properties: Property[];
@@ -49,12 +50,35 @@ const SwipeContainer = forwardRef<{ handleSwipe: (direction: "left" | "right" | 
 
     setIsSwipingDisabled(true);
 
-    // Record the swipe
-    swipeMutation.mutate({
-      userId,
-      propertyId: currentProperty.id,
-      action,
-    });
+    // Save to local storage if it's a like action
+    if (action === "like" || action === "super_like") {
+      try {
+        LocalStorageService.addLikedProperty(currentProperty, action as "like" | "super_like");
+        toast({
+          title: action === "super_like" ? "Super Liked!" : "Liked!",
+          description: `${currentProperty.title} saved to your favorites`,
+        });
+      } catch (error) {
+        console.error("Error saving liked property:", error);
+      }
+    }
+
+    // Record the swipe to server (if user is logged in, this will be handled)
+    const userSession = LocalStorageService.getUserSession();
+    if (userSession.isLoggedIn && userSession.userId) {
+      swipeMutation.mutate({
+        userId: userSession.userId,
+        propertyId: currentProperty.id,
+        action,
+      });
+    } else {
+      // Just record for demo user as fallback
+      swipeMutation.mutate({
+        userId,
+        propertyId: currentProperty.id,
+        action,
+      });
+    }
 
     // Animate card out smoothly
     const targetX = direction === "left" ? -300 : direction === "right" ? 300 : 0;
