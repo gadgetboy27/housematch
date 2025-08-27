@@ -67,7 +67,7 @@ export default function SwipeContainer({ properties, onPropertySelect, onSwipe }
       y.set(0);
       setIsSwipingDisabled(false);
       onSwipe();
-    }, 300);
+    }, 600);
   };
 
   const handleDragEnd = (event: any, info: PanInfo) => {
