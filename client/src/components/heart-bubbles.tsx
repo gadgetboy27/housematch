@@ -11,11 +11,11 @@ export default function HeartBubbles({ trigger, onComplete }: HeartBubblesProps)
 
   useEffect(() => {
     if (trigger) {
-      // Create 5 hearts with random positions
+      // Create 5 hearts with random positions, same size as button heart (text-2xl = 24px)
       const newHearts = Array.from({ length: 5 }, (_, i) => ({
         id: Date.now() + i,
-        x: Math.random() * 30 - 15, // -15 to 15px from center
-        size: 24 + Math.random() * 12, // 24-36px (bigger hearts)
+        x: Math.random() * 20 - 10, // -10 to 10px from center (tighter spread)
+        size: 24, // Exact same size as like button heart (text-2xl)
       }));
 
       setHearts(newHearts);
@@ -37,11 +37,11 @@ export default function HeartBubbles({ trigger, onComplete }: HeartBubblesProps)
             className="absolute text-red-400"
             style={{
               left: `calc(50% + ${heart.x}px)`,
-              top: "85%", // Start from near bottom (like button area)
+              top: "90%", // Start even closer to like button position
               fontSize: `${heart.size}px`,
             }}
-            initial={{ y: 0, opacity: 1, scale: 0.3 }}
-            animate={{ y: -80, opacity: 0, scale: 1 }}
+            initial={{ y: 0, opacity: 1, scale: 0.8 }}
+            animate={{ y: -100, opacity: 0, scale: 1.2 }}
             transition={{ duration: 1.2, ease: "easeOut" }}
           >
             ❤️
