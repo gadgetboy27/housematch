@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { ChevronDown } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 
 interface PropertyTypeDropdownProps {
   currentType: string;
@@ -31,6 +32,24 @@ const propertyTypeColors = {
 export default function PropertyTypeDropdown({ currentType, onTypeChange }: PropertyTypeDropdownProps) {
   const [isOpen, setIsOpen] = useState(false);
   
+  // Fetch all properties to count by type
+  const { data: allProperties = [] } = useQuery({
+    queryKey: ["/api/properties", "all"],
+    queryFn: async () => {
+      const response = await fetch("/api/properties?userId=demo-user");
+      return response.json();
+    }
+  });
+
+  // Count properties by type
+  const propertyCounts = allProperties.reduce((counts: Record<string, number>, property: any) => {
+    const type = property.propertyType || "other";
+    counts[type] = (counts[type] || 0) + 1;
+    return counts;
+  }, {});
+
+  const totalProperties = allProperties.length;
+  
   const currentTypeData = propertyTypes.find(type => type.value === currentType) || propertyTypes[0];
   const typeColor = propertyTypeColors[currentType as keyof typeof propertyTypeColors] || propertyTypeColors.all;
 
@@ -39,15 +58,24 @@ export default function PropertyTypeDropdown({ currentType, onTypeChange }: Prop
     setIsOpen(false);
   };
 
+  const handleButtonClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsOpen(!isOpen);
+  };
+
   return (
     <div className="relative">
       {/* Dropdown Button */}
       <button
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={handleButtonClick}
         className={`px-3 py-1 rounded-full text-xs font-medium backdrop-blur-sm bg-white/90 border ${typeColor} flex items-center gap-1 hover:bg-white/95 transition-all duration-200`}
         data-testid="button-property-type-dropdown"
       >
-        <span>{currentTypeData.label}</span>
+        <span>
+          {currentTypeData.label}
+          {currentType === "all" ? ` (${totalProperties})` : ` (${propertyCounts[currentType] || 0})`}
+        </span>
         <ChevronDown 
           className={`w-3 h-3 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} 
         />
@@ -67,6 +95,7 @@ export default function PropertyTypeDropdown({ currentType, onTypeChange }: Prop
             {propertyTypes.map((type) => {
               const isSelected = type.value === currentType;
               const itemColor = propertyTypeColors[type.value as keyof typeof propertyTypeColors] || propertyTypeColors.all;
+              const count = type.value === "all" ? totalProperties : (propertyCounts[type.value] || 0);
               
               return (
                 <button
@@ -77,7 +106,10 @@ export default function PropertyTypeDropdown({ currentType, onTypeChange }: Prop
                   }`}
                   data-testid={`option-property-type-${type.value}`}
                 >
-                  {type.label}
+                  <div className="flex justify-between items-center">
+                    <span>{type.label}</span>
+                    <span className="text-xs text-gray-500">({count})</span>
+                  </div>
                 </button>
               );
             })}

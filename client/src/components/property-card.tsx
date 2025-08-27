@@ -43,12 +43,14 @@ export default function PropertyCard({ property, isBackground = false, onPropert
           </div>
           
           {/* Property Type Dropdown */}
-          <div className="absolute top-4 left-4">
+          <div className="absolute top-4 left-4 z-50">
             {onPropertyTypeFilter ? (
-              <PropertyTypeDropdown 
-                currentType={property.propertyType}
-                onTypeChange={onPropertyTypeFilter}
-              />
+              <div onClick={(e) => e.stopPropagation()}>
+                <PropertyTypeDropdown 
+                  currentType={property.propertyType}
+                  onTypeChange={onPropertyTypeFilter}
+                />
+              </div>
             ) : (
               <div className={`px-3 py-1 rounded-full text-xs font-medium backdrop-blur-sm bg-white/90 border ${typeColor}`}>
                 {property.propertyType.charAt(0).toUpperCase() + property.propertyType.slice(1)}
