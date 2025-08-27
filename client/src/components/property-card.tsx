@@ -43,13 +43,18 @@ export default function PropertyCard({ property, isBackground = false, onPropert
           </div>
           
           {/* Property Type Dropdown */}
-          <div className="absolute top-4 left-4 z-50">
+          <div className="absolute top-4 left-4 z-[100]">
             {onPropertyTypeFilter ? (
-              <div onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                e.nativeEvent.stopImmediatePropagation();
-              }}>
+              <div 
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  e.nativeEvent.stopImmediatePropagation();
+                }}
+                onPointerDown={(e) => e.stopPropagation()}
+                onTouchStart={(e) => e.stopPropagation()}
+                style={{ touchAction: 'none' }}
+              >
                 <PropertyTypeDropdown 
                   currentType={property.propertyType}
                   onTypeChange={onPropertyTypeFilter}

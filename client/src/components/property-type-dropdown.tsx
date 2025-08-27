@@ -66,10 +66,12 @@ export default function PropertyTypeDropdown({ currentType, onTypeChange }: Prop
   };
 
   return (
-    <div className="relative">
+    <div className="relative" style={{ touchAction: 'none' }}>
       {/* Dropdown Button */}
       <button
         onClick={handleButtonClick}
+        onPointerDown={(e) => e.stopPropagation()}
+        onTouchStart={(e) => e.stopPropagation()}
         className={`px-3 py-1 rounded-full text-xs font-medium flex items-center gap-1 transition-all duration-300 
                    backdrop-blur-2xl bg-white/40 border border-white/30 shadow-2xl
                    hover:bg-white/50 hover:shadow-[0_16px_40px_rgba(255,255,255,0.2)] hover:border-white/40 hover:scale-105
