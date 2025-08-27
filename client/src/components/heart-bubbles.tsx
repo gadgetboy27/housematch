@@ -14,8 +14,8 @@ export default function HeartBubbles({ trigger, onComplete }: HeartBubblesProps)
       // Create 5 hearts with random positions
       const newHearts = Array.from({ length: 5 }, (_, i) => ({
         id: Date.now() + i,
-        x: Math.random() * 40 - 20, // -20 to 20px from center
-        size: 16 + Math.random() * 8, // 16-24px
+        x: Math.random() * 30 - 15, // -15 to 15px from center
+        size: 24 + Math.random() * 12, // 24-36px (bigger hearts)
       }));
 
       setHearts(newHearts);
@@ -37,11 +37,11 @@ export default function HeartBubbles({ trigger, onComplete }: HeartBubblesProps)
             className="absolute text-red-400"
             style={{
               left: `calc(50% + ${heart.x}px)`,
-              top: "50%",
+              top: "85%", // Start from near bottom (like button area)
               fontSize: `${heart.size}px`,
             }}
-            initial={{ y: 0, opacity: 1, scale: 0.5 }}
-            animate={{ y: -60, opacity: 0, scale: 1 }}
+            initial={{ y: 0, opacity: 1, scale: 0.3 }}
+            animate={{ y: -80, opacity: 0, scale: 1 }}
             transition={{ duration: 1.2, ease: "easeOut" }}
           >
             ❤️
