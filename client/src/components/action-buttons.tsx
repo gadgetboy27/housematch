@@ -13,6 +13,7 @@ export default function ActionButtons({ onReject, onLike, onSuperLike, disabled 
   const [showHeartBubbles, setShowHeartBubbles] = useState(false);
 
   const handleLike = () => {
+    console.log("Like button clicked!"); // Debug log
     setShowHeartBubbles(true);
     onLike();
   };
@@ -42,7 +43,7 @@ export default function ActionButtons({ onReject, onLike, onSuperLike, disabled 
       {/* Like Button - Premium Gold */}
       <motion.button
         className="relative group"
-        onClick={handleLike}
+        onClick={onLike}
         disabled={disabled}
         whileTap={{ scale: 0.95 }}
         data-testid="button-like"
