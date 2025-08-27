@@ -7,15 +7,17 @@ interface HeartBubblesProps {
 }
 
 export default function HeartBubbles({ trigger, onComplete }: HeartBubblesProps) {
-  const [hearts, setHearts] = useState<Array<{id: number, x: number, size: number}>>([]);
+  const [hearts, setHearts] = useState<Array<{id: number, x: number, y: number, size: number, delay: number}>>([]);
 
   useEffect(() => {
     if (trigger) {
       // Create 5 hearts with random positions, same size as button heart (text-2xl = 24px)
       const newHearts = Array.from({ length: 5 }, (_, i) => ({
         id: Date.now() + i,
-        x: Math.random() * 20 - 10, // -10 to 10px from center (tighter spread)
+        x: Math.random() * 80 - 40, // -40 to 40px from center (much wider spread)
+        y: Math.random() * 30 - 15, // Add vertical variation too
         size: 24, // Exact same size as like button heart (text-2xl)
+        delay: Math.random() * 0.4, // Random delay for staggered animation
       }));
 
       setHearts(newHearts);
@@ -37,12 +39,16 @@ export default function HeartBubbles({ trigger, onComplete }: HeartBubblesProps)
             className="absolute text-red-400"
             style={{
               left: `calc(50% + ${heart.x}px)`,
-              top: "90%", // Start even closer to like button position
+              top: `calc(90% + ${heart.y}px)`, // Add vertical variation to start position
               fontSize: `${heart.size}px`,
             }}
             initial={{ y: 0, opacity: 1, scale: 0.8 }}
             animate={{ y: -200, opacity: 0, scale: 1.2 }}
-            transition={{ duration: 2.0, ease: "easeOut" }}
+            transition={{ 
+              duration: 2.0, 
+              ease: "easeOut",
+              delay: heart.delay // Staggered start times
+            }}
           >
             ❤️
           </motion.div>
