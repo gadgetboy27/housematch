@@ -69,11 +69,11 @@ export default function PropertyTypeDropdown({ currentType, onTypeChange }: Prop
       {/* Dropdown Button */}
       <button
         onClick={handleButtonClick}
-        className={`px-2 py-0.5 rounded-full text-xs font-medium flex items-center gap-1 transition-all duration-300 
-                   backdrop-blur-md bg-white/35 border border-white/20 shadow-lg
-                   hover:bg-white/45 hover:shadow-xl hover:border-white/30 hover:scale-105
-                   active:scale-95 active:bg-white/25
-                   before:absolute before:inset-0 before:rounded-full before:bg-gradient-to-r before:from-white/10 before:to-transparent before:pointer-events-none
+        className={`px-3 py-1 rounded-full text-xs font-medium flex items-center gap-1 transition-all duration-300 
+                   backdrop-blur-2xl bg-white/40 border border-white/30 shadow-2xl
+                   hover:bg-white/50 hover:shadow-[0_16px_40px_rgba(255,255,255,0.2)] hover:border-white/40 hover:scale-105
+                   active:scale-95 active:bg-white/30 active:shadow-inner
+                   before:absolute before:inset-0 before:rounded-full before:bg-gradient-to-br before:from-white/20 before:via-white/5 before:to-transparent before:pointer-events-none
                    relative overflow-hidden`}
         data-testid="button-property-type-dropdown"
         style={{
@@ -99,9 +99,9 @@ export default function PropertyTypeDropdown({ currentType, onTypeChange }: Prop
           />
           
           {/* Menu */}
-          <div className="absolute top-full left-0 mt-1 w-48 backdrop-blur-md bg-white/35 rounded-lg shadow-xl border border-white/20 z-20 overflow-hidden"
+          <div className="absolute top-full left-0 mt-2 w-48 backdrop-blur-2xl bg-white/40 rounded-xl shadow-2xl border border-white/30 z-20 overflow-hidden"
                style={{
-                 boxShadow: '0 16px 64px rgba(0, 0, 0, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.2)',
+                 boxShadow: '0 20px 60px rgba(0,0,0,0.4), 0 8px 20px rgba(255,255,255,0.1), inset 0 2px 4px rgba(255,255,255,0.3)',
                }}>
             {propertyTypes.map((type) => {
               const isSelected = type.value === currentType;
