@@ -143,14 +143,12 @@ export default function AddProperty() {
   };
 
   // Handle upload completion
-  const handleUploadComplete = async (result: UploadResult<Record<string, unknown>, Record<string, unknown>>) => {
-    if (result.successful && result.successful.length > 0) {
+  const handleUploadComplete = async (uploadedUrls: string[]) => {
+    if (uploadedUrls.length > 0) {
       const newImagePaths: string[] = [];
       
       // Process all uploaded files
-      for (const uploadedFile of result.successful) {
-        const imageURL = uploadedFile.uploadURL;
-        
+      for (const imageURL of uploadedUrls) {
         try {
           // Normalize the path on the backend
           const response = await apiRequest("PUT", "/api/property-images", { imageURL });

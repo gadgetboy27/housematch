@@ -1,9 +1,5 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import type { ReactNode } from "react";
-import Uppy from "@uppy/core";
-import { DashboardModal } from "@uppy/react";
-import AwsS3 from "@uppy/aws-s3";
-import type { UploadResult } from "@uppy/core";
 import { Button } from "@/components/ui/button";
 
 interface ObjectUploaderProps {
@@ -14,9 +10,7 @@ interface ObjectUploaderProps {
     method: "PUT";
     url: string;
   }>;
-  onComplete?: (
-    result: UploadResult<Record<string, unknown>, Record<string, unknown>>
-  ) => void;
+  onComplete?: (files: string[]) => void;
   onUploadProgress?: (files: any[]) => void;
   buttonClassName?: string;
   children: ReactNode;
@@ -61,67 +55,87 @@ export function ObjectUploader({
   buttonClassName,
   children,
 }: ObjectUploaderProps) {
-  const [showModal, setShowModal] = useState(false);
-  const [uploadedFiles, setUploadedFiles] = useState<any[]>([]);
-  
-  const [uppy] = useState(() => {
-    const uppyInstance = new Uppy({
-      restrictions: {
-        maxNumberOfFiles,
-        maxFileSize,
-        allowedFileTypes,
-      },
-      autoProceed: false,
-      allowMultipleUploadBatches: true,
-    });
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadedFiles, setUploadedFiles] = useState<string[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-    uppyInstance.use(AwsS3, {
-      shouldUseMultipart: false,
-      getUploadParameters: async (file) => {
-        // Call the parameter function for each file
-        const params = await onGetUploadParameters();
-        return params;
-      },
-    });
+  const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(event.target.files || []);
+    if (files.length === 0) return;
 
-    uppyInstance.on("complete", (result) => {
-      console.log("🔍 Upload complete:", result);
-      if (result.successful) {
-        console.log("🔍 Successful uploads:", result.successful.length);
-        const newFiles = [...uploadedFiles, ...result.successful];
+    console.log("🔍 Files selected:", files.length);
+    setIsUploading(true);
+
+    try {
+      const uploadedUrls: string[] = [];
+
+      for (const file of files) {
+        console.log("🔍 Uploading file:", file.name);
+        
+        // Get upload parameters
+        const { url } = await onGetUploadParameters();
+        
+        // Upload file directly
+        const response = await fetch(url, {
+          method: 'PUT',
+          body: file,
+          headers: {
+            'Content-Type': file.type,
+          },
+        });
+
+        if (response.ok) {
+          uploadedUrls.push(url.split('?')[0]); // Remove query params to get clean URL
+          console.log("🔍 File uploaded successfully:", file.name);
+        } else {
+          console.error("🔍 Upload failed for:", file.name);
+        }
+      }
+
+      if (uploadedUrls.length > 0) {
+        const newFiles = [...uploadedFiles, ...uploadedUrls];
         setUploadedFiles(newFiles);
         onUploadProgress?.(newFiles);
-        onComplete?.(result);
+        onComplete?.(uploadedUrls);
       }
-      setShowModal(false);
-    });
-
-    uppyInstance.on("upload-progress", (file, progress) => {
-      // Provide real-time progress feedback
-      console.log(`Upload progress for ${file?.name}: ${progress.percentage}%`);
-    });
-
-    uppyInstance.on("error", (error) => {
-      console.error("Upload error:", error);
-    });
-
-    return uppyInstance;
-  });
+    } catch (error) {
+      console.error("🔍 Upload error:", error);
+    } finally {
+      setIsUploading(false);
+    }
+  };
 
   return (
     <div>
+      {/* Hidden file input with camera/gallery support */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        multiple={maxNumberOfFiles > 1}
+        capture="environment" // This enables camera access on mobile
+        onChange={handleFileSelect}
+        className="hidden"
+      />
+
       <Button 
         type="button"
         onClick={() => {
           console.log("🔍 Upload button clicked!");
-          console.log("🔍 Current modal state:", showModal);
-          setShowModal(true);
-          console.log("🔍 Setting modal to true");
+          fileInputRef.current?.click();
         }} 
         className={buttonClassName}
+        disabled={isUploading}
         data-testid="button-upload-file"
       >
-        {children}
+        {isUploading ? (
+          <div className="flex flex-col items-center space-y-1">
+            <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+            <span className="text-sm">Uploading...</span>
+          </div>
+        ) : (
+          children
+        )}
       </Button>
 
       {/* Show uploaded files count */}
@@ -135,31 +149,6 @@ export function ObjectUploader({
           )}
         </div>
       )}
-
-      {showModal && <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center">
-        <div className="bg-white p-4 rounded-lg max-w-md w-full mx-4">
-          <p className="mb-4">🔍 DEBUG: Modal should be visible now</p>
-          <button 
-            onClick={() => setShowModal(false)}
-            className="bg-red-500 text-white px-4 py-2 rounded"
-          >
-            Close Debug Modal
-          </button>
-        </div>
-      </div>}
-
-      <DashboardModal
-        uppy={uppy}
-        open={showModal}
-        onRequestClose={() => {
-          console.log("🔍 Modal close requested");
-          setShowModal(false);
-        }}
-        proudlyDisplayPoweredByUppy={false}
-        metaFields={[]}
-        note={`Upload up to ${maxNumberOfFiles} high-quality property images. On mobile, tap "Browse Files" then choose Camera, Gallery, or Files.`}
-        hideProgressDetails={false}
-      />
     </div>
   );
 }
