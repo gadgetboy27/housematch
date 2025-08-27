@@ -1,6 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import SwipeContainer from "@/components/swipe-container";
+import ActionButtons from "@/components/action-buttons";
 import BottomNavigation from "@/components/bottom-navigation";
 import PropertyDetailsModal from "@/components/modals/property-details-modal";
 import AISuggestionsModal from "@/components/modals/ai-suggestions-modal";
@@ -13,6 +14,8 @@ export default function Home() {
   const [showAISuggestions, setShowAISuggestions] = useState(false);
   const [showAIBrain, setShowAIBrain] = useState(false);
   const [swipeCount, setSwipeCount] = useState(0);
+  const [isSwipingDisabled, setIsSwipingDisabled] = useState(false);
+  const swipeContainerRef = useRef<any>(null);
 
   const { data: properties = [], isLoading } = useQuery({
     queryKey: ["/api/properties"],
@@ -33,6 +36,32 @@ export default function Home() {
     setSwipeCount(prev => prev + 1);
   };
 
+  const handleSwipeAction = (direction: "left" | "right" | "up", action: string) => {
+    // This can be used for additional logic when buttons are pressed
+    setIsSwipingDisabled(true);
+    setTimeout(() => {
+      setIsSwipingDisabled(false);
+    }, 600);
+  };
+
+  const handleReject = () => {
+    if (swipeContainerRef.current?.handleSwipe) {
+      swipeContainerRef.current.handleSwipe("left", "dislike");
+    }
+  };
+
+  const handleLike = () => {
+    if (swipeContainerRef.current?.handleSwipe) {
+      swipeContainerRef.current.handleSwipe("right", "like");
+    }
+  };
+
+  const handleSuperLike = () => {
+    if (swipeContainerRef.current?.handleSwipe) {
+      swipeContainerRef.current.handleSwipe("up", "super_like");
+    }
+  };
+
   const handleAIBrainClick = () => {
     setShowAIBrain(false);
     setShowAISuggestions(true);
@@ -51,12 +80,24 @@ export default function Home() {
 
   return (
     <div className="max-w-sm mx-auto min-h-screen bg-gradient-to-br from-blue-500 via-purple-500 to-purple-700 relative overflow-hidden">
-      {/* Main Swiping Area - Full Height */}
-      <div className="relative h-[calc(100vh-70px)] overflow-hidden">
+      {/* Main Swiping Area */}
+      <div className="relative h-[calc(100vh-140px)] overflow-hidden">
         <SwipeContainer 
+          ref={swipeContainerRef}
           properties={properties}
           onPropertySelect={handlePropertySelect}
           onSwipe={handleSwipe}
+          onSwipeAction={handleSwipeAction}
+        />
+      </div>
+
+      {/* Action Buttons Container */}
+      <div className="relative h-[70px] flex items-center justify-center">
+        <ActionButtons
+          onReject={handleReject}
+          onLike={handleLike}
+          onSuperLike={handleSuperLike}
+          disabled={isSwipingDisabled}
         />
       </div>
 
