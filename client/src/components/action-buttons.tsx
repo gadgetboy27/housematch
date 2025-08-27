@@ -5,9 +5,15 @@ interface ActionButtonsProps {
   onLike: () => void;
   onSuperLike: () => void;
   disabled?: boolean;
+  onLikeEffect?: () => void; // Optional callback for heart bubbles
 }
 
-export default function ActionButtons({ onReject, onLike, onSuperLike, disabled = false }: ActionButtonsProps) {
+export default function ActionButtons({ onReject, onLike, onSuperLike, disabled = false, onLikeEffect }: ActionButtonsProps) {
+  
+  const handleLikeClick = () => {
+    onLike(); // Original functionality
+    onLikeEffect?.(); // Trigger heart bubbles if provided
+  };
   return (
     <div className="flex items-center space-x-4">
       {/* Reject Button */}
@@ -33,7 +39,7 @@ export default function ActionButtons({ onReject, onLike, onSuperLike, disabled 
       {/* Like Button - Premium Gold */}
       <motion.button
         className="relative group"
-        onClick={onLike}
+        onClick={handleLikeClick}
         disabled={disabled}
         whileTap={{ scale: 0.95 }}
         data-testid="button-like"

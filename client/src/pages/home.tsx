@@ -112,6 +112,15 @@ export default function Home() {
           onLike={handleLike}
           onSuperLike={handleSuperLike}
           disabled={isSwipingDisabled}
+          onLikeEffect={() => {
+            // Simple approach - just trigger the heart state directly
+            setTimeout(() => {
+              const container = swipeContainerRef.current;
+              if (container && container.setHeartTrigger) {
+                container.setHeartTrigger(true);
+              }
+            }, 0);
+          }}
         />
       </div>
 
