@@ -79,19 +79,25 @@ export default function PropertyCard({ property, isBackground = false, onPropert
             <div className="flex items-center space-x-4 text-sm">
               {(property.bedrooms || 0) > 0 && (
                 <span className="flex items-center space-x-1" data-testid="text-bedrooms">
-                  <i className="fas fa-bed"></i>
+                  <i className="fas fa-bed text-blue-200"></i>
                   <span>{property.bedrooms}</span>
                 </span>
               )}
               {(property.bathrooms || 0) > 0 && (
                 <span className="flex items-center space-x-1" data-testid="text-bathrooms">
-                  <i className="fas fa-bath"></i>
+                  <i className="fas fa-shower text-cyan-200"></i>
                   <span>{property.bathrooms}</span>
+                </span>
+              )}
+              {(property.carSpaces || 0) > 0 && (
+                <span className="flex items-center space-x-1" data-testid="text-car-spaces">
+                  <i className="fas fa-car text-green-200"></i>
+                  <span>{property.carSpaces}</span>
                 </span>
               )}
               {(property.floorArea || 0) > 0 && (
                 <span className="flex items-center space-x-1" data-testid="text-floor-area">
-                  <i className="fas fa-ruler-combined"></i>
+                  <i className="fas fa-home text-yellow-200"></i>
                   <span>{property.floorArea}m²</span>
                 </span>
               )}
