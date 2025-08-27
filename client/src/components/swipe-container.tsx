@@ -57,7 +57,8 @@ const SwipeContainer = forwardRef<{ handleSwipe: (direction: "left" | "right" | 
         toast({
           title: action === "super_like" ? "Super Liked!" : "Liked!",
           description: `${currentProperty.title} saved to your favorites`,
-          duration: 300,
+          duration: 500,
+          variant: "subtle" as any,
         });
       } catch (error) {
         console.error("Error saving liked property:", error);
