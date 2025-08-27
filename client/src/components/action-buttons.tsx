@@ -1,6 +1,4 @@
 import { motion } from "framer-motion";
-import { useState } from "react";
-import HeartBubbles from "./heart-bubbles";
 
 interface ActionButtonsProps {
   onReject: () => void;
@@ -10,16 +8,8 @@ interface ActionButtonsProps {
 }
 
 export default function ActionButtons({ onReject, onLike, onSuperLike, disabled = false }: ActionButtonsProps) {
-  const [showHeartBubbles, setShowHeartBubbles] = useState(false);
-
-  const handleLike = () => {
-    console.log("Like button clicked!"); // Debug log
-    setShowHeartBubbles(true);
-    onLike();
-  };
-
   return (
-    <div className="flex items-center space-x-4 relative">
+    <div className="flex items-center space-x-4">
       {/* Reject Button */}
       <motion.button
         className="relative group"
@@ -79,14 +69,6 @@ export default function ActionButtons({ onReject, onLike, onSuperLike, disabled 
         </div>
         <div className="absolute inset-0 bg-gradient-to-b from-white/20 via-white/5 to-blue-500/10 rounded-lg pointer-events-none"></div>
       </motion.button>
-
-      {/* Heart Bubbles Effect */}
-      <div className="absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 w-20 h-12">
-        <HeartBubbles
-          isTriggered={showHeartBubbles}
-          onComplete={() => setShowHeartBubbles(false)}
-        />
-      </div>
     </div>
   );
 }
