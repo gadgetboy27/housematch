@@ -113,7 +113,6 @@ export function ObjectUploader({
         type="file"
         accept="image/*"
         multiple={maxNumberOfFiles > 1}
-        capture="environment" // This enables camera access on mobile
         onChange={handleFileSelect}
         className="hidden"
       />
