@@ -55,21 +55,37 @@ const SwipeContainer = forwardRef<{ handleSwipe: (direction: "left" | "right" | 
       action,
     });
 
-    // Animate card out
+    // Animate card out smoothly
     const targetX = direction === "left" ? -300 : direction === "right" ? 300 : 0;
     const targetY = direction === "up" ? -300 : 0;
     
+    // Use smooth animation instead of instant set
+    const animationControls = {
+      x: targetX,
+      y: targetY,
+      transition: { 
+        duration: 0.3, 
+        ease: "easeOut",
+        type: "tween"
+      }
+    };
+
+    // Animate and then reset
+    Promise.resolve().then(() => {
+      // Move to next property after smooth animation
+      setTimeout(() => {
+        setCurrentIndex(prev => (prev + 1) % properties.length);
+        // Reset positions smoothly
+        x.set(0);
+        y.set(0);
+        setIsSwipingDisabled(false);
+        onSwipe();
+      }, 300);
+    });
+    
+    // Set target position with smooth transition
     x.set(targetX);
     y.set(targetY);
-
-    // Move to next property after animation
-    setTimeout(() => {
-      setCurrentIndex(prev => (prev + 1) % properties.length);
-      x.set(0);
-      y.set(0);
-      setIsSwipingDisabled(false);
-      onSwipe();
-    }, 300);
 
     // Call the external action handler
     onSwipeAction(direction, action);
@@ -144,13 +160,21 @@ const SwipeContainer = forwardRef<{ handleSwipe: (direction: "left" | "right" | 
           rotate,
           opacity,
           zIndex: 20,
+          willChange: "transform, opacity", // Hardware acceleration
+          touchAction: "pan-y", // Better touch handling
         }}
         drag
         dragConstraints={{ left: 0, right: 0, top: 0, bottom: 0 }}
+        dragElastic={0.3}
         onDragEnd={handleDragEnd}
         onClick={handleCardClick}
         whileTap={{ scale: 0.98 }}
         data-testid="card-swipe-active"
+        transition={{
+          type: "spring",
+          damping: 25,
+          stiffness: 300,
+        }}
       >
         <PropertyCard property={currentProperty} />
         
