@@ -17,8 +17,17 @@ export default function Home() {
   const [isSwipingDisabled, setIsSwipingDisabled] = useState(false);
   const swipeContainerRef = useRef<any>(null);
 
+  const [selectedPropertyType, setSelectedPropertyType] = useState<string>("all");
+  
   const { data: properties = [], isLoading } = useQuery({
-    queryKey: ["/api/properties"],
+    queryKey: ["/api/properties", selectedPropertyType],
+    queryFn: async () => {
+      const url = selectedPropertyType === "all" 
+        ? "/api/properties?userId=demo-user"
+        : `/api/properties?type=${selectedPropertyType}&userId=demo-user`;
+      const response = await fetch(url);
+      return response.json();
+    }
   });
 
   useEffect(() => {
@@ -42,6 +51,10 @@ export default function Home() {
     setTimeout(() => {
       setIsSwipingDisabled(false);
     }, 600);
+  };
+
+  const handlePropertyTypeFilter = (type: string) => {
+    setSelectedPropertyType(type);
   };
 
   const handleReject = () => {
@@ -88,6 +101,7 @@ export default function Home() {
           onPropertySelect={handlePropertySelect}
           onSwipe={handleSwipe}
           onSwipeAction={handleSwipeAction}
+          onPropertyTypeFilter={handlePropertyTypeFilter}
         />
         
         {/* Action Buttons Overlay */}

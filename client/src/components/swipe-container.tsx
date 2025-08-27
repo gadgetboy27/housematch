@@ -11,10 +11,11 @@ interface SwipeContainerProps {
   onPropertySelect: (property: Property) => void;
   onSwipe: () => void;
   onSwipeAction: (direction: "left" | "right" | "up", action: string) => void;
+  onPropertyTypeFilter?: (type: string) => void;
 }
 
 const SwipeContainer = forwardRef<{ handleSwipe: (direction: "left" | "right" | "up", action: string) => void }, SwipeContainerProps>(
-  ({ properties, onPropertySelect, onSwipe, onSwipeAction }, ref) => {
+  ({ properties, onPropertySelect, onSwipe, onSwipeAction, onPropertyTypeFilter }, ref) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isSwipingDisabled, setIsSwipingDisabled] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
@@ -176,7 +177,10 @@ const SwipeContainer = forwardRef<{ handleSwipe: (direction: "left" | "right" | 
           stiffness: 300,
         }}
       >
-        <PropertyCard property={currentProperty} />
+        <PropertyCard 
+          property={currentProperty} 
+          onPropertyTypeFilter={onPropertyTypeFilter}
+        />
         
         {/* Swipe Indicators */}
         <motion.div

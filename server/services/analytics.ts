@@ -66,7 +66,7 @@ export class AnalyticsService {
   }
 
   async getPersonalizedProperties(userId: string, limit = 20): Promise<PropertyScore[]> {
-    const allProperties = await this.storage.getProperties();
+    const allProperties = await this.storage.getAllProperties();
     const userSwipes = await this.storage.getUserSwipes(userId);
     const swipedPropertyIds = new Set(userSwipes.map(s => s.propertyId));
     
@@ -111,13 +111,13 @@ export class AnalyticsService {
     }
 
     // Bedroom preference
-    if (preferences.preferredBedrooms.includes(property.bedrooms)) {
+    if (property.bedrooms !== null && preferences.preferredBedrooms.includes(property.bedrooms)) {
       score += 0.1;
       reasons.push(`${property.bedrooms} bedrooms match preference`);
     }
 
     // Bathroom preference
-    if (preferences.preferredBathrooms.includes(property.bathrooms)) {
+    if (property.bathrooms !== null && preferences.preferredBathrooms.includes(property.bathrooms)) {
       score += 0.1;
       reasons.push(`${property.bathrooms} bathrooms match preference`);
     }
@@ -183,7 +183,9 @@ export class AnalyticsService {
   private extractPreferredBedrooms(liked: Property[]): number[] {
     const bedroomCounts: Record<number, number> = {};
     liked.forEach(p => {
-      bedroomCounts[p.bedrooms] = (bedroomCounts[p.bedrooms] || 0) + 1;
+      if (p.bedrooms !== null) {
+        bedroomCounts[p.bedrooms] = (bedroomCounts[p.bedrooms] || 0) + 1;
+      }
     });
 
     return Object.entries(bedroomCounts)
@@ -195,7 +197,9 @@ export class AnalyticsService {
   private extractPreferredBathrooms(liked: Property[]): number[] {
     const bathroomCounts: Record<number, number> = {};
     liked.forEach(p => {
-      bathroomCounts[p.bathrooms] = (bathroomCounts[p.bathrooms] || 0) + 1;
+      if (p.bathrooms !== null) {
+        bathroomCounts[p.bathrooms] = (bathroomCounts[p.bathrooms] || 0) + 1;
+      }
     });
 
     return Object.entries(bathroomCounts)

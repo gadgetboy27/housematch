@@ -1,9 +1,11 @@
 import { Property } from "@shared/schema";
 import PropertyMetrics from "./property-metrics";
+import PropertyTypeDropdown from "./property-type-dropdown";
 
 interface PropertyCardProps {
   property: Property;
   isBackground?: boolean;
+  onPropertyTypeFilter?: (type: string) => void;
 }
 
 const propertyTypeColors = {
@@ -13,7 +15,7 @@ const propertyTypeColors = {
   lease: "border-purple-500 bg-purple-50 text-purple-700",
 };
 
-export default function PropertyCard({ property, isBackground = false }: PropertyCardProps) {
+export default function PropertyCard({ property, isBackground = false, onPropertyTypeFilter }: PropertyCardProps) {
   const typeColor = propertyTypeColors[property.propertyType as keyof typeof propertyTypeColors] || propertyTypeColors.residential;
 
   return (
@@ -34,17 +36,24 @@ export default function PropertyCard({ property, isBackground = false }: Propert
           {/* TikTok-style Metrics */}
           <div className="absolute top-4 right-4">
             <PropertyMetrics 
-              views={property.views}
-              likes={property.likes}
-              saves={property.saves}
+              views={property.views || 0}
+              likes={property.likes || 0}
+              saves={property.saves || 0}
             />
           </div>
           
-          {/* Property Type Badge */}
+          {/* Property Type Dropdown */}
           <div className="absolute top-4 left-4">
-            <div className={`px-3 py-1 rounded-full text-xs font-medium backdrop-blur-sm bg-white/90 border ${typeColor}`}>
-              {property.propertyType.charAt(0).toUpperCase() + property.propertyType.slice(1)}
-            </div>
+            {onPropertyTypeFilter ? (
+              <PropertyTypeDropdown 
+                currentType={property.propertyType}
+                onTypeChange={onPropertyTypeFilter}
+              />
+            ) : (
+              <div className={`px-3 py-1 rounded-full text-xs font-medium backdrop-blur-sm bg-white/90 border ${typeColor}`}>
+                {property.propertyType.charAt(0).toUpperCase() + property.propertyType.slice(1)}
+              </div>
+            )}
           </div>
         </>
       )}
@@ -66,19 +75,19 @@ export default function PropertyCard({ property, isBackground = false }: Propert
               {property.price}
             </div>
             <div className="flex items-center space-x-4 text-sm">
-              {property.bedrooms > 0 && (
+              {(property.bedrooms || 0) > 0 && (
                 <span className="flex items-center space-x-1" data-testid="text-bedrooms">
                   <i className="fas fa-bed"></i>
                   <span>{property.bedrooms}</span>
                 </span>
               )}
-              {property.bathrooms > 0 && (
+              {(property.bathrooms || 0) > 0 && (
                 <span className="flex items-center space-x-1" data-testid="text-bathrooms">
                   <i className="fas fa-bath"></i>
                   <span>{property.bathrooms}</span>
                 </span>
               )}
-              {property.floorArea > 0 && (
+              {(property.floorArea || 0) > 0 && (
                 <span className="flex items-center space-x-1" data-testid="text-floor-area">
                   <i className="fas fa-ruler-combined"></i>
                   <span>{property.floorArea}m²</span>
