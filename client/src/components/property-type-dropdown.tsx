@@ -69,15 +69,23 @@ export default function PropertyTypeDropdown({ currentType, onTypeChange }: Prop
       {/* Dropdown Button */}
       <button
         onClick={handleButtonClick}
-        className={`px-3 py-1 rounded-full text-xs font-medium backdrop-blur-sm bg-white/90 border ${typeColor} flex items-center gap-1 hover:bg-white/95 transition-all duration-200`}
+        className={`px-3 py-1 rounded-full text-xs font-medium flex items-center gap-1 transition-all duration-300 
+                   backdrop-blur-md bg-white/35 border border-white/20 shadow-lg
+                   hover:bg-white/45 hover:shadow-xl hover:border-white/30 hover:scale-105
+                   active:scale-95 active:bg-white/25
+                   before:absolute before:inset-0 before:rounded-full before:bg-gradient-to-r before:from-white/10 before:to-transparent before:pointer-events-none
+                   relative overflow-hidden`}
         data-testid="button-property-type-dropdown"
+        style={{
+          boxShadow: '0 8px 32px rgba(255, 255, 255, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.2)',
+        }}
       >
-        <span>
+        <span className="text-white font-semibold drop-shadow-sm">
           {currentTypeData.label}
           {currentType === "all" ? ` (${totalProperties})` : ` (${propertyCounts[currentType] || 0})`}
         </span>
         <ChevronDown 
-          className={`w-3 h-3 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} 
+          className={`w-3 h-3 transition-transform duration-200 text-white drop-shadow-sm ${isOpen ? 'rotate-180' : ''}`} 
         />
       </button>
 
@@ -91,7 +99,10 @@ export default function PropertyTypeDropdown({ currentType, onTypeChange }: Prop
           />
           
           {/* Menu */}
-          <div className="absolute top-full left-0 mt-1 w-48 bg-white/95 backdrop-blur-md rounded-lg shadow-lg border border-white/20 z-20 overflow-hidden">
+          <div className="absolute top-full left-0 mt-1 w-48 backdrop-blur-md bg-white/35 rounded-lg shadow-xl border border-white/20 z-20 overflow-hidden"
+               style={{
+                 boxShadow: '0 16px 64px rgba(0, 0, 0, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.2)',
+               }}>
             {propertyTypes.map((type) => {
               const isSelected = type.value === currentType;
               const itemColor = propertyTypeColors[type.value as keyof typeof propertyTypeColors] || propertyTypeColors.all;
@@ -101,14 +112,15 @@ export default function PropertyTypeDropdown({ currentType, onTypeChange }: Prop
                 <button
                   key={type.value}
                   onClick={() => handleTypeSelect(type.value)}
-                  className={`w-full px-4 py-2 text-left text-sm hover:bg-white/80 transition-colors duration-150 ${
-                    isSelected ? `${itemColor} font-medium` : 'text-gray-700'
-                  }`}
+                  className={`w-full px-4 py-2 text-left text-sm transition-all duration-150 
+                             hover:bg-white/25 hover:backdrop-blur-lg
+                             ${isSelected ? 'bg-white/20 font-semibold text-white' : 'text-white/90'}
+                             border-b border-white/10 last:border-b-0`}
                   data-testid={`option-property-type-${type.value}`}
                 >
                   <div className="flex justify-between items-center">
-                    <span>{type.label}</span>
-                    <span className="text-xs text-gray-500">({count})</span>
+                    <span className="drop-shadow-sm">{type.label}</span>
+                    <span className="text-xs text-white/60 drop-shadow-sm">({count})</span>
                   </div>
                 </button>
               );
