@@ -85,7 +85,9 @@ export function ObjectUploader({
     });
 
     uppyInstance.on("complete", (result) => {
+      console.log("🔍 Upload complete:", result);
       if (result.successful) {
+        console.log("🔍 Successful uploads:", result.successful.length);
         const newFiles = [...uploadedFiles, ...result.successful];
         setUploadedFiles(newFiles);
         onUploadProgress?.(newFiles);
@@ -110,7 +112,12 @@ export function ObjectUploader({
     <div>
       <Button 
         type="button"
-        onClick={() => setShowModal(true)} 
+        onClick={() => {
+          console.log("🔍 Upload button clicked!");
+          console.log("🔍 Current modal state:", showModal);
+          setShowModal(true);
+          console.log("🔍 Setting modal to true");
+        }} 
         className={buttonClassName}
         data-testid="button-upload-file"
       >
@@ -132,7 +139,10 @@ export function ObjectUploader({
       <DashboardModal
         uppy={uppy}
         open={showModal}
-        onRequestClose={() => setShowModal(false)}
+        onRequestClose={() => {
+          console.log("🔍 Modal close requested");
+          setShowModal(false);
+        }}
         proudlyDisplayPoweredByUppy={false}
         metaFields={[]}
         note={`Upload up to ${maxNumberOfFiles} high-quality property images. On mobile, tap "Browse Files" then choose Camera, Gallery, or Files.`}
