@@ -31,8 +31,8 @@ export default function PropertyCard({ property, isBackground = false }: Propert
       
       {!isBackground && (
         <>
-          {/* TikTok-style Metrics - Moved to bottom right */}
-          <div className="absolute bottom-24 right-4">
+          {/* TikTok-style Metrics */}
+          <div className="absolute top-4 right-4">
             <PropertyMetrics 
               views={property.views}
               likes={property.likes}
@@ -40,7 +40,12 @@ export default function PropertyCard({ property, isBackground = false }: Propert
             />
           </div>
           
-          {/* Property Type Badge - Moved to bottom with property info */}
+          {/* Property Type Badge */}
+          <div className="absolute top-4 left-4">
+            <div className={`px-3 py-1 rounded-full text-xs font-medium backdrop-blur-sm bg-white/90 border ${typeColor}`}>
+              {property.propertyType.charAt(0).toUpperCase() + property.propertyType.slice(1)}
+            </div>
+          </div>
         </>
       )}
       
@@ -83,12 +88,7 @@ export default function PropertyCard({ property, isBackground = false }: Propert
           </div>
           
           <div className="flex items-center justify-between text-xs text-white/70">
-            <div className="flex items-center space-x-2">
-              <span data-testid="text-suburb">{property.suburb}</span>
-              <div className={`px-2 py-1 rounded-full text-xs font-medium backdrop-blur-sm bg-white/90 border ${typeColor}`}>
-                {property.propertyType.charAt(0).toUpperCase() + property.propertyType.slice(1)}
-              </div>
-            </div>
+            <span data-testid="text-suburb">{property.suburb}</span>
             {property.lotNumber && (
               <span data-testid="text-lot-number">{property.lotNumber}</span>
             )}
