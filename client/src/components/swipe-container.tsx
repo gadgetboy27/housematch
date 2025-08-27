@@ -158,7 +158,7 @@ const SwipeContainer = forwardRef<{ handleSwipe: (direction: "left" | "right" | 
 
   if (!currentProperty) {
     return (
-      <div className="absolute inset-4 flex items-center justify-center">
+      <div className="absolute inset-2 flex items-center justify-center">
         <div className="text-center text-white">
           <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-4">
             <i className="fas fa-home text-2xl"></i>
@@ -171,7 +171,7 @@ const SwipeContainer = forwardRef<{ handleSwipe: (direction: "left" | "right" | 
   }
 
   return (
-    <div className="absolute inset-4">
+    <div className="absolute inset-2">
       {/* Background Cards */}
       {properties.slice(currentIndex + 1, currentIndex + 3).map((property, index) => (
         <div
