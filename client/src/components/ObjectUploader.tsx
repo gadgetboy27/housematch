@@ -17,6 +17,7 @@ interface ObjectUploaderProps {
   onComplete?: (
     result: UploadResult<Record<string, unknown>, Record<string, unknown>>
   ) => void;
+  onUploadProgress?: (files: any[]) => void;
   buttonClassName?: string;
   children: ReactNode;
 }
@@ -51,15 +52,18 @@ interface ObjectUploaderProps {
  * @param props.children - Content to be rendered inside the button
  */
 export function ObjectUploader({
-  maxNumberOfFiles = 1,
+  maxNumberOfFiles = 4,
   maxFileSize = 10485760, // 10MB default
   allowedFileTypes = ['image/*'], // Default to images only
   onGetUploadParameters,
   onComplete,
+  onUploadProgress,
   buttonClassName,
   children,
 }: ObjectUploaderProps) {
   const [showModal, setShowModal] = useState(false);
+  const [uploadedFiles, setUploadedFiles] = useState<any[]>([]);
+  
   const [uppy] = useState(() => {
     const uppyInstance = new Uppy({
       restrictions: {
@@ -68,16 +72,35 @@ export function ObjectUploader({
         allowedFileTypes,
       },
       autoProceed: false,
+      allowMultipleUploadBatches: true,
     });
 
     uppyInstance.use(AwsS3, {
       shouldUseMultipart: false,
-      getUploadParameters: onGetUploadParameters,
+      getUploadParameters: async (file) => {
+        // Call the parameter function for each file
+        const params = await onGetUploadParameters();
+        return params;
+      },
     });
 
     uppyInstance.on("complete", (result) => {
-      onComplete?.(result);
-      setShowModal(false); // Close modal on completion
+      if (result.successful) {
+        const newFiles = [...uploadedFiles, ...result.successful];
+        setUploadedFiles(newFiles);
+        onUploadProgress?.(newFiles);
+        onComplete?.(result);
+      }
+      setShowModal(false);
+    });
+
+    uppyInstance.on("upload-progress", (file, progress) => {
+      // Provide real-time progress feedback
+      console.log(`Upload progress for ${file?.name}: ${progress.percentage}%`);
+    });
+
+    uppyInstance.on("error", (error) => {
+      console.error("Upload error:", error);
     });
 
     return uppyInstance;
@@ -94,13 +117,26 @@ export function ObjectUploader({
         {children}
       </Button>
 
+      {/* Show uploaded files count */}
+      {uploadedFiles.length > 0 && (
+        <div className="mt-2 text-sm text-green-600">
+          ✅ {uploadedFiles.length} photo{uploadedFiles.length > 1 ? 's' : ''} uploaded
+          {uploadedFiles.length >= 4 && (
+            <div className="text-xs text-orange-600 mt-1">
+              💎 Need more than 4 photos? Upgrade to Premium (Coming Soon)
+            </div>
+          )}
+        </div>
+      )}
+
       <DashboardModal
         uppy={uppy}
         open={showModal}
         onRequestClose={() => setShowModal(false)}
         proudlyDisplayPoweredByUppy={false}
         metaFields={[]}
-        note="Upload high-quality property images. On mobile, you can use your camera or select from gallery."
+        note={`Upload up to ${maxNumberOfFiles} high-quality property images. On mobile, tap "Browse Files" then choose Camera, Gallery, or Files.`}
+        hideProgressDetails={false}
       />
     </div>
   );

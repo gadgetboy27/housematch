@@ -34,7 +34,7 @@ const zoningOptions = [
 
 export default function AddProperty() {
   const [selectedPropertyType, setSelectedPropertyType] = useState<string>("");
-  const [uploadedImageUrl, setUploadedImageUrl] = useState<string>("");
+  const [uploadedImages, setUploadedImages] = useState<string[]>([]);
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -108,7 +108,8 @@ export default function AddProperty() {
     const propertyData = {
       ...data,
       propertyType: selectedPropertyType || data.propertyType,
-      imageUrl: uploadedImageUrl || data.imageUrl,
+      imageUrl: uploadedImages.length > 0 ? uploadedImages[0] : data.imageUrl,
+      additionalImages: uploadedImages.slice(1), // Store additional images
       // Ensure numeric fields are actually numbers
       bedrooms: parseInt(data.bedrooms) || 0,
       bathrooms: parseInt(data.bathrooms) || 0,
@@ -144,27 +145,41 @@ export default function AddProperty() {
   // Handle upload completion
   const handleUploadComplete = async (result: UploadResult<Record<string, unknown>, Record<string, unknown>>) => {
     if (result.successful && result.successful.length > 0) {
-      const uploadedFile = result.successful[0];
-      const imageURL = uploadedFile.uploadURL;
+      const newImagePaths: string[] = [];
       
-      try {
-        // Normalize the path on the backend
-        const response = await apiRequest("PUT", "/api/property-images", { imageURL });
-        const data = await response.json();
-        setUploadedImageUrl(data.objectPath);
+      // Process all uploaded files
+      for (const uploadedFile of result.successful) {
+        const imageURL = uploadedFile.uploadURL;
         
+        try {
+          // Normalize the path on the backend
+          const response = await apiRequest("PUT", "/api/property-images", { imageURL });
+          const data = await response.json();
+          newImagePaths.push(data.objectPath);
+        } catch (error) {
+          console.error("Failed to process uploaded image:", error);
+        }
+      }
+      
+      if (newImagePaths.length > 0) {
+        setUploadedImages(prev => [...prev, ...newImagePaths]);
         toast({
           title: "Success",
-          description: "Image uploaded successfully!",
+          description: `${newImagePaths.length} image${newImagePaths.length > 1 ? 's' : ''} uploaded successfully!`,
         });
-      } catch (error) {
+      } else {
         toast({
           title: "Error", 
-          description: "Failed to process uploaded image",
+          description: "Failed to process uploaded images",
           variant: "destructive",
         });
       }
     }
+  };
+
+  // Handle upload progress
+  const handleUploadProgress = (files: any[]) => {
+    console.log(`Upload progress: ${files.length} files processed`);
   };
 
   return (
@@ -487,22 +502,39 @@ export default function AddProperty() {
                     Property Image
                   </label>
                   <ObjectUploader
-                    maxNumberOfFiles={1}
+                    maxNumberOfFiles={4}
                     maxFileSize={10485760} // 10MB
                     allowedFileTypes={['image/*']}
                     onGetUploadParameters={handleGetUploadParameters}
                     onComplete={handleUploadComplete}
+                    onUploadProgress={handleUploadProgress}
                     buttonClassName="w-full bg-primary/10 border-2 border-dashed border-primary/30 text-primary hover:bg-primary/20 h-24 flex flex-col items-center justify-center space-y-2"
                   >
                     <div className="flex flex-col items-center space-y-1">
                       <i className="fas fa-camera text-xl"></i>
-                      <span className="font-medium">Upload Property Image</span>
-                      <span className="text-xs text-muted-foreground">Camera, Gallery, or Files</span>
+                      <span className="font-medium">Upload Property Images</span>
+                      <span className="text-xs text-muted-foreground">Camera, Gallery, or Files (up to 4)</span>
                     </div>
                   </ObjectUploader>
-                  {uploadedImageUrl && (
-                    <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded-md">
-                      <p className="text-sm text-green-700">✅ Image uploaded successfully!</p>
+                  
+                  {/* Show uploaded images preview */}
+                  {uploadedImages.length > 0 && (
+                    <div className="mt-3 space-y-2">
+                      <div className="text-sm font-medium text-green-700">
+                        ✅ {uploadedImages.length} image{uploadedImages.length > 1 ? 's' : ''} ready for upload
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        {uploadedImages.map((imagePath, index) => (
+                          <div key={index} className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center text-green-600 text-xs font-medium">
+                            #{index + 1}
+                          </div>
+                        ))}
+                      </div>
+                      {uploadedImages.length >= 4 && (
+                        <div className="text-xs text-orange-600 bg-orange-50 p-2 rounded-md">
+                          💎 Want more than 4 photos? Premium coming soon!
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
