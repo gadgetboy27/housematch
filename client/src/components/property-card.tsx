@@ -29,7 +29,7 @@ export default function PropertyCard({ property, isBackground = false, onPropert
       />
       
       {/* Enhanced Gradient Overlay with Softer Blending */}
-      <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/40 via-black/20 to-transparent"></div>
+      <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/25 via-black/10 to-transparent"></div>
       
       {!isBackground && (
         <>
