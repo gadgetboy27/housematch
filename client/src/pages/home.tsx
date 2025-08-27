@@ -92,9 +92,9 @@ export default function Home() {
   }
 
   return (
-    <div className="max-w-sm mx-auto h-screen bg-gradient-to-br from-blue-500 via-purple-500 to-purple-700 relative overflow-hidden">
-      {/* Main Swiping Area - Full height */}
-      <div className="relative h-full overflow-hidden">
+    <div className="max-w-sm mx-auto h-screen bg-gradient-to-br from-blue-500 via-grey-500 to-grey-700 relative overflow-hidden">
+      {/* Main Swiping Area - Account for navbar space */}
+      <div className="relative h-[calc(100vh-80px)] overflow-hidden">
         <SwipeContainer 
           ref={swipeContainerRef}
           properties={properties}
