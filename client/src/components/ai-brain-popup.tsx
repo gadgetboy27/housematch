@@ -24,8 +24,8 @@ export default function AIBrainPopup({ onClick }: AIBrainPopupProps) {
                       border border-purple-400/40 
                       hover:bg-purple-500/40 hover:shadow-[0_16px_32px_rgba(147,51,234,0.5),0_12px_24px_rgba(147,51,234,0.4)]
                       transition-all duration-200">
-        <motion.i
-          className="fas fa-brain text-white text-2xl drop-shadow-[0_3px_6px_rgba(0,0,0,0.8)]"
+        <motion.div
+          className="text-white text-2xl drop-shadow-[0_3px_6px_rgba(0,0,0,0.8)]"
           animate={{ 
             scale: [1, 1.2, 1],
           }}
@@ -37,7 +37,9 @@ export default function AIBrainPopup({ onClick }: AIBrainPopupProps) {
           style={{
             filter: "drop-shadow(0 0 12px rgba(255,255,255,0.4))"
           }}
-        />
+        >
+          🧠
+        </motion.div>
       </div>
       
       {/* Glass Overlay Effect */}
