@@ -79,9 +79,9 @@ export default function Home() {
   }
 
   return (
-    <div className="max-w-sm mx-auto min-h-screen bg-gradient-to-br from-blue-500 via-purple-500 to-purple-700 relative overflow-hidden">
-      {/* Main Swiping Area - Full Height */}
-      <div className="relative h-screen overflow-hidden">
+    <div className="max-w-sm mx-auto h-screen bg-gradient-to-br from-blue-500 via-purple-500 to-purple-700 relative overflow-hidden">
+      {/* Main Swiping Area - Raised to avoid navbar cutoff */}
+      <div className="relative h-[calc(100vh-80px)] overflow-hidden">
         <SwipeContainer 
           ref={swipeContainerRef}
           properties={properties}
@@ -91,7 +91,7 @@ export default function Home() {
         />
         
         {/* Action Buttons Overlay */}
-        <div className="absolute bottom-20 left-1/2 transform -translate-x-1/2 z-40">
+        <div className="absolute bottom-24 left-1/2 transform -translate-x-1/2 z-40">
           <ActionButtons
             onReject={handleReject}
             onLike={handleLike}
@@ -100,6 +100,9 @@ export default function Home() {
           />
         </div>
       </div>
+
+      {/* Background Extension for Navbar Area */}
+      <div className="absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-purple-700 to-transparent"></div>
 
       {/* AI Brain Popup */}
       {showAIBrain && (
