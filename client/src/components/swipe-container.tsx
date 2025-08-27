@@ -165,7 +165,7 @@ export default function SwipeContainer({ properties, onPropertySelect, onSwipe }
       </motion.div>
 
       {/* Professional Action Buttons */}
-      <div className="absolute bottom-[2.25rem] left-1/2 transform -translate-x-1/2 flex items-center space-x-4 z-30">
+      <div className="absolute bottom-[0.375rem] left-1/2 transform -translate-x-1/2 flex items-center space-x-4 z-30">
         {/* Reject Button */}
         <motion.button
           className="relative group"
