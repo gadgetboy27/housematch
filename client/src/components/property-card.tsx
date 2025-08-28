@@ -1,4 +1,5 @@
 // src/components/property-card.tsx
+import { useState } from "react";
 import { Property } from "@shared/schema";
 import PropertyMetrics from "./property-metrics";
 import PropertyTypeDropdown from "./property-type-dropdown";
@@ -17,20 +18,78 @@ const propertyTypeColors = {
 };
 
 export default function PropertyCard({ property, isBackground = false, onPropertyTypeFilter }: PropertyCardProps) {
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  
   const typeColor =
     propertyTypeColors[property.propertyType as keyof typeof propertyTypeColors] || propertyTypeColors.residential;
+
+  // Combine main image and additional images into one array
+  const allImages = [
+    property.imageUrl || "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=600",
+    ...(property.additionalImages || [])
+  ];
+
+  const hasMultipleImages = allImages.length > 1;
+  const currentImage = allImages[currentImageIndex];
+
+  const handlePreviousImage = (e: React.MouseEvent | React.TouchEvent) => {
+    e.stopPropagation();
+    if (hasMultipleImages) {
+      setCurrentImageIndex((prev) => (prev === 0 ? allImages.length - 1 : prev - 1));
+    }
+  };
+
+  const handleNextImage = (e: React.MouseEvent | React.TouchEvent) => {
+    e.stopPropagation();
+    if (hasMultipleImages) {
+      setCurrentImageIndex((prev) => (prev === allImages.length - 1 ? 0 : prev + 1));
+    }
+  };
 
   return (
     <div className="w-full h-full relative select-none">
       <img
-        src={
-          property.imageUrl ||
-          "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=600"
-        }
-        alt={property.title}
+        src={currentImage}
+        alt={`${property.title} - Image ${currentImageIndex + 1}`}
         className="w-full h-full object-cover"
         draggable={false}
       />
+
+      {/* Image Navigation Tap Zones - Only show if multiple images */}
+      {hasMultipleImages && (
+        <>
+          {/* Left tap zone */}
+          <div 
+            className="absolute top-0 left-0 w-[30%] h-full z-10 cursor-pointer"
+            onClick={handlePreviousImage}
+            onTouchEnd={handlePreviousImage}
+            data-testid="tap-zone-previous-image"
+          />
+          
+          {/* Right tap zone */}
+          <div 
+            className="absolute top-0 right-0 w-[30%] h-full z-10 cursor-pointer"
+            onClick={handleNextImage}
+            onTouchEnd={handleNextImage}
+            data-testid="tap-zone-next-image"
+          />
+          
+          {/* Image indicator dots */}
+          <div className="absolute bottom-20 left-1/2 transform -translate-x-1/2 flex space-x-2 z-30">
+            {allImages.map((_, index) => (
+              <div
+                key={index}
+                className={`w-2 h-2 rounded-full transition-all duration-200 ${
+                  index === currentImageIndex 
+                    ? 'bg-white shadow-lg scale-110' 
+                    : 'bg-white/50 hover:bg-white/70'
+                }`}
+                data-testid={`image-dot-${index}`}
+              />
+            ))}
+          </div>
+        </>
+      )}
 
       <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/25 to-transparent" />
 
