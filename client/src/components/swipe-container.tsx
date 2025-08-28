@@ -76,22 +76,19 @@ const SwipeContainer = forwardRef<
     const targetX = direction === "left" ? -window.innerWidth * 1.5 : direction === "right" ? window.innerWidth * 1.5 : 0;
     const targetY = direction === "up" ? -window.innerHeight * 1.5 : 0;
 
-    // Advance to next card first, then animate current card off-screen
-    setCurrentIndex(prev => (prev + 1) % properties.length);
+    // Animate current card off-screen and let it stay there
+    animate(x, targetX, { type: "spring", stiffness: 300, damping: 25, duration: 0.5 });
+    animate(y, targetY, { type: "spring", stiffness: 300, damping: 25, duration: 0.5 });
     
-    // Animate off-screen - don't await, let it finish in background
-    Promise.all([
-      animate(x, targetX, { type: "spring", stiffness: 300, damping: 25, duration: 0.6 }),
-      animate(y, targetY, { type: "spring", stiffness: 300, damping: 25, duration: 0.6 })
-    ]).then(() => {
-      // Reset position only after animation completes and card is off-screen
+    // After a short delay, advance to next card (this reveals the card underneath)
+    setTimeout(() => {
+      setCurrentIndex(prev => (prev + 1) % properties.length);
+      // Reset position for the new card that's now current
       x.set(0);
       y.set(0);
-    });
-
-    // Re-enable swiping immediately so next card can be swiped
-    setIsSwipingDisabled(false);
-    setHeartTrigger(false);
+      setIsSwipingDisabled(false);
+      setHeartTrigger(false);
+    }, 300); // Shorter delay to reveal next card quickly
 
     onSwipe();
     onSwipeAction(direction, action);
