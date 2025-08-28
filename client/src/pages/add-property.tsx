@@ -22,6 +22,8 @@ const propertyTypeOptions = [
   { value: "rental", label: "Rental", icon: "fa-key", color: "border-green-200 bg-green-50 text-green-700" },
   { value: "commercial", label: "Commercial", icon: "fa-building", color: "border-orange-200 bg-orange-50 text-orange-700" },
   { value: "lease", label: "Lease", icon: "fa-handshake", color: "border-purple-200 bg-purple-50 text-purple-700" },
+  { value: "farm", label: "Farm", icon: "fa-tractor", color: "border-yellow-200 bg-yellow-50 text-yellow-700" },
+  { value: "batch", label: "Batch", icon: "fa-mountain", color: "border-pink-200 bg-pink-50 text-pink-700" },
 ];
 
 const zoningOptions = [
