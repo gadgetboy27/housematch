@@ -92,8 +92,8 @@ export default function Home() {
   return (
     <div className="relative min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 pb-24">
       {/* Swipe Container */}
-      <div className="absolute inset-0 flex items-center justify-center px-4 pb-32">
-        <div className="relative w-full max-w-sm h-[600px]">
+      <div className="absolute inset-0 flex items-center justify-center px-3 pb-20">
+        <div className="relative w-full max-w-lg h-[650px]">
           <SwipeContainer 
             ref={swipeRef}
             properties={mockProperties} 
@@ -105,7 +105,7 @@ export default function Home() {
       </div>
       
       {/* Action Buttons */}
-      <div className="fixed bottom-24 left-1/2 transform -translate-x-1/2 z-30">
+      <div className="fixed bottom-20 left-1/2 transform -translate-x-1/2 z-30">
         <ActionButtons
           onReject={handleReject}
           onLike={handleLike}
