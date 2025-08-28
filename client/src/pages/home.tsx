@@ -1,141 +1,66 @@
-import { useState, useEffect, useRef } from "react";
+import { useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import SwipeContainer from "@/components/swipe-container";
 import ActionButtons from "@/components/action-buttons";
 import BottomNavigation from "@/components/bottom-navigation";
 import PropertyDetailsModal from "@/components/modals/property-details-modal";
-import AISuggestionsModal from "@/components/modals/ai-suggestions-modal";
 import AIBrainPopup from "@/components/ai-brain-popup";
 import { Property } from "@shared/schema";
 
 export default function Home() {
   const [selectedProperty, setSelectedProperty] = useState<Property | null>(null);
   const [showPropertyDetails, setShowPropertyDetails] = useState(false);
-  const [showAISuggestions, setShowAISuggestions] = useState(false);
   const [showAIBrain, setShowAIBrain] = useState(false);
   const [swipeCount, setSwipeCount] = useState(0);
   const [isSwipingDisabled, setIsSwipingDisabled] = useState(false);
   const swipeContainerRef = useRef<any>(null);
 
-  const [selectedPropertyType, setSelectedPropertyType] = useState<string>("all");
-  
   const { data: properties = [], isLoading } = useQuery({
-    queryKey: ["/api/properties", selectedPropertyType],
+    queryKey: ["/api/properties"],
     queryFn: async () => {
-      const url = selectedPropertyType === "all" 
-        ? "/api/properties?userId=demo-user"
-        : `/api/properties?type=${selectedPropertyType}&userId=demo-user`;
-      const response = await fetch(url);
+      const response = await fetch("/api/properties?userId=demo-user");
       return response.json();
-    }
+    },
   });
-
-  useEffect(() => {
-    if (swipeCount >= 12) {
-      setShowAIBrain(true);
-    }
-  }, [swipeCount]);
 
   const handlePropertySelect = (property: Property) => {
     setSelectedProperty(property);
     setShowPropertyDetails(true);
   };
 
-  const handleSwipe = () => {
-    setSwipeCount(prev => prev + 1);
-  };
+  const handleSwipe = () => setSwipeCount((prev) => prev + 1);
 
-  const handleSwipeAction = (direction: "left" | "right" | "up", action: string) => {
-    // This can be used for additional logic when buttons are pressed
+  const handleSwipeAction = () => {
     setIsSwipingDisabled(true);
-    setTimeout(() => {
-      setIsSwipingDisabled(false);
-    }, 600);
+    setTimeout(() => setIsSwipingDisabled(false), 600); // debouncing buttons
   };
 
-  const handlePropertyTypeFilter = (type: string) => {
-    setSelectedPropertyType(type);
-  };
+  const handleReject = () => swipeContainerRef.current?.handleSwipe("left", "dislike");
+  const handleLike = () => swipeContainerRef.current?.handleSwipe("right", "like");
+  const handleSuperLike = () => swipeContainerRef.current?.handleSwipe("up", "super_like");
 
-  const handleReject = () => {
-    if (swipeContainerRef.current?.handleSwipe) {
-      swipeContainerRef.current.handleSwipe("left", "dislike");
-    }
-  };
-
-  const handleLike = () => {
-    if (swipeContainerRef.current?.handleSwipe) {
-      swipeContainerRef.current.handleSwipe("right", "like");
-    }
-  };
-
-  const handleSuperLike = () => {
-    if (swipeContainerRef.current?.handleSwipe) {
-      swipeContainerRef.current.handleSwipe("up", "super_like");
-    }
-  };
-
-  const handleAIBrainClick = () => {
-    setShowAIBrain(false);
-    setShowAISuggestions(true);
-  };
-
-  if (isLoading) {
-    return (
-      <div className="max-w-sm mx-auto min-h-screen bg-white flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Loading properties...</p>
-        </div>
-      </div>
-    );
-  }
+  if (isLoading) return <div>Loading...</div>;
 
   return (
-    <div className="max-w-sm mx-auto h-screen bg-gradient-to-br from-blue-500 via-grey-500 to-grey-700 relative overflow-hidden">
-      {/* Main Swiping Area - Maximized for full image showcase */}
-      <div className="relative h-[calc(100vh-60px)] overflow-hidden">
-        <SwipeContainer 
-          ref={swipeContainerRef}
-          properties={properties}
-          onPropertySelect={handlePropertySelect}
-          onSwipe={handleSwipe}
-          onSwipeAction={handleSwipeAction}
-          onPropertyTypeFilter={handlePropertyTypeFilter}
-        />
-      </div>
-      
-      {/* Floating Action Buttons - Independent and Overlapping Both Areas */}
-      <div className="fixed bottom-[63px] left-1/2 transform -translate-x-1/2 z-50">
+    <div className="max-w-sm mx-auto h-screen relative overflow-hidden">
+      <SwipeContainer
+        ref={swipeContainerRef}
+        properties={properties}
+        onPropertySelect={handlePropertySelect}
+        onSwipe={handleSwipe}
+        onSwipeAction={handleSwipeAction}
+      />
+
+      <div className="fixed bottom-16 left-1/2 transform -translate-x-1/2 z-50">
         <ActionButtons
           onReject={handleReject}
           onLike={handleLike}
           onSuperLike={handleSuperLike}
           disabled={isSwipingDisabled}
-          onLikeEffect={() => {
-            // Simple approach - just trigger the heart state directly
-            setTimeout(() => {
-              const container = swipeContainerRef.current;
-              if (container && container.setHeartTrigger) {
-                container.setHeartTrigger(true);
-              }
-            }, 0);
-          }}
+          onLikeEffect={() => swipeContainerRef.current?.setHeartTrigger(true)}
         />
       </div>
 
-      {/* Smooth Gradient Transition for Better Blending */}
-      <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-white/95 via-white/60 via-white/30 to-transparent backdrop-blur-sm"></div>
-
-      {/* AI Brain Popup */}
-      {showAIBrain && (
-        <AIBrainPopup onClick={handleAIBrainClick} />
-      )}
-
-      {/* Bottom Navigation */}
-      <BottomNavigation />
-
-      {/* Modals */}
       {showPropertyDetails && selectedProperty && (
         <PropertyDetailsModal
           property={selectedProperty}
@@ -144,12 +69,8 @@ export default function Home() {
         />
       )}
 
-      {showAISuggestions && (
-        <AISuggestionsModal
-          isOpen={showAISuggestions}
-          onClose={() => setShowAISuggestions(false)}
-        />
-      )}
+      {showAIBrain && <AIBrainPopup onClick={() => setShowAIBrain(false)} />}
+      <BottomNavigation />
     </div>
   );
 }

@@ -1,3 +1,4 @@
+// src/components/property-card.tsx
 import { Property } from "@shared/schema";
 import PropertyMetrics from "./property-metrics";
 import PropertyTypeDropdown from "./property-type-dropdown";
@@ -16,105 +17,81 @@ const propertyTypeColors = {
 };
 
 export default function PropertyCard({ property, isBackground = false, onPropertyTypeFilter }: PropertyCardProps) {
-  const typeColor = propertyTypeColors[property.propertyType as keyof typeof propertyTypeColors] || propertyTypeColors.residential;
+  const typeColor =
+    propertyTypeColors[property.propertyType as keyof typeof propertyTypeColors] || propertyTypeColors.residential;
 
   return (
-    <div className="w-full h-full relative">
-      {/* Property Image */}
+    <div className="w-full h-full relative select-none">
       <img
-        src={property.imageUrl || "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=600"}
+        src={
+          property.imageUrl ||
+          "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=600"
+        }
         alt={property.title}
         className="w-full h-full object-cover"
-        data-testid="img-property"
+        draggable={false}
       />
-      
-      {/* Enhanced Gradient Overlay with Softer Blending */}
-      <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/25 via-black/10 to-transparent"></div>
-      
+
+      <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/25 to-transparent" />
+
       {!isBackground && (
         <>
-          {/* TikTok-style Metrics */}
+          {/* metrics */}
           <div className="absolute top-4 right-4">
-            <PropertyMetrics 
-              views={property.views || 0}
-              likes={property.likes || 0}
-              saves={property.saves || 0}
-            />
+            <PropertyMetrics views={property.views || 0} likes={property.likes || 0} saves={property.saves || 0} />
           </div>
-          
-          {/* Property Type Dropdown */}
-          <div className="absolute top-4 left-4 z-[100]">
-            {onPropertyTypeFilter && (
-              <div 
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  e.nativeEvent.stopImmediatePropagation();
-                }}
-                onPointerDown={(e) => e.stopPropagation()}
-                onTouchStart={(e) => e.stopPropagation()}
-                style={{ touchAction: 'none' }}
-              >
-                <PropertyTypeDropdown 
-                  currentType={property.propertyType}
-                  onTypeChange={onPropertyTypeFilter}
-                />
-              </div>
-            )}
-          </div>
+
+          {/* type filter */}
+          {onPropertyTypeFilter && (
+            <div
+              className="absolute top-4 left-4 z-50"
+              onPointerDown={(e) => e.stopPropagation()}
+              onTouchStart={(e) => e.stopPropagation()}
+            >
+              <PropertyTypeDropdown currentType={property.propertyType} onTypeChange={onPropertyTypeFilter} />
+            </div>
+          )}
         </>
       )}
-      
-      {/* Property Info */}
+
+      {/* info */}
       <div className="absolute bottom-5 left-0 right-0 p-6 text-white">
-        <div className="space-y-3">
-          <div>
-            <h2 className="text-2xl font-bold leading-tight" data-testid="text-property-title">
-              {property.title}
-            </h2>
-            <p className="text-white/80 text-sm" data-testid="text-property-address">
-              {property.address}
-            </p>
+        <h2 className="text-2xl font-bold leading-tight">{property.title}</h2>
+        <p className="text-white/80 text-sm">{property.address}</p>
+
+        <div className="flex items-center justify-between mt-2">
+          <span className="text-xl font-bold">{property.price}</span>
+          <div className="flex items-center space-x-4 text-sm">
+            {property.bedrooms ? (
+              <span className="flex items-center space-x-1">
+                <i className="fas fa-bed text-blue-200" />
+                <span>{property.bedrooms}</span>
+              </span>
+            ) : null}
+            {property.bathrooms ? (
+              <span className="flex items-center space-x-1">
+                <i className="fas fa-shower text-cyan-200" />
+                <span>{property.bathrooms}</span>
+              </span>
+            ) : null}
+            {property.carSpaces ? (
+              <span className="flex items-center space-x-1">
+                <i className="fas fa-car text-green-200" />
+                <span>{property.carSpaces}</span>
+              </span>
+            ) : null}
+            {property.floorArea ? (
+              <span className="flex items-center space-x-1">
+                <i className="fas fa-home text-yellow-200" />
+                <span>{property.floorArea}m²</span>
+              </span>
+            ) : null}
           </div>
-          
-          <div className="flex items-center justify-between">
-            <div className="text-xl font-bold" data-testid="text-property-price">
-              {property.price}
-            </div>
-            <div className="flex items-center space-x-4 text-sm">
-              {(property.bedrooms || 0) > 0 && (
-                <span className="flex items-center space-x-1" data-testid="text-bedrooms">
-                  <i className="fas fa-bed text-blue-200"></i>
-                  <span>{property.bedrooms}</span>
-                </span>
-              )}
-              {(property.bathrooms || 0) > 0 && (
-                <span className="flex items-center space-x-1" data-testid="text-bathrooms">
-                  <i className="fas fa-shower text-cyan-200"></i>
-                  <span>{property.bathrooms}</span>
-                </span>
-              )}
-              {(property.carSpaces || 0) > 0 && (
-                <span className="flex items-center space-x-1" data-testid="text-car-spaces">
-                  <i className="fas fa-car text-green-200"></i>
-                  <span>{property.carSpaces}</span>
-                </span>
-              )}
-              {(property.floorArea || 0) > 0 && (
-                <span className="flex items-center space-x-1" data-testid="text-floor-area">
-                  <i className="fas fa-home text-yellow-200"></i>
-                  <span>{property.floorArea}m²</span>
-                </span>
-              )}
-            </div>
-          </div>
-          
-          <div className="flex items-center justify-between text-xs text-white/70">
-            <span data-testid="text-suburb">{property.suburb}</span>
-            {property.lotNumber && (
-              <span data-testid="text-lot-number">{property.lotNumber}</span>
-            )}
-          </div>
+        </div>
+
+        <div className="flex items-center justify-between text-xs text-white/70 mt-2">
+          <span>{property.suburb}</span>
+          {property.lotNumber && <span>{property.lotNumber}</span>}
         </div>
       </div>
     </div>
