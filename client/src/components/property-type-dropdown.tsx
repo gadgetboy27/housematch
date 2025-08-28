@@ -73,14 +73,14 @@ export default function PropertyTypeDropdown({ currentType, onTypeChange }: Prop
         onPointerDown={(e) => e.stopPropagation()}
         onTouchStart={(e) => e.stopPropagation()}
         className={`px-3 py-1 rounded-full text-xs font-medium flex items-center gap-1 transition-all duration-300 
-                   backdrop-blur-2xl bg-white/40 border border-white/30 shadow-2xl
-                   hover:bg-white/50 hover:shadow-[0_16px_40px_rgba(255,255,255,0.2)] hover:border-white/40 hover:scale-105
-                   active:scale-95 active:bg-white/30 active:shadow-inner
-                   before:absolute before:inset-0 before:rounded-full before:bg-gradient-to-br before:from-white/20 before:via-white/5 before:to-transparent before:pointer-events-none
+                   backdrop-blur-2xl bg-gradient-to-br from-blue-400/50 via-blue-300/40 to-blue-500/30 border border-blue-300/40 shadow-2xl
+                   hover:from-blue-400/60 hover:via-blue-300/50 hover:to-blue-500/40 hover:shadow-[0_16px_40px_rgba(59,130,246,0.3)] hover:border-blue-300/50 hover:scale-105
+                   active:scale-95 active:from-blue-400/40 active:via-blue-300/30 active:to-blue-500/20 active:shadow-inner
+                   before:absolute before:inset-0 before:rounded-full before:bg-gradient-to-br before:from-blue-200/20 before:via-blue-100/10 before:to-transparent before:pointer-events-none
                    relative overflow-hidden`}
         data-testid="button-property-type-dropdown"
         style={{
-          boxShadow: '0 8px 32px rgba(255, 255, 255, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.2)',
+          boxShadow: '0 8px 32px rgba(59, 130, 246, 0.2), inset 0 1px 0 rgba(147, 197, 253, 0.3)',
         }}
       >
         <span className="text-white font-semibold drop-shadow-sm">
