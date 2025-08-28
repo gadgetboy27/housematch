@@ -126,7 +126,7 @@ const SwipeContainer = forwardRef<
       {properties.slice(currentIndex + 1, currentIndex + 3).map((p, i) => (
         <div
           key={`${p.id}-${currentIndex}-${i}`}
-          className="absolute inset-0 rounded-2xl overflow-hidden"
+          className="absolute inset-0 rounded-2xl overflow-hidden pointer-events-none"
           style={{ 
             transform: `scale(${0.98 - i * 0.015}) translateY(${(i + 1) * 8}px)`,
             zIndex: 10 - i 
@@ -144,7 +144,7 @@ const SwipeContainer = forwardRef<
           rotate, 
           opacity, 
           zIndex: 20, 
-          touchAction: "pan-y", 
+          touchAction: "none", 
           willChange: "transform, opacity" 
         }}
         drag
