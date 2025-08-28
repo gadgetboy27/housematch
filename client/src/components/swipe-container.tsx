@@ -122,27 +122,6 @@ const SwipeContainer = forwardRef<
 
   return (
     <div className="absolute inset-2">
-      {properties.slice(currentIndex + 1, currentIndex + 3).map((p, i) => (
-        <motion.div
-          key={`${p.id}-${currentIndex}-${i}`}
-          className="absolute inset-0 rounded-2xl overflow-hidden"
-          initial={{ scale: 0.85 - i * 0.05, y: (i + 2) * 15 }}
-          animate={{ 
-            scale: 0.95 - i * 0.05, 
-            y: (i + 1) * 10,
-            zIndex: 10 - i 
-          }}
-          transition={{ 
-            type: "spring", 
-            stiffness: 300, 
-            damping: 30,
-            duration: 0.3 
-          }}
-        >
-          <PropertyCard property={p} isBackground />
-        </motion.div>
-      ))}
-
       <motion.div
         className="absolute inset-0 rounded-2xl overflow-hidden cursor-grab active:cursor-grabbing"
         style={{ 
