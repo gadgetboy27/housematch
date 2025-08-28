@@ -102,8 +102,8 @@ export default function Home() {
   return (
     <div className="relative min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 pb-24">
       {/* Swipe Container */}
-      <div className="flex items-start justify-center px-3 pt-8 pb-44 min-h-screen">
-        <div className="relative w-full max-w-lg h-[580px]">
+      <div className="fixed bottom-36 left-1/2 transform -translate-x-1/2 w-full max-w-lg px-3 z-20">
+        <div className="relative w-full h-[580px]">
           <SwipeContainer 
             ref={swipeRef}
             properties={mockProperties} 
