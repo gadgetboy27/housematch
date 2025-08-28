@@ -87,14 +87,17 @@ const SwipeContainer = forwardRef<
     
     // For superlike (up swipe), animate new card in from above
     if (direction === "up") {
+      // Wait 0.1 seconds after exit completes
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
       y.set(-window.innerHeight * 0.2); // Start closer to screen
       x.set(0);
-      // Faster but still smooth animation
+      // Same speed as exit animation
       await animate(y, 0, { 
         type: "spring", 
-        stiffness: 100,  // More responsive
-        damping: 28,     // Quick settling
-        duration: 0.6    // Snappier timing
+        stiffness: 300,  // Same as exit
+        damping: 25,     // Same as exit
+        duration: 0.6    // Same as exit
       });
     } else {
       // For left/right swipes, just reset to center
