@@ -7,6 +7,8 @@ import { insertPropertySchema } from "@shared/schema";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import BottomNavigation from "@/components/bottom-navigation";
+import { Badge } from "@/components/ui/badge";
+import React from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -39,6 +41,12 @@ const zoningOptions = [
 export default function AddProperty() {
   const [selectedPropertyType, setSelectedPropertyType] = useState<string>("");
   const [uploadedImages, setUploadedImages] = useState<string[]>([]);
+  const [validationStatus, setValidationStatus] = useState<{
+    isValidating: boolean;
+    isValid: boolean;
+    message: string;
+    details?: any;
+  }>({ isValidating: false, isValid: false, message: '' });
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -62,6 +70,7 @@ export default function AddProperty() {
     yearBuilt: z.string().transform(val => parseInt(val) || new Date().getFullYear()),
     imageUrl: z.string().optional(),
     description: z.string().optional(),
+    isLinzValidated: z.boolean().default(false),
   });
 
   const form = useForm({
@@ -84,6 +93,7 @@ export default function AddProperty() {
       yearBuilt: new Date().getFullYear().toString(),
       imageUrl: "",
       description: "",
+      isLinzValidated: false,
     },
   });
 
@@ -126,6 +136,7 @@ export default function AddProperty() {
       carSpaces: parseInt(data.carSpaces) || 0,
       yearBuilt: parseInt(data.yearBuilt) || new Date().getFullYear(),
       hideCertificateOfTitle: data.hideCertificateOfTitle,
+      isLinzValidated: data.isLinzValidated,
     };
 
     console.log("Submitting property data:", propertyData);
@@ -188,6 +199,59 @@ export default function AddProperty() {
   const handleUploadProgress = (files: any[]) => {
     console.log(`Upload progress: ${files.length} files processed`);
   };
+
+  // LINZ Validation Functions
+  const validateWithLinz = async (lotNumber: string, address: string, suburb: string) => {
+    if (!lotNumber.trim() || !address.trim()) {
+      setValidationStatus({ isValidating: false, isValid: false, message: '' });
+      return;
+    }
+
+    setValidationStatus({ isValidating: true, isValid: false, message: 'Validating with LINZ records...' });
+    
+    try {
+      const response = await apiRequest('POST', '/api/validate-property', {
+        lotNumber: lotNumber.trim(),
+        address: address.trim(), 
+        suburb: suburb.trim()
+      });
+      const result = await response.json();
+      
+      setValidationStatus({
+        isValidating: false,
+        isValid: result.valid,
+        message: result.message,
+        details: result.details
+      });
+      
+      // Update form validation status
+      form.setValue('isLinzValidated', result.valid);
+      
+    } catch (error) {
+      console.error('LINZ validation error:', error);
+      setValidationStatus({
+        isValidating: false,
+        isValid: false,
+        message: 'Validation service temporarily unavailable',
+      });
+    }
+  };
+  
+  // Watch for changes in lot number, address, and suburb
+  const watchedLotNumber = form.watch('lotNumber');
+  const watchedAddress = form.watch('address');
+  const watchedSuburb = form.watch('suburb');
+  
+  // Debounce validation when key fields change
+  React.useEffect(() => {
+    const timer = setTimeout(() => {
+      if (watchedLotNumber && watchedAddress && watchedSuburb) {
+        validateWithLinz(watchedLotNumber, watchedAddress, watchedSuburb);
+      }
+    }, 1000); // 1 second debounce
+    
+    return () => clearTimeout(timer);
+  }, [watchedLotNumber, watchedAddress, watchedSuburb]);
 
   return (
     <div className="max-w-sm mx-auto min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 relative">
@@ -386,7 +450,7 @@ export default function AddProperty() {
                       <FormLabel className="flex items-center space-x-1">
                         <span>Council Lot Number</span>
                         <span className="text-red-500 text-xs">*</span>
-                        <span className="text-xs text-muted-foreground">(Required for security)</span>
+                        <span className="text-xs text-muted-foreground">(Required - must match LINZ records)</span>
                       </FormLabel>
                       <FormControl>
                         <Input 
@@ -408,7 +472,7 @@ export default function AddProperty() {
                       <FormLabel className="flex items-center space-x-1">
                         <span>Certificate of Title</span>
                         <span className="text-red-500 text-xs">*</span>
-                        <span className="text-xs text-muted-foreground">(Required for security)</span>
+                        <span className="text-xs text-muted-foreground">(Required - must match LINZ records)</span>
                       </FormLabel>
                       <FormControl>
                         <Input 
@@ -448,6 +512,47 @@ export default function AddProperty() {
                     </FormItem>
                   )}
                 />
+
+                {/* LINZ Validation Status */}
+                {(validationStatus.isValidating || validationStatus.message) && (
+                  <div className={`p-3 rounded-lg border ${
+                    validationStatus.isValidating 
+                      ? 'bg-blue-50 border-blue-200' 
+                      : validationStatus.isValid 
+                        ? 'bg-green-50 border-green-200'
+                        : 'bg-red-50 border-red-200'
+                  }`}>
+                    <div className="flex items-center space-x-2">
+                      {validationStatus.isValidating ? (
+                        <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+                      ) : (
+                        <i className={`fas ${validationStatus.isValid ? 'fa-check-circle text-green-600' : 'fa-exclamation-triangle text-red-600'}`} />
+                      )}
+                      <span className={`text-sm font-medium ${
+                        validationStatus.isValidating 
+                          ? 'text-blue-700' 
+                          : validationStatus.isValid 
+                            ? 'text-green-700' 
+                            : 'text-red-700'
+                      }`}>
+                        {validationStatus.message}
+                      </span>
+                    </div>
+                    {validationStatus.details && !validationStatus.isValid && (
+                      <div className="mt-2 text-xs text-red-600">
+                        {!validationStatus.details.lotNumberValid && (
+                          <div>• Lot number not found in LINZ records</div>
+                        )}
+                        {!validationStatus.details.addressValid && (
+                          <div>• Address not found in LINZ records</div>
+                        )}
+                        {!validationStatus.details.crossMatch && validationStatus.details.lotNumberValid && validationStatus.details.addressValid && (
+                          <div>• Lot number and address don't match the same property</div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 <div className="grid grid-cols-2 gap-4">
                   <FormField
@@ -605,7 +710,7 @@ export default function AddProperty() {
             <Button 
               type="submit" 
               className="w-full bg-primary text-primary-foreground h-12 font-semibold"
-              disabled={createPropertyMutation.isPending}
+              disabled={createPropertyMutation.isPending || (validationStatus.message && !validationStatus.isValid)}
               data-testid="button-submit-property"
             >
               {createPropertyMutation.isPending ? (

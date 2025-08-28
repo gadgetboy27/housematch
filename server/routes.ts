@@ -8,6 +8,7 @@ import {
   ObjectStorageService,
   ObjectNotFoundError,
 } from "./objectStorage";
+import { LINZValidationService } from "./services/linz-validation";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   
@@ -269,6 +270,63 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ message: "Order status updated successfully" });
     } catch (error) {
       res.status(500).json({ message: "Failed to update order status" });
+    }
+  });
+
+  // LINZ Property Validation routes
+  app.post("/api/validate-property", async (req, res) => {
+    try {
+      const { lotNumber, address, suburb } = req.body;
+      
+      if (!lotNumber || !address) {
+        return res.status(400).json({ 
+          message: "Lot number and address are required for validation" 
+        });
+      }
+
+      const linzService = new LINZValidationService();
+      const validation = await linzService.crossValidateProperty(lotNumber, address, suburb);
+      
+      res.json({
+        valid: validation.overallValid,
+        details: {
+          lotNumberValid: validation.lotValid.isValid,
+          addressValid: validation.addressValid.isValid,
+          crossMatch: validation.crossMatch,
+          lotError: validation.lotValid.error,
+          addressError: validation.addressValid.error,
+          suggestions: {
+            lotSuggestions: validation.lotValid.suggestions || [],
+            addressSuggestions: validation.addressValid.suggestions || []
+          }
+        },
+        message: validation.overallValid 
+          ? "Property details match LINZ records" 
+          : "Property details do not match LINZ records - please verify and correct"
+      });
+    } catch (error) {
+      console.error('Property validation error:', error);
+      res.status(500).json({ 
+        message: "Validation service temporarily unavailable" 
+      });
+    }
+  });
+
+  app.get("/api/property-suggestions", async (req, res) => {
+    try {
+      const { q } = req.query;
+      
+      if (!q || typeof q !== 'string' || q.length < 3) {
+        return res.json({ suggestions: [] });
+      }
+
+      const linzService = new LINZValidationService();
+      const suggestions = await linzService.getPropertySuggestions(q);
+      
+      res.json({ suggestions });
+    } catch (error) {
+      console.error('Property suggestions error:', error);
+      res.json({ suggestions: [] });
     }
   });
 
