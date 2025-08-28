@@ -89,12 +89,12 @@ const SwipeContainer = forwardRef<
     if (direction === "up") {
       y.set(-window.innerHeight * 0.15); // Start closer to screen
       x.set(0);
-      // Much slower and smoother animation
+      // Smooth and perfectly timed animation
       await animate(y, 0, { 
         type: "spring", 
-        stiffness: 100,  // Much lower stiffness for gentler motion
-        damping: 35,     // Higher damping for smoother settling
-        duration: 1.2    // Longer duration
+        stiffness: 130,  // Slightly more responsive
+        damping: 32,     // Good balance for smooth settling
+        duration: 0.9    // Perfect timing
       });
     } else {
       // For left/right swipes, just reset to center
