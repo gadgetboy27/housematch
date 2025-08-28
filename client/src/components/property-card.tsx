@@ -75,7 +75,7 @@ export default function PropertyCard({ property, isBackground = false, onPropert
           />
           
           {/* Image indicator dots */}
-          <div className="absolute bottom-20 left-1/2 transform -translate-x-1/2 flex space-x-2 z-30">
+          <div className="absolute bottom-32 left-1/2 transform -translate-x-1/2 flex space-x-2 z-30">
             {allImages.map((_, index) => (
               <div
                 key={index}
