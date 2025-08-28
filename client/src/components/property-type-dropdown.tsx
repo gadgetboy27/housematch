@@ -14,7 +14,9 @@ const propertyTypes = [
   { value: "commercial", label: "Commercial" },
   { value: "lease", label: "Lease" },
   { value: "farm", label: "Farm" },
-  { value: "batch", label: "Batch" }
+  { value: "batch", label: "Batch" },
+  { value: "land", label: "Land" },
+  { value: "apartment", label: "Apartment" }
 ];
 
 const propertyTypeColors = {
@@ -24,6 +26,8 @@ const propertyTypeColors = {
   lease: "border-purple-500 bg-purple-50 text-purple-700",
   farm: "border-yellow-500 bg-yellow-50 text-yellow-700",
   batch: "border-pink-500 bg-pink-50 text-pink-700",
+  land: "border-emerald-500 bg-emerald-50 text-emerald-700",
+  apartment: "border-cyan-500 bg-cyan-50 text-cyan-700",
   all: "border-indigo-500 bg-indigo-50 text-indigo-700"
 };
 
