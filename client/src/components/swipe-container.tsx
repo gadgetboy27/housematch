@@ -1,5 +1,5 @@
 import { useState, useRef, forwardRef, useImperativeHandle } from "react";
-import { motion, useMotionValue, useTransform, PanInfo, AnimatePresence } from "framer-motion";
+import { motion, useMotionValue, useTransform, PanInfo, AnimatePresence, animate } from "framer-motion";
 import PropertyCard from "./property-card";
 import { Property } from "@shared/schema";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -32,10 +32,10 @@ const SwipeContainer = forwardRef<
 
   const x = useMotionValue(0);
   const y = useMotionValue(0);
-  const rotate = useTransform(x, [-300, 0, 300], [-25, 0, 25]);
-  const opacity = useTransform(x, [-300, -100, 0, 100, 300], [0, 1, 1, 1, 0]);
-  const likeOpacity = useTransform(x, [0, 120], [0, 1]);
-  const nopeOpacity = useTransform(x, [0, -120], [0, 1]);
+  const rotate = useTransform(x, [-200, 0, 200], [-15, 0, 15]); // More subtle rotation like Tinder
+  const opacity = useTransform(x, [-200, -50, 0, 50, 200], [0.3, 1, 1, 1, 0.3]); // Better opacity curve
+  const likeOpacity = useTransform(x, [50, 150], [0, 1]); // Earlier feedback
+  const nopeOpacity = useTransform(x, [-150, -50], [1, 0]); // Earlier feedback
 
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -51,7 +51,7 @@ const SwipeContainer = forwardRef<
 
   const currentProperty = properties[currentIndex];
 
-  const handleSwipe = (direction: "left" | "right" | "up", action: string) => {
+  const handleSwipe = async (direction: "left" | "right" | "up", action: string) => {
     if (isSwipingDisabled || !currentProperty) return;
     setIsSwipingDisabled(true);
 
@@ -72,20 +72,22 @@ const SwipeContainer = forwardRef<
     const uid = session.isLoggedIn && session.userId ? session.userId : userId;
     swipeMutation.mutate({ userId: uid, propertyId: currentProperty.id, action });
 
-    // Animate off-screen
+    // Animate off-screen using framer motion
     const targetX = direction === "left" ? -window.innerWidth * 1.5 : direction === "right" ? window.innerWidth * 1.5 : 0;
     const targetY = direction === "up" ? -window.innerHeight * 1.5 : 0;
 
-    x.set(targetX);
-    y.set(targetY);
+    // Use framer motion animate with spring for smoother exit like Tinder
+    await Promise.all([
+      animate(x, targetX, { type: "spring", stiffness: 300, damping: 25, duration: 0.6 }),
+      animate(y, targetY, { type: "spring", stiffness: 300, damping: 25, duration: 0.6 })
+    ]);
 
-    setTimeout(() => {
-      x.set(0);
-      y.set(0);
-      setCurrentIndex(prev => (prev + 1) % properties.length);
-      setIsSwipingDisabled(false);
-      setHeartTrigger(false);
-    }, 500);
+    // Reset position and advance to next card
+    x.set(0);
+    y.set(0);
+    setCurrentIndex(prev => (prev + 1) % properties.length);
+    setIsSwipingDisabled(false);
+    setHeartTrigger(false);
 
     onSwipe();
     onSwipeAction(direction, action);
@@ -94,17 +96,17 @@ const SwipeContainer = forwardRef<
   useImperativeHandle(ref, () => ({ handleSwipe, setHeartTrigger }));
 
   const handleDragEnd = (_: any, info: PanInfo) => {
-    const threshold = 120; // increased for mobile
-    const velocityThreshold = 500;
+    const threshold = 100; // Tinder-like threshold
+    const velocityThreshold = 600; // Slightly higher for better feel
 
     if (Math.abs(info.offset.x) > threshold || Math.abs(info.velocity.x) > velocityThreshold) {
       handleSwipe(info.offset.x > 0 ? "right" : "left", info.offset.x > 0 ? "like" : "dislike");
     } else if (Math.abs(info.offset.y) > threshold && info.offset.y < 0) {
       handleSwipe("up", "super_like");
     } else {
-      // Smooth spring reset
-      x.set(0);
-      y.set(0);
+      // Smooth spring reset using framer motion animate
+      animate(x, 0, { type: "spring", stiffness: 400, damping: 30 });
+      animate(y, 0, { type: "spring", stiffness: 400, damping: 30 });
     }
   };
 
@@ -121,13 +123,24 @@ const SwipeContainer = forwardRef<
   return (
     <div className="absolute inset-2">
       {properties.slice(currentIndex + 1, currentIndex + 3).map((p, i) => (
-        <div
+        <motion.div
           key={`${p.id}-${currentIndex}-${i}`}
           className="absolute inset-0 rounded-2xl overflow-hidden"
-          style={{ transform: `scale(${0.95 - i * 0.05}) translateY(${(i + 1) * 10}px)`, zIndex: 10 - i }}
+          initial={{ scale: 0.85 - i * 0.05, y: (i + 2) * 15 }}
+          animate={{ 
+            scale: 0.95 - i * 0.05, 
+            y: (i + 1) * 10,
+            zIndex: 10 - i 
+          }}
+          transition={{ 
+            type: "spring", 
+            stiffness: 300, 
+            damping: 30,
+            duration: 0.3 
+          }}
         >
           <PropertyCard property={p} isBackground />
-        </div>
+        </motion.div>
       ))}
 
       <motion.div
@@ -143,11 +156,18 @@ const SwipeContainer = forwardRef<
         }}
         drag
         dragConstraints={{ left: 0, right: 0, top: 0, bottom: 0 }}
-        dragElastic={0.2} // lower elastic for mobile
+        dragElastic={0.1} // More rigid like Tinder
+        dragMomentum={false} // Prevents overshoot
         onDragEnd={handleDragEnd}
         onClick={handleClick}
         whileTap={{ scale: 0.98 }}
-        transition={{ type: "spring", stiffness: 300, damping: 25 }} // spring for smooth motion
+        whileDrag={{ scale: 1.05 }} // Slight scale up while dragging
+        transition={{ 
+          type: "spring", 
+          stiffness: 400, 
+          damping: 30,
+          mass: 1
+        }}
       >
         <PropertyCard property={currentProperty} onPropertyTypeFilter={onPropertyTypeFilter} />
 
