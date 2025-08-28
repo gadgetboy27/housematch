@@ -55,8 +55,9 @@ export default function AddProperty() {
     floorArea: z.string().transform(val => parseInt(val) || 0),
     landArea: z.string().transform(val => parseInt(val) || 0),
     carSpaces: z.string().transform(val => parseInt(val) || 0).optional(),
-    lotNumber: z.string().optional(),
-    certificateOfTitle: z.string().optional(),
+    lotNumber: z.string().min(1, "Council Lot Number is required for security verification"),
+    certificateOfTitle: z.string().min(1, "Certificate of Title is required for security verification"),
+    hideCertificateOfTitle: z.boolean().default(false),
     zoning: z.string().optional(),
     yearBuilt: z.string().transform(val => parseInt(val) || new Date().getFullYear()),
     imageUrl: z.string().optional(),
@@ -78,6 +79,7 @@ export default function AddProperty() {
       carSpaces: "1",
       lotNumber: "",
       certificateOfTitle: "",
+      hideCertificateOfTitle: false,
       zoning: "Residential",
       yearBuilt: new Date().getFullYear().toString(),
       imageUrl: "",
@@ -121,6 +123,7 @@ export default function AddProperty() {
       landArea: parseInt(data.landArea) || 0,
       carSpaces: parseInt(data.carSpaces) || 0,
       yearBuilt: parseInt(data.yearBuilt) || new Date().getFullYear(),
+      hideCertificateOfTitle: data.hideCertificateOfTitle,
     };
 
     console.log("Submitting property data:", propertyData);
@@ -378,7 +381,11 @@ export default function AddProperty() {
                   name="lotNumber"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Council Lot Number</FormLabel>
+                      <FormLabel className="flex items-center space-x-1">
+                        <span>Council Lot Number</span>
+                        <span className="text-red-500 text-xs">*</span>
+                        <span className="text-xs text-muted-foreground">(Required for security)</span>
+                      </FormLabel>
                       <FormControl>
                         <Input 
                           placeholder="Lot 15 DP 456789" 
@@ -396,7 +403,11 @@ export default function AddProperty() {
                   name="certificateOfTitle"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Certificate of Title</FormLabel>
+                      <FormLabel className="flex items-center space-x-1">
+                        <span>Certificate of Title</span>
+                        <span className="text-red-500 text-xs">*</span>
+                        <span className="text-xs text-muted-foreground">(Required for security)</span>
+                      </FormLabel>
                       <FormControl>
                         <Input 
                           placeholder="CT 456789/123" 
@@ -404,6 +415,33 @@ export default function AddProperty() {
                           data-testid="input-certificate-title"
                         />
                       </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="hideCertificateOfTitle"
+                  render={({ field }) => (
+                    <FormItem className="flex items-center space-x-2 bg-blue-50 p-3 rounded-lg border border-blue-200">
+                      <FormControl>
+                        <input
+                          type="checkbox"
+                          checked={field.value}
+                          onChange={field.onChange}
+                          className="w-4 h-4 text-primary focus:ring-primary border-gray-300 rounded"
+                          data-testid="checkbox-hide-certificate"
+                        />
+                      </FormControl>
+                      <div className="flex-1">
+                        <FormLabel className="text-sm font-medium text-blue-800 mb-0 cursor-pointer">
+                          Hide Certificate of Title from public display
+                        </FormLabel>
+                        <p className="text-xs text-blue-600 mt-1">
+                          Certificate will still be saved for security verification but won't be visible to other users
+                        </p>
+                      </div>
                       <FormMessage />
                     </FormItem>
                   )}

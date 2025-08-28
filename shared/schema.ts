@@ -22,8 +22,9 @@ export const properties = pgTable("properties", {
   landArea: integer("land_area"), // in m²
   carSpaces: integer("car_spaces"), // number of parking spaces/garage
   propertyType: text("property_type").notNull(), // residential, rental, commercial, lease
-  lotNumber: text("lot_number"), // e.g., "Lot 15 DP 456789"
-  certificateOfTitle: text("certificate_of_title"), // e.g., "CT 456789/123"
+  lotNumber: text("lot_number").notNull(), // e.g., "Lot 15 DP 456789" - MANDATORY for security
+  certificateOfTitle: text("certificate_of_title").notNull(), // e.g., "CT 456789/123" - MANDATORY for security
+  hideCertificateOfTitle: boolean("hide_certificate_of_title").default(false), // Privacy control for certificate
   zoning: text("zoning"),
   yearBuilt: integer("year_built"),
   imageUrl: text("image_url"),

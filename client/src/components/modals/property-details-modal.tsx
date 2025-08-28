@@ -80,7 +80,7 @@ export default function PropertyDetailsModal({ property, isOpen, onClose }: Prop
 
             {/* Basic Details */}
             <div className="grid grid-cols-2 gap-4 py-4 border-t border-border">
-              {property.bedrooms > 0 && (
+              {property.bedrooms && property.bedrooms > 0 && (
                 <div className="text-center">
                   <div className="text-2xl font-bold text-secondary" data-testid="text-detail-bedrooms">
                     {property.bedrooms}
@@ -88,7 +88,7 @@ export default function PropertyDetailsModal({ property, isOpen, onClose }: Prop
                   <div className="text-sm text-muted-foreground">Bedrooms</div>
                 </div>
               )}
-              {property.bathrooms > 0 && (
+              {property.bathrooms && property.bathrooms > 0 && (
                 <div className="text-center">
                   <div className="text-2xl font-bold text-secondary" data-testid="text-detail-bathrooms">
                     {property.bathrooms}
@@ -96,7 +96,7 @@ export default function PropertyDetailsModal({ property, isOpen, onClose }: Prop
                   <div className="text-sm text-muted-foreground">Bathrooms</div>
                 </div>
               )}
-              {property.floorArea > 0 && (
+              {property.floorArea && property.floorArea > 0 && (
                 <div className="text-center">
                   <div className="text-2xl font-bold text-secondary" data-testid="text-detail-floor-area">
                     {property.floorArea}m²
@@ -104,7 +104,7 @@ export default function PropertyDetailsModal({ property, isOpen, onClose }: Prop
                   <div className="text-sm text-muted-foreground">Floor Area</div>
                 </div>
               )}
-              {property.landArea > 0 && (
+              {property.landArea && property.landArea > 0 && (
                 <div className="text-center">
                   <div className="text-2xl font-bold text-secondary" data-testid="text-detail-land-area">
                     {property.landArea}m²
@@ -134,11 +134,19 @@ export default function PropertyDetailsModal({ property, isOpen, onClose }: Prop
                     </div>
                   </div>
                 )}
-                {property.certificateOfTitle && (
+                {property.certificateOfTitle && !property.hideCertificateOfTitle && (
                   <div>
                     <span className="text-muted-foreground">Title:</span>
                     <div className="font-medium" data-testid="text-detail-certificate">
                       {property.certificateOfTitle}
+                    </div>
+                  </div>
+                )}
+                {property.certificateOfTitle && property.hideCertificateOfTitle && (
+                  <div>
+                    <span className="text-muted-foreground">Title:</span>
+                    <div className="font-medium text-gray-500" data-testid="text-detail-certificate-hidden">
+                      🔒 Hidden for privacy
                     </div>
                   </div>
                 )}
