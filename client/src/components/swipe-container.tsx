@@ -132,7 +132,15 @@ const SwipeContainer = forwardRef<
 
       <motion.div
         className="absolute inset-0 rounded-2xl overflow-hidden cursor-grab active:cursor-grabbing"
-        style={{ x, y, rotate, opacity, zIndex: 20, touchAction: "pan-y", willChange: "transform, opacity" }}
+        style={{ 
+          x, 
+          y, 
+          rotate, 
+          opacity, 
+          zIndex: 20, 
+          touchAction: "pan-y", 
+          willChange: "transform, opacity" 
+        }}
         drag
         dragConstraints={{ left: 0, right: 0, top: 0, bottom: 0 }}
         dragElastic={0.2} // lower elastic for mobile
