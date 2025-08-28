@@ -12,6 +12,7 @@ export const users = pgTable("users", {
 
 export const properties = pgTable("properties", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").references(() => users.id).notNull(), // Track property owner
   title: text("title").notNull(),
   address: text("address").notNull(),
   suburb: text("suburb").notNull(),

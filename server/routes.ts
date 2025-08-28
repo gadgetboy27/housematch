@@ -3,6 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { insertPropertySchema, insertUserSwipeSchema, insertPurchaseOrderSchema } from "@shared/schema";
 import { analyzeUserPreferences, generatePropertyRecommendations, generateMarketInsights } from "./services/openai";
+import { requireAuth, requirePropertyOwnership } from "./middleware/auth";
 import {
   ObjectStorageService,
   ObjectNotFoundError,
@@ -60,17 +61,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/properties", async (req, res) => {
+  app.post("/api/properties", requireAuth, async (req, res) => {
     try {
       const validatedData = insertPropertySchema.parse(req.body);
-      const property = await storage.createProperty(validatedData);
+      // Add userId to property data from authenticated user
+      const propertyData = { ...validatedData, userId: req.userId! };
+      const property = await storage.createProperty(propertyData);
       res.status(201).json(property);
     } catch (error) {
       res.status(400).json({ message: "Invalid property data", error: error.message });
     }
   });
 
-  app.post("/api/properties/:id/metrics", async (req, res) => {
+  app.post("/api/properties/:id/metrics", requireAuth, requirePropertyOwnership, async (req, res) => {
     try {
       const { views, likes, saves } = req.body;
       await storage.updatePropertyMetrics(req.params.id, views, likes, saves);

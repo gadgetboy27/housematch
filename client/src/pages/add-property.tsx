@@ -89,7 +89,9 @@ export default function AddProperty() {
 
   const createPropertyMutation = useMutation({
     mutationFn: async (data: any) => {
-      const response = await apiRequest("POST", "/api/properties", data);
+      const response = await apiRequest("POST", "/api/properties", data, {
+        'x-user-id': 'demo-user' // Add authentication header
+      });
       return response.json();
     },
     onSuccess: () => {
