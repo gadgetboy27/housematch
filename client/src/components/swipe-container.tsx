@@ -1,9 +1,12 @@
-import { forwardRef, useRef, useState, useImperativeHandle, useEffect } from "react";
-import { motion, useMotionValue, useTransform, PanInfo } from "framer-motion";
+import { useState, useRef, forwardRef, useImperativeHandle } from "react";
+import { motion, useMotionValue, useTransform, PanInfo, AnimatePresence } from "framer-motion";
 import PropertyCard from "./property-card";
-import HeartBubbles from "./heart-bubbles";
 import { Property } from "@shared/schema";
-import { useSwipe } from "@/hooks/use-swipe";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
+import { LocalStorageService } from "@/lib/local-storage";
+import HeartBubbles from "./heart-bubbles";
 
 interface SwipeContainerProps {
   properties: Property[];
@@ -14,132 +17,145 @@ interface SwipeContainerProps {
 }
 
 const SwipeContainer = forwardRef<
-  { handleSwipe: (direction: "left" | "right" | "up", action: "like" | "dislike" | "super_like") => void; setHeartTrigger: (val: boolean) => void },
+  { handleSwipe: (direction: "left" | "right" | "up", action: string) => void; setHeartTrigger: (val: boolean) => void },
   SwipeContainerProps
->(
-  ({ properties, onPropertySelect, onSwipe, onSwipeAction, onPropertyTypeFilter }, ref) => {
-    const [currentIndex, setCurrentIndex] = useState(0);
-    const [heartTrigger, setHeartTrigger] = useState(false);
-    const [isSwipingDisabled, setIsSwipingDisabled] = useState(false);
+>(({
+  properties,
+  onPropertySelect,
+  onSwipe,
+  onSwipeAction,
+  onPropertyTypeFilter,
+}, ref) => {
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [isSwipingDisabled, setIsSwipingDisabled] = useState(false);
+  const [heartTrigger, setHeartTrigger] = useState(false);
 
-    const x = useMotionValue(0);
-    const y = useMotionValue(0);
-    const rotate = useTransform(x, [-300, 0, 300], [-30, 0, 30]);
-    const opacity = useTransform(x, [-300, -100, 0, 100, 300], [0, 1, 1, 1, 0]);
-    const likeOpacity = useTransform(x, [0, 100], [0, 1]);
-    const nopeOpacity = useTransform(x, [0, -100], [0, 1]);
+  const x = useMotionValue(0);
+  const y = useMotionValue(0);
+  const rotate = useTransform(x, [-300, 0, 300], [-25, 0, 25]);
+  const opacity = useTransform(x, [-300, -100, 0, 100, 300], [0, 1, 1, 1, 0]);
+  const likeOpacity = useTransform(x, [0, 120], [0, 1]);
+  const nopeOpacity = useTransform(x, [0, -120], [0, 1]);
 
-    const cardRef = useRef<HTMLDivElement>(null);
-    const currentProperty = properties[currentIndex];
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const userId = "demo-user";
 
-    const { swipeAnalytics, onDragStart, onDragMove, onDragEnd } = useSwipe({ threshold: 150 });
+  const swipeMutation = useMutation({
+    mutationFn: async (swipeData: { userId: string; propertyId: string; action: string }) => {
+      const res = await apiRequest("POST", "/api/swipes", swipeData);
+      return res.json();
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["/api/swipes", userId] }),
+  });
 
-    // Effect: when swipeAnalytics changes, trigger swipe
-    useEffect(() => {
-      if (swipeAnalytics?.direction && !isSwipingDisabled && currentProperty) {
-        const directionMap: Record<string, "like" | "dislike" | "super_like"> = {
-          left: "dislike",
-          right: "like",
-          up: "super_like",
-        };
+  const currentProperty = properties[currentIndex];
 
-        const action = directionMap[swipeAnalytics.direction];
-        handleSwipe(swipeAnalytics.direction, action);
-      }
-    }, [swipeAnalytics]);
+  const handleSwipe = (direction: "left" | "right" | "up", action: string) => {
+    if (isSwipingDisabled || !currentProperty) return;
+    setIsSwipingDisabled(true);
 
-    const handleSwipe = (direction: "left" | "right" | "up", action: "like" | "dislike" | "super_like") => {
-      if (isSwipingDisabled || !currentProperty) return;
-      setIsSwipingDisabled(true);
-
-      // Heart effect for likes
+    // Heart bubble for likes
+    if (action === "like" || action === "super_like") {
       if (action === "like") setHeartTrigger(true);
-
-      // Animate card offscreen
-      const targetX = direction === "left" ? -600 : direction === "right" ? 600 : 0;
-      const targetY = direction === "up" ? -800 : 0;
-      x.set(targetX);
-      y.set(targetY);
-
-      // After animation, reset and move to next card
-      setTimeout(() => {
-        setCurrentIndex((prev) => (prev + 1) % properties.length);
-        x.set(0);
-        y.set(0);
-        setIsSwipingDisabled(false);
-        setHeartTrigger(false);
-        onSwipe();
-      }, 300);
-
-      onSwipeAction(direction, action);
-    };
-
-    // Expose functions to parent
-    useImperativeHandle(ref, () => ({ handleSwipe, setHeartTrigger }));
-
-    if (!currentProperty) {
-      return (
-        <div className="absolute inset-2 flex items-center justify-center text-white">
-          <div className="text-center">
-            <h3 className="text-lg font-semibold mb-2">No More Properties</h3>
-            <p className="text-white/80 text-sm">Check back later for new listings</p>
-          </div>
-        </div>
-      );
+      LocalStorageService.addLikedProperty(currentProperty, action as "like" | "super_like");
+      toast({
+        title: action === "super_like" ? "Super Liked!" : "Liked!",
+        description: `${currentProperty.title} saved`,
+        duration: 800,
+        variant: "subtle" as any,
+      });
     }
 
-    return (
-      <div className="absolute inset-2">
-        {/* Background Cards */}
-        {properties.slice(currentIndex + 1, currentIndex + 3).map((property, index) => (
-          <div
-            key={`${property.id}-${index}`}
-            className="absolute inset-0 bg-white rounded-2xl overflow-hidden"
-            style={{
-              transform: `scale(${0.95 - index * 0.05}) translateY(${(index + 1) * 10}px)`,
-              zIndex: 10 - index,
-            }}
-          >
-            <PropertyCard property={property} isBackground />
-          </div>
-        ))}
+    // Record swipe
+    const session = LocalStorageService.getUserSession();
+    const uid = session.isLoggedIn && session.userId ? session.userId : userId;
+    swipeMutation.mutate({ userId: uid, propertyId: currentProperty.id, action });
 
-        {/* Active Card */}
-        <motion.div
-          ref={cardRef}
-          className="absolute inset-0 bg-white rounded-2xl overflow-hidden cursor-grab active:cursor-grabbing"
-          style={{ x, y, rotate, opacity, zIndex: 20, willChange: "transform, opacity" }}
-          drag
-          dragConstraints={{ left: 0, right: 0, top: 0, bottom: 0 }}
-          dragElastic={0.3}
-          onDragStart={(e, info) => onDragStart(info.point.x, info.point.y)}
-          onDrag={(e, info) => onDragMove(info.point.x, info.point.y)}
-          onDragEnd={(e, info) => onDragEnd(info.point.x, info.point.y)}
+    // Animate off-screen
+    const targetX = direction === "left" ? -window.innerWidth * 1.5 : direction === "right" ? window.innerWidth * 1.5 : 0;
+    const targetY = direction === "up" ? -window.innerHeight * 1.5 : 0;
+
+    x.set(targetX);
+    y.set(targetY);
+
+    setTimeout(() => {
+      x.set(0);
+      y.set(0);
+      setCurrentIndex(prev => (prev + 1) % properties.length);
+      setIsSwipingDisabled(false);
+      setHeartTrigger(false);
+    }, 500);
+
+    onSwipe();
+    onSwipeAction(direction, action);
+  };
+
+  useImperativeHandle(ref, () => ({ handleSwipe, setHeartTrigger }));
+
+  const handleDragEnd = (_: any, info: PanInfo) => {
+    const threshold = 120; // increased for mobile
+    const velocityThreshold = 500;
+
+    if (Math.abs(info.offset.x) > threshold || Math.abs(info.velocity.x) > velocityThreshold) {
+      handleSwipe(info.offset.x > 0 ? "right" : "left", info.offset.x > 0 ? "like" : "dislike");
+    } else if (Math.abs(info.offset.y) > threshold && info.offset.y < 0) {
+      handleSwipe("up", "super_like");
+    } else {
+      // Smooth spring reset
+      x.set(0);
+      y.set(0);
+    }
+  };
+
+  const handleClick = () => {
+    if (Math.abs(x.get()) < 10 && currentProperty) onPropertySelect(currentProperty);
+  };
+
+  if (!currentProperty) return (
+    <div className="absolute inset-2 flex items-center justify-center text-white/80">
+      No More Properties
+    </div>
+  );
+
+  return (
+    <div className="absolute inset-2">
+      {properties.slice(currentIndex + 1, currentIndex + 3).map((p, i) => (
+        <div
+          key={`${p.id}-${currentIndex}-${i}`}
+          className="absolute inset-0 rounded-2xl overflow-hidden"
+          style={{ transform: `scale(${0.95 - i * 0.05}) translateY(${(i + 1) * 10}px)`, zIndex: 10 - i }}
         >
-          <PropertyCard property={currentProperty} onPropertyTypeFilter={onPropertyTypeFilter} />
+          <PropertyCard property={p} isBackground />
+        </div>
+      ))}
 
-          {/* Swipe Indicators */}
-          <motion.div
-            className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 pointer-events-none z-30 text-green-500 text-6xl font-bold transform -rotate-12 drop-shadow-lg"
-            style={{ opacity: likeOpacity }}
-          >
-            LIKE
-          </motion.div>
+      <motion.div
+        className="absolute inset-0 rounded-2xl overflow-hidden cursor-grab active:cursor-grabbing"
+        style={{ x, y, rotate, opacity, zIndex: 20, touchAction: "pan-y", willChange: "transform, opacity" }}
+        drag
+        dragConstraints={{ left: 0, right: 0, top: 0, bottom: 0 }}
+        dragElastic={0.2} // lower elastic for mobile
+        onDragEnd={handleDragEnd}
+        onClick={handleClick}
+        whileTap={{ scale: 0.98 }}
+        transition={{ type: "spring", stiffness: 300, damping: 25 }} // spring for smooth motion
+      >
+        <PropertyCard property={currentProperty} onPropertyTypeFilter={onPropertyTypeFilter} />
 
-          <motion.div
-            className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 pointer-events-none z-30 text-red-500 text-6xl font-bold transform rotate-12 drop-shadow-lg"
-            style={{ opacity: nopeOpacity }}
-          >
-            NOPE
-          </motion.div>
-
-          {/* Heart bubbles */}
-          <HeartBubbles trigger={heartTrigger} onComplete={() => setHeartTrigger(false)} />
+        <motion.div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none z-30" style={{ opacity: likeOpacity }}>
+          <div className="text-green-500 text-6xl font-bold transform -rotate-12 drop-shadow-lg">LIKE</div>
         </motion.div>
-      </div>
-    );
-  }
-);
+
+        <motion.div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none z-30" style={{ opacity: nopeOpacity }}>
+          <div className="text-red-500 text-6xl font-bold transform rotate-12 drop-shadow-lg">NOPE</div>
+        </motion.div>
+
+        <HeartBubbles trigger={heartTrigger} onComplete={() => setHeartTrigger(false)} />
+      </motion.div>
+    </div>
+  );
+});
 
 SwipeContainer.displayName = "SwipeContainer";
 export default SwipeContainer;
