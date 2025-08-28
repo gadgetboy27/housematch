@@ -79,7 +79,8 @@ const SwipeContainer = forwardRef<
     // Use framer motion animate with spring for smoother exit like Tinder
     await Promise.all([
       animate(x, targetX, { type: "spring", stiffness: 220, damping: 18 }),
-      animate(y, targetY, { type: "spring", stiffness: 220, damping: 18 }]);
+      animate(y, targetY, { type: "spring", stiffness: 220, damping: 18 })
+    ]);
 
     // Advance to next card first
     setCurrentIndex(prev => (prev + 1) % properties.length);
