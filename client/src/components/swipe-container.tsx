@@ -1,4 +1,4 @@
-import { useState, useRef, forwardRef, useImperativeHandle } from "react";
+import { useState, useRef, forwardRef, useImperativeHandle, useEffect } from "react";
 import { motion, useMotionValue, useTransform, PanInfo, AnimatePresence, animate } from "framer-motion";
 import PropertyCard from "./property-card";
 import { Property } from "@shared/schema";
@@ -29,6 +29,13 @@ const SwipeContainer = forwardRef<
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isSwipingDisabled, setIsSwipingDisabled] = useState(false);
   const [heartTrigger, setHeartTrigger] = useState(false);
+
+  // Reset index when properties change (e.g., due to filtering)
+  useEffect(() => {
+    setCurrentIndex(0);
+    x.set(0);
+    y.set(0);
+  }, [properties]);
 
   const x = useMotionValue(0);
   const y = useMotionValue(0);
