@@ -1,33 +1,34 @@
 import { useLocation } from "wouter";
+import { Home, Heart, Plus, ShoppingCart, User } from "lucide-react";
 
 const navigationItems = [
   {
     path: "/",
-    icon: "fa-home",
+    icon: Home,
     label: "Discover",
     testId: "nav-discover"
   },
   {
     path: "/liked",
-    icon: "fa-heart",
+    icon: Heart,
     label: "Liked",
     testId: "nav-liked"
   },
   {
     path: "/add",
-    icon: "fa-plus",
+    icon: Plus,
     label: "Add",
     testId: "nav-add"
   },
   {
     path: "/reports",
-    icon: "fa-shopping-cart",
+    icon: ShoppingCart,
     label: "Reports",
     testId: "nav-reports"
   },
   {
     path: "/profile",
-    icon: "fa-user",
+    icon: User,
     label: "Profile",
     testId: "nav-profile"
   },
@@ -41,6 +42,7 @@ export default function BottomNavigation() {
       <div className="flex items-center justify-around">
         {navigationItems.map((item) => {
           const isActive = location === item.path;
+          const IconComponent = item.icon;
           
           return (
             <button
@@ -53,7 +55,7 @@ export default function BottomNavigation() {
               }`}
               data-testid={item.testId}
             >
-              <i className={`fas ${item.icon} text-lg`}></i>
+              <IconComponent className="w-5 h-5" />
               <span className="text-xs font-medium">{item.label}</span>
             </button>
           );
