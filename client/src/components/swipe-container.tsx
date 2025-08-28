@@ -87,12 +87,12 @@ const SwipeContainer = forwardRef<
     
     // For superlike (up swipe), animate new card in from above
     if (direction === "up") {
-      y.set(-window.innerHeight * 0.15); // Start closer to screen
+      y.set(-window.innerHeight * 0.2); // Start closer to screen
       x.set(0);
       // Faster but still smooth animation
       await animate(y, 0, { 
         type: "spring", 
-        stiffness: 200,  // More responsive
+        stiffness: 100,  // More responsive
         damping: 28,     // Quick settling
         duration: 0.6    // Snappier timing
       });
