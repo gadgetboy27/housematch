@@ -10,12 +10,9 @@ interface PropertyTypeDropdownProps {
 const propertyTypes = [
   { value: "all", label: "All Properties" },
   { value: "residential", label: "Residential" },
-  { value: "commercial", label: "Commercial" },
   { value: "rental", label: "Rental" },
-  { value: "lease", label: "Lease" },
-  { value: "farm", label: "Farm" },
-  { value: "batch", label: "Batch" },
-  { value: "other", label: "Other" }
+  { value: "commercial", label: "Commercial" },
+  { value: "lease", label: "Lease" }
 ];
 
 const propertyTypeColors = {
@@ -23,9 +20,6 @@ const propertyTypeColors = {
   rental: "border-green-500 bg-green-50 text-green-700", 
   commercial: "border-orange-500 bg-orange-50 text-orange-700",
   lease: "border-purple-500 bg-purple-50 text-purple-700",
-  farm: "border-yellow-500 bg-yellow-50 text-yellow-700",
-  batch: "border-pink-500 bg-pink-50 text-pink-700",
-  other: "border-gray-500 bg-gray-50 text-gray-700",
   all: "border-indigo-500 bg-indigo-50 text-indigo-700"
 };
 
