@@ -78,23 +78,22 @@ const SwipeContainer = forwardRef<
 
     // Use framer motion animate with spring for smoother exit like Tinder
     await Promise.all([
-      animate(x, targetX, { type: "spring", stiffness: 300, damping: 25, duration: 0.6 }),
-      animate(y, targetY, { type: "spring", stiffness: 300, damping: 25, duration: 0.6 })
-    ]);
+      animate(x, targetX, { type: "spring", stiffness: 220, damping: 18 }),
+      animate(y, targetY, { type: "spring", stiffness: 220, damping: 18 }]);
 
     // Advance to next card first
     setCurrentIndex(prev => (prev + 1) % properties.length);
     
     // For superlike (up swipe), animate new card in from above
     if (direction === "up") {
-      y.set(-window.innerHeight * 0.3); // Start closer to screen
+      y.set(-window.innerHeight * 1.5); // Start closer to screen
       x.set(0);
       // Faster but still smooth animation
       // Same speed as exit animation
       await animate(y, 0, { 
         type: "spring", 
-        stiffness: 300,  // More responsive
-        damping: 25,     // Quick settling
+        stiffness: 240,  // More responsive
+        damping: 22,     // Quick settling
         duration: 0.6    // Snappier timing
       });
     } else {
