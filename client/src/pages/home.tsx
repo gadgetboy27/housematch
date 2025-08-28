@@ -50,6 +50,7 @@ export default function Home() {
   const handleReject = () => swipeRef.current?.handleSwipe("left", "dislike");
   const handleLike = () => swipeRef.current?.handleSwipe("right", "like");
   const handleSuperLike = () => swipeRef.current?.handleSwipe("up", "super_like");
+  const handleBack = () => swipeRef.current?.handleBack();
 
   const handleAIBrainClick = () => {
     setShowAIBrain(false);
@@ -80,6 +81,7 @@ export default function Home() {
           onReject={handleReject}
           onLike={handleLike}
           onSuperLike={handleSuperLike}
+          onBack={handleBack}
           disabled={isSwipingDisabled}
           onLikeEffect={() => swipeRef.current?.setHeartTrigger(true)}
         />

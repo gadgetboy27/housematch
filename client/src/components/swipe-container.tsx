@@ -17,7 +17,7 @@ interface SwipeContainerProps {
 }
 
 const SwipeContainer = forwardRef<
-  { handleSwipe: (direction: "left" | "right" | "up", action: string) => void; setHeartTrigger: (val: boolean) => void },
+  { handleSwipe: (direction: "left" | "right" | "up", action: string) => void; setHeartTrigger: (val: boolean) => void; handleBack: () => void },
   SwipeContainerProps
 >(({
   properties,
@@ -29,6 +29,7 @@ const SwipeContainer = forwardRef<
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isSwipingDisabled, setIsSwipingDisabled] = useState(false);
   const [heartTrigger, setHeartTrigger] = useState(false);
+  const [propertyHistory, setPropertyHistory] = useState<number[]>([]);
 
   // Reset index when properties change (e.g., due to filtering)
   useEffect(() => {
@@ -89,6 +90,9 @@ const SwipeContainer = forwardRef<
       animate(y, targetY, { type: "spring", stiffness: 220, damping: 18 }),
     ]);
 
+    // Add current index to history before advancing
+    setPropertyHistory(prev => [...prev, currentIndex]);
+    
     // Advance to next card first
     setCurrentIndex(prev => (prev + 1) % properties.length);
     
@@ -116,7 +120,33 @@ const SwipeContainer = forwardRef<
     onSwipeAction(direction, action);
   };
 
-  useImperativeHandle(ref, () => ({ handleSwipe, setHeartTrigger }));
+  const handleBack = () => {
+    if (propertyHistory.length === 0 || isSwipingDisabled) return;
+    
+    setIsSwipingDisabled(true);
+    const previousIndex = propertyHistory[propertyHistory.length - 1];
+    
+    // Remove the last item from history
+    setPropertyHistory(prev => prev.slice(0, -1));
+    
+    // Set to previous property
+    setCurrentIndex(previousIndex);
+    
+    // Reset card position
+    x.set(0);
+    y.set(0);
+    
+    setIsSwipingDisabled(false);
+    
+    toast({
+      title: "Went Back",
+      description: "Returned to previous property",
+      duration: 800,
+      variant: "subtle" as any,
+    });
+  };
+
+  useImperativeHandle(ref, () => ({ handleSwipe, setHeartTrigger, handleBack }));
 
   const handleDragEnd = (_: any, info: PanInfo) => {
     const threshold = 100; // Tinder-like threshold

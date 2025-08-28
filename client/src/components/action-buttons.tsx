@@ -5,6 +5,7 @@ interface ActionButtonsProps {
   onReject: () => void;
   onLike: () => void;
   onSuperLike: () => void;
+  onBack?: () => void;       // Optional callback for going back
   disabled?: boolean;
   onLikeEffect?: () => void; // Optional callback for heart bubbles
   debounceTime?: number;     // Optional debounce duration (ms)
@@ -14,6 +15,7 @@ export default function ActionButtons({
   onReject,
   onLike,
   onSuperLike,
+  onBack,
   disabled = false,
   onLikeEffect,
   debounceTime = 500,
@@ -87,6 +89,27 @@ export default function ActionButtons({
                         group-active:scale-90 transition-transform filter drop-shadow-[0_0_10px_rgba(255,255,100,0.6)]">⭐️</span>
         </div>
       </motion.button>
+
+      {/* Back Button */}
+      {onBack && (
+        <motion.button
+          className="relative group"
+          onClick={() => handleClick(onBack)}
+          disabled={disabled}
+          whileTap={{ scale: 0.95 }}
+          data-testid="button-back"
+        >
+          <div className="w-16 h-12 bg-transparent backdrop-blur-2xl rounded-lg flex items-center justify-center
+                          shadow-[0_12px_24px_rgba(75,85,99,0.4),0_8px_16px_rgba(75,85,99,0.3),0_4px_8px_rgba(0,0,0,0.2),inset_0_2px_4px_rgba(255,255,255,0.3)]
+                          border-2 border-white/60 
+                          group-active:bg-gray-500/15 group-active:shadow-[0_6px_12px_rgba(75,85,99,0.5),inset_0_3px_6px_rgba(0,0,0,0.2)]
+                          group-active:transform group-active:translate-y-1
+                          transition-all duration-200 hover:bg-gray-500/10">
+            <span className="text-white text-2xl font-bold drop-shadow-[0_3px_6px_rgba(0,0,0,0.8)] 
+                          group-active:scale-90 transition-transform filter drop-shadow-[0_0_8px_rgba(255,255,255,0.3)]">↶</span>
+          </div>
+        </motion.button>
+      )}
     </div>
   );
 }
