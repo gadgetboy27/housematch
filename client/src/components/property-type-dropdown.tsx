@@ -104,10 +104,13 @@ export default function PropertyTypeDropdown({ currentType, onTypeChange }: Prop
           />
           
           {/* Menu */}
-          <div className="absolute top-full left-0 mt-2 w-48 backdrop-blur-2xl bg-gradient-to-br from-blue-800/70 via-blue-900/60 to-blue-950/50 rounded-xl shadow-2xl border border-blue-700/50 z-20 overflow-hidden"
-               style={{
-                 boxShadow: '0 20px 60px rgba(0,0,0,0.4), 0 8px 20px rgba(30,58,138,0.2), inset 0 2px 4px rgba(96,165,250,0.15)',
-               }}>
+          <div 
+            className="absolute top-full left-0 mt-2 w-48 backdrop-blur-2xl bg-gradient-to-br from-blue-800/70 via-blue-900/60 to-blue-950/50 rounded-xl shadow-2xl border border-blue-700/50 z-20 overflow-hidden"
+            style={{
+              boxShadow: '0 20px 60px rgba(0,0,0,0.4), 0 8px 20px rgba(30,58,138,0.2), inset 0 2px 4px rgba(96,165,250,0.15)',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
             {propertyTypes.map((type) => {
               const isSelected = type.value === currentType;
               const itemColor = propertyTypeColors[type.value as keyof typeof propertyTypeColors] || propertyTypeColors.all;
@@ -116,7 +119,11 @@ export default function PropertyTypeDropdown({ currentType, onTypeChange }: Prop
               return (
                 <button
                   key={type.value}
-                  onClick={() => handleTypeSelect(type.value)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    e.preventDefault();
+                    handleTypeSelect(type.value);
+                  }}
                   className={`w-full px-4 py-2 text-left text-sm transition-all duration-150 
                              hover:bg-blue-700/30 hover:backdrop-blur-lg
                              ${isSelected ? 'bg-blue-700/40 font-semibold text-white' : 'text-white/90'}
