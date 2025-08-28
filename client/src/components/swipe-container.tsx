@@ -147,22 +147,33 @@ const SwipeContainer = forwardRef<
           rotate, 
           opacity, 
           zIndex: 20, 
-          touchAction: "pan-y", 
-          willChange: "transform, opacity" 
+          touchAction: "none", // Allow full control of touch events
+          willChange: "transform", // Optimize for hardware acceleration
+          backfaceVisibility: "hidden", // Prevent flicker
+          perspective: 1000, // Enable 3D acceleration
+          transform: "translateZ(0)" // Force hardware acceleration
         }}
         drag
         dragConstraints={{ left: 0, right: 0, top: 0, bottom: 0 }}
-        dragElastic={0.1} // More rigid like Tinder
+        dragElastic={0.2} // Slightly more elastic for better mobile feel
         dragMomentum={false} // Prevents overshoot
+        dragTransition={{ 
+          bounceStiffness: 600,
+          bounceDamping: 20,
+          power: 0.3 // Smoother mobile dragging
+        }}
         onDragEnd={handleDragEnd}
         onClick={handleClick}
         whileTap={{ scale: 0.98 }}
-        whileDrag={{ scale: 1.05 }} // Slight scale up while dragging
+        whileDrag={{ 
+          scale: 1.02, // Less aggressive scale for mobile performance
+          rotateZ: 0 // Prevent additional rotation during drag that causes jank
+        }}
         transition={{ 
           type: "spring", 
-          stiffness: 400, 
-          damping: 30,
-          mass: 1
+          stiffness: 300, // Reduced for smoother mobile performance
+          damping: 35,    // Higher damping for less bounce
+          mass: 0.8       // Lighter feel
         }}
       >
         <PropertyCard property={currentProperty} onPropertyTypeFilter={onPropertyTypeFilter} />
