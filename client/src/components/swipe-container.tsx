@@ -76,16 +76,20 @@ const SwipeContainer = forwardRef<
     const targetX = direction === "left" ? -window.innerWidth * 1.5 : direction === "right" ? window.innerWidth * 1.5 : 0;
     const targetY = direction === "up" ? -window.innerHeight * 1.5 : 0;
 
-    // Use framer motion animate with spring for smoother exit like Tinder
-    await Promise.all([
+    // Advance to next card first, then animate current card off-screen
+    setCurrentIndex(prev => (prev + 1) % properties.length);
+    
+    // Animate off-screen - don't await, let it finish in background
+    Promise.all([
       animate(x, targetX, { type: "spring", stiffness: 300, damping: 25, duration: 0.6 }),
       animate(y, targetY, { type: "spring", stiffness: 300, damping: 25, duration: 0.6 })
-    ]);
+    ]).then(() => {
+      // Reset position only after animation completes and card is off-screen
+      x.set(0);
+      y.set(0);
+    });
 
-    // Reset position and advance to next card
-    x.set(0);
-    y.set(0);
-    setCurrentIndex(prev => (prev + 1) % properties.length);
+    // Re-enable swiping immediately so next card can be swiped
     setIsSwipingDisabled(false);
     setHeartTrigger(false);
 
