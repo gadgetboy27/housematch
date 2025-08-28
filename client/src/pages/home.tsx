@@ -92,7 +92,7 @@ export default function Home() {
   return (
     <div className="relative min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 pb-24">
       {/* Swipe Container */}
-      <div className="flex items-end justify-center px-3 pt-12 pb-32 min-h-screen">
+      <div className="flex items-center justify-center px-3 pt-8 pb-44 min-h-screen">
         <div className="relative w-full max-w-lg h-[580px]">
           <SwipeContainer 
             ref={swipeRef}
