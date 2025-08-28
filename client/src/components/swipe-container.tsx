@@ -76,20 +76,18 @@ const SwipeContainer = forwardRef<
     const targetX = direction === "left" ? -window.innerWidth * 1.5 : direction === "right" ? window.innerWidth * 1.5 : 0;
     const targetY = direction === "up" ? -window.innerHeight * 1.5 : 0;
 
-    // Immediately advance to next card so it slides into position
+    // Use framer motion animate with spring for smoother exit like Tinder
+    await Promise.all([
+      animate(x, targetX, { type: "spring", stiffness: 300, damping: 25, duration: 0.6 }),
+      animate(y, targetY, { type: "spring", stiffness: 300, damping: 25, duration: 0.6 })
+    ]);
+
+    // Reset position and advance to next card
+    x.set(0);
+    y.set(0);
     setCurrentIndex(prev => (prev + 1) % properties.length);
-    
-    // Animate the old card off-screen (it's now gone from currentProperty)
-    animate(x, targetX, { type: "spring", stiffness: 300, damping: 25, duration: 0.6 });
-    animate(y, targetY, { type: "spring", stiffness: 300, damping: 25, duration: 0.6 });
-    
-    // Reset immediately after starting animation for next swipe
-    setTimeout(() => {
-      x.set(0);
-      y.set(0);
-      setIsSwipingDisabled(false);
-      setHeartTrigger(false);
-    }, 100); // Much shorter delay
+    setIsSwipingDisabled(false);
+    setHeartTrigger(false);
 
     onSwipe();
     onSwipeAction(direction, action);
@@ -125,20 +123,27 @@ const SwipeContainer = forwardRef<
   return (
     <div className="absolute inset-2">
       {properties.slice(currentIndex + 1, currentIndex + 3).map((p, i) => (
-        <div
-          key={`bg-${p.id}-${i}`}
-          className="absolute inset-0 rounded-2xl overflow-hidden pointer-events-none"
-          style={{ 
-            transform: `scale(${0.98 - i * 0.015}) translateY(${(i + 1) * 8}px)`,
+        <motion.div
+          key={`${p.id}-${currentIndex}-${i}`}
+          className="absolute inset-0 rounded-2xl overflow-hidden"
+          initial={{ scale: 0.85 - i * 0.05, y: (i + 2) * 15 }}
+          animate={{ 
+            scale: 0.95 - i * 0.05, 
+            y: (i + 1) * 10,
             zIndex: 10 - i 
+          }}
+          transition={{ 
+            type: "spring", 
+            stiffness: 300, 
+            damping: 30,
+            duration: 0.3 
           }}
         >
           <PropertyCard property={p} isBackground />
-        </div>
+        </motion.div>
       ))}
 
       <motion.div
-        key={`main-${currentProperty.id}`}
         className="absolute inset-0 rounded-2xl overflow-hidden cursor-grab active:cursor-grabbing"
         style={{ 
           x, 
@@ -146,7 +151,7 @@ const SwipeContainer = forwardRef<
           rotate, 
           opacity, 
           zIndex: 20, 
-          touchAction: "none", 
+          touchAction: "pan-y", 
           willChange: "transform, opacity" 
         }}
         drag
@@ -155,7 +160,8 @@ const SwipeContainer = forwardRef<
         dragMomentum={false} // Prevents overshoot
         onDragEnd={handleDragEnd}
         onClick={handleClick}
-        whileTap={{ scale: 0.99 }}
+        whileTap={{ scale: 0.98 }}
+        whileDrag={{ scale: 1.05 }} // Slight scale up while dragging
         transition={{ 
           type: "spring", 
           stiffness: 400, 

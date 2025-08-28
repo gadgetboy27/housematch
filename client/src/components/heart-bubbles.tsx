@@ -16,10 +16,10 @@ export default function HeartBubbles({ trigger, onComplete }: HeartBubblesProps)
         // Create 5 hearts with random positions, same size as button heart (text-2xl = 24px)
         const newHearts = Array.from({ length: 5 }, (_, i) => ({
           id: Date.now() + i,
-          x: Math.random() * 40 - 40, // -40 to 40px from center (much wider spread)
-          y: Math.random() * 20 - 15, // Add vertical variation too
-          size: 30, // Exact same size as like button heart (text-2xl)
-          delay: Math.random() * 0.8, // Random delay for staggered animation
+          x: Math.random() * 80 - 40, // -40 to 40px from center (much wider spread)
+          y: Math.random() * 30 - 15, // Add vertical variation too
+          size: 24, // Exact same size as like button heart (text-2xl)
+          delay: Math.random() * 0.4, // Random delay for staggered animation
         }));
 
         setHearts(newHearts);
