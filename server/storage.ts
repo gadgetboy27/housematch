@@ -64,6 +64,11 @@ export class MemStorage implements IStorage {
         yearBuilt: 2018,
         imageUrl: "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=600",
         description: "Stunning modern family home in the heart of Ponsonby",
+        additionalImages: [
+          "https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=600",
+          "https://images.unsplash.com/photo-1586023492125-27b2c045efd7?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=600",
+          "https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=600"
+        ],
         views: 147,
         likes: 23,
         saves: 8
@@ -84,6 +89,11 @@ export class MemStorage implements IStorage {
         yearBuilt: 2020,
         imageUrl: "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=600",
         description: "Luxury apartment with harbour views",
+        additionalImages: [
+          "https://images.unsplash.com/photo-1507089947368-19c1da9775ae?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=600",
+          "https://images.unsplash.com/photo-1540932239986-30128078f3c5?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=600",
+          "https://images.unsplash.com/photo-1574269909862-7e1d70bb8078?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=600"
+        ],
         views: 89,
         likes: 15,
         saves: 5
@@ -104,6 +114,11 @@ export class MemStorage implements IStorage {
         yearBuilt: 1995,
         imageUrl: "https://images.unsplash.com/photo-1449844908441-8829872d2607?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=600",
         description: "Charming villa with character features",
+        additionalImages: [
+          "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=600",
+          "https://images.unsplash.com/photo-1565538810643-b5bdb714032a?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=600",
+          "https://images.unsplash.com/photo-1571055107559-3e67626fa8be?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=600"
+        ],
         views: 203,
         likes: 31,
         saves: 12
@@ -124,6 +139,11 @@ export class MemStorage implements IStorage {
         yearBuilt: 2015,
         imageUrl: "https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=600",
         description: "Modern rental property near good schools",
+        additionalImages: [
+          "https://images.unsplash.com/photo-1567767292278-a4f21aa2d36e?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=600",
+          "https://images.unsplash.com/photo-1586105251261-72a756497a11?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=600",
+          "https://images.unsplash.com/photo-1554995207-c18c203602cb?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=600"
+        ],
         views: 134,
         likes: 19,
         saves: 7
@@ -144,6 +164,11 @@ export class MemStorage implements IStorage {
         yearBuilt: 2010,
         imageUrl: "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=600",
         description: "Prime commercial office space",
+        additionalImages: [
+          "https://images.unsplash.com/photo-1497366811353-6870744d04b2?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=600",
+          "https://images.unsplash.com/photo-1557804506-669a67965ba0?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=600",
+          "https://images.unsplash.com/photo-1542744173-8e7e53415bb0?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=600"
+        ],
         views: 67,
         likes: 8,
         saves: 3
@@ -164,6 +189,11 @@ export class MemStorage implements IStorage {
         yearBuilt: 2019,
         imageUrl: "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=600",
         description: "Stunning waterfront views",
+        additionalImages: [
+          "https://images.unsplash.com/photo-1505843513577-22bb7d21e455?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=600",
+          "https://images.unsplash.com/photo-1549517045-bc93de075e53?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=600",
+          "https://images.unsplash.com/photo-1523755231516-e43fd2e8dca5?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=600"
+        ],
         views: 312,
         likes: 45,
         saves: 18
@@ -184,6 +214,11 @@ export class MemStorage implements IStorage {
         yearBuilt: 2021,
         imageUrl: "https://images.unsplash.com/photo-1572120360610-d971b9d7767c?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=600",
         description: "Brand new contemporary design",
+        additionalImages: [
+          "https://images.unsplash.com/photo-1583847268964-b28dc8f51f92?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=600",
+          "https://images.unsplash.com/photo-1586023492125-27b2c045efd7?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=600",
+          "https://images.unsplash.com/photo-1560440021-33f9b867899d?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=600"
+        ],
         views: 98,
         likes: 27,
         saves: 11
@@ -204,6 +239,11 @@ export class MemStorage implements IStorage {
         yearBuilt: 1925,
         imageUrl: "https://images.unsplash.com/photo-1493809842364-78817add7ffb?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=600",
         description: "Beautiful character home",
+        additionalImages: [
+          "https://images.unsplash.com/photo-1513475382585-d06e58bcb0e0?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=600",
+          "https://images.unsplash.com/photo-1574269909862-7e1d70bb8078?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=600",
+          "https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=600"
+        ],
         views: 156,
         likes: 22,
         saves: 9
@@ -224,6 +264,11 @@ export class MemStorage implements IStorage {
         yearBuilt: 2017,
         imageUrl: "https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=600",
         description: "Executive apartment in prime location",
+        additionalImages: [
+          "https://images.unsplash.com/photo-1574269909862-7e1d70bb8078?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=600",
+          "https://images.unsplash.com/photo-1549517045-bc93de075e53?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=600",
+          "https://images.unsplash.com/photo-1540932239986-30128078f3c5?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=600"
+        ],
         views: 89,
         likes: 16,
         saves: 6
@@ -244,6 +289,11 @@ export class MemStorage implements IStorage {
         yearBuilt: 2005,
         imageUrl: "https://images.unsplash.com/photo-1516455590571-18256e5bb9ff?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=600",
         description: "Perfect for students or young professionals",
+        additionalImages: [
+          "https://images.unsplash.com/photo-1560448075-bb485b067938?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=600",
+          "https://images.unsplash.com/photo-1567767292278-a4f21aa2d36e?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=600",
+          "https://images.unsplash.com/photo-1554995207-c18c203602cb?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=600"
+        ],
         views: 234,
         likes: 38,
         saves: 14
@@ -264,6 +314,11 @@ export class MemStorage implements IStorage {
         yearBuilt: 1980,
         imageUrl: "https://images.unsplash.com/photo-1441986300917-64674bd600d8?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=600",
         description: "Prime retail space on Cuba Street",
+        additionalImages: [
+          "https://images.unsplash.com/photo-1555529669-e69e7aa0ba9a?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=600",
+          "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=600",
+          "https://images.unsplash.com/photo-1542744173-8e7e53415bb0?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=600"
+        ],
         views: 145,
         likes: 12,
         saves: 4
@@ -284,6 +339,11 @@ export class MemStorage implements IStorage {
         yearBuilt: 1990,
         imageUrl: "https://images.unsplash.com/photo-1560448075-bb485b067938?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=600",
         description: "Unique warehouse conversion",
+        additionalImages: [
+          "https://images.unsplash.com/photo-1586105251261-72a756497a11?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=600",
+          "https://images.unsplash.com/photo-1507089947368-19c1da9775ae?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=600",
+          "https://images.unsplash.com/photo-1583847268964-b28dc8f51f92?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=600"
+        ],
         views: 178,
         likes: 29,
         saves: 13
@@ -304,6 +364,11 @@ export class MemStorage implements IStorage {
         yearBuilt: 2000,
         imageUrl: "https://images.unsplash.com/photo-1568605114967-8130f3a36994?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=600",
         description: "Spacious family home near university",
+        additionalImages: [
+          "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=600",
+          "https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=600",
+          "https://images.unsplash.com/photo-1565538810643-b5bdb714032a?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=600"
+        ],
         views: 201,
         likes: 33,
         saves: 15
@@ -324,6 +389,11 @@ export class MemStorage implements IStorage {
         yearBuilt: 2022,
         imageUrl: "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=600",
         description: "Luxury penthouse with city views",
+        additionalImages: [
+          "https://images.unsplash.com/photo-1560448075-bb485b067938?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=600",
+          "https://images.unsplash.com/photo-1507089947368-19c1da9775ae?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=600",
+          "https://images.unsplash.com/photo-1523755231516-e43fd2e8dca5?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=600"
+        ],
         views: 87,
         likes: 41,
         saves: 19
@@ -344,6 +414,11 @@ export class MemStorage implements IStorage {
         yearBuilt: 2016,
         imageUrl: "https://images.unsplash.com/photo-1520637836862-4d197d17c46a?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=600",
         description: "Beachfront holiday rental",
+        additionalImages: [
+          "https://images.unsplash.com/photo-1505843513577-22bb7d21e455?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=600",
+          "https://images.unsplash.com/photo-1549517045-bc93de075e53?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=600",
+          "https://images.unsplash.com/photo-1540932239986-30128078f3c5?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=600"
+        ],
         views: 289,
         likes: 52,
         saves: 22
@@ -364,6 +439,11 @@ export class MemStorage implements IStorage {
         yearBuilt: 2008,
         imageUrl: "https://images.unsplash.com/photo-1587293852726-70cdb56c2866?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=600",
         description: "Large industrial warehouse facility",
+        additionalImages: [
+          "https://images.unsplash.com/photo-1565444563072-6c8065ade936?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=600",
+          "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=600",
+          "https://images.unsplash.com/photo-1542744173-8e7e53415bb0?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=600"
+        ],
         views: 56,
         likes: 7,
         saves: 2
@@ -384,6 +464,11 @@ export class MemStorage implements IStorage {
         yearBuilt: 2020,
         imageUrl: "https://images.unsplash.com/photo-1613545325278-f24b0cae1224?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=600",
         description: "Exclusive luxury villa with water views",
+        additionalImages: [
+          "https://images.unsplash.com/photo-1583847268964-b28dc8f51f92?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=600",
+          "https://images.unsplash.com/photo-1560448075-bb485b067938?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=600",
+          "https://images.unsplash.com/photo-1505843513577-22bb7d21e455?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=600"
+        ],
         views: 156,
         likes: 67,
         saves: 28
@@ -404,6 +489,11 @@ export class MemStorage implements IStorage {
         yearBuilt: 2012,
         imageUrl: "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=600",
         description: "Compact city apartment",
+        additionalImages: [
+          "https://images.unsplash.com/photo-1586105251261-72a756497a11?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=600",
+          "https://images.unsplash.com/photo-1574269909862-7e1d70bb8078?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=600",
+          "https://images.unsplash.com/photo-1540932239986-30128078f3c5?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=600"
+        ],
         views: 123,
         likes: 18,
         saves: 6
@@ -424,6 +514,11 @@ export class MemStorage implements IStorage {
         yearBuilt: 1985,
         imageUrl: "https://images.unsplash.com/photo-1570129477492-45c003edd2be?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=600",
         description: "Classic suburban family home",
+        additionalImages: [
+          "https://images.unsplash.com/photo-1513475382585-d06e58bcb0e0?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=600",
+          "https://images.unsplash.com/photo-1567767292278-a4f21aa2d36e?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=600",
+          "https://images.unsplash.com/photo-1565538810643-b5bdb714032a?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=600"
+        ],
         views: 167,
         likes: 24,
         saves: 10
@@ -444,6 +539,11 @@ export class MemStorage implements IStorage {
         yearBuilt: 2015,
         imageUrl: "https://images.unsplash.com/photo-1497366216548-37526070297c?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=600",
         description: "Premium office space for lease",
+        additionalImages: [
+          "https://images.unsplash.com/photo-1497366811353-6870744d04b2?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=600",
+          "https://images.unsplash.com/photo-1557804506-669a67965ba0?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=600",
+          "https://images.unsplash.com/photo-1542744173-8e7e53415bb0?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=600"
+        ],
         views: 78,
         likes: 9,
         saves: 3
