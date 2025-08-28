@@ -1,6 +1,7 @@
-import { Card, CardContent } from "@/components/ui/card";
+// src/components/property-card.tsx
 import { Property } from "@shared/schema";
-import { MapPin, Bed, Bath, Car, Ruler } from "lucide-react";
+import PropertyMetrics from "./property-metrics";
+import PropertyTypeDropdown from "./property-type-dropdown";
 
 interface PropertyCardProps {
   property: Property;
@@ -8,52 +9,91 @@ interface PropertyCardProps {
   onPropertyTypeFilter?: (type: string) => void;
 }
 
-export default function PropertyCard({ property, isBackground, onPropertyTypeFilter }: PropertyCardProps) {
+const propertyTypeColors = {
+  residential: "border-blue-500 bg-blue-50 text-blue-700",
+  rental: "border-green-500 bg-green-50 text-green-700",
+  commercial: "border-orange-500 bg-orange-50 text-orange-700",
+  lease: "border-purple-500 bg-purple-50 text-purple-700",
+};
+
+export default function PropertyCard({ property, isBackground = false, onPropertyTypeFilter }: PropertyCardProps) {
+  const typeColor =
+    propertyTypeColors[property.propertyType as keyof typeof propertyTypeColors] || propertyTypeColors.residential;
+
   return (
-    <Card className={`w-full max-w-md rounded-2xl shadow-lg overflow-hidden ${isBackground ? 'opacity-80' : ''}`}>
-      <CardContent className="p-0">
-        <div className="relative w-full h-[580px]">
-          <img
-            src={property.imageUrl || "https://picsum.photos/600/400"}
-            alt={property.title}
-            className="w-full h-full object-cover"
-          />
-          
-          {/* Gradient overlay for text readability */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
-          
-          {/* Overlayed content */}
-          <div className="absolute bottom-0 left-0 right-0 p-6 text-white">
-            <div className="space-y-3">
-              <div className="text-2xl font-bold text-primary bg-white/90 text-black px-3 py-1 rounded-lg inline-block">
-                {property.price}
-              </div>
-              
-              <h2 className="text-xl font-bold drop-shadow-lg">{property.title}</h2>
-              
-              <div className="flex items-center text-sm text-white/90 drop-shadow-md">
-                <MapPin className="w-4 h-4 mr-1" />
-                {property.suburb}
-              </div>
-              
-              <div className="flex justify-between text-sm text-white/90 bg-black/30 backdrop-blur-sm rounded-lg p-3">
-                <span className="flex items-center">
-                  <Bed className="w-4 h-4 mr-1" /> {property.bedrooms}
-                </span>
-                <span className="flex items-center">
-                  <Bath className="w-4 h-4 mr-1" /> {property.bathrooms}
-                </span>
-                <span className="flex items-center">
-                  <Car className="w-4 h-4 mr-1" /> {property.carSpaces || 0}
-                </span>
-                <span className="flex items-center">
-                  <Ruler className="w-4 h-4 mr-1" /> {property.floorArea || 0} m²
-                </span>
-              </div>
+    <div className="w-full h-full relative select-none">
+      <img
+        src={
+          property.imageUrl ||
+          "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=600"
+        }
+        alt={property.title}
+        className="w-full h-full object-cover"
+        draggable={false}
+      />
+
+      <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/25 to-transparent" />
+
+      {!isBackground && (
+        <>
+          {/* metrics */}
+          <div className="absolute top-4 right-4">
+            <PropertyMetrics views={property.views || 0} likes={property.likes || 0} saves={property.saves || 0} />
+          </div>
+
+          {/* type filter */}
+          {onPropertyTypeFilter && (
+            <div
+              className="absolute top-4 left-4 z-50"
+              onPointerDown={(e) => e.stopPropagation()}
+              onTouchStart={(e) => e.stopPropagation()}
+            >
+              <PropertyTypeDropdown currentType={property.propertyType} onTypeChange={onPropertyTypeFilter} />
             </div>
+          )}
+        </>
+      )}
+
+      {/* info */}
+      <div className="absolute bottom-5 left-0 right-0 p-6 text-white">
+        <h2 className="text-2xl font-bold leading-tight">{property.title}</h2>
+        <p className="text-white/80 text-sm">{property.address}</p>
+
+        <div className="flex items-center justify-between mt-2">
+          <span className="text-xl font-bold">{property.price}</span>
+          <div className="flex items-center space-x-4 text-sm">
+            {property.bedrooms ? (
+              <span className="flex items-center space-x-1">
+                <i className="fas fa-bed text-blue-200" />
+                <span>{property.bedrooms}</span>
+              </span>
+            ) : null}
+            {property.bathrooms ? (
+              <span className="flex items-center space-x-1">
+                <i className="fas fa-shower text-cyan-200" />
+                <span>{property.bathrooms}</span>
+              </span>
+            ) : null}
+            {property.carSpaces ? (
+              <span className="flex items-center space-x-1">
+                <i className="fas fa-car text-green-200" />
+                <span>{property.carSpaces}</span>
+              </span>
+            ) : null}
+            {property.floorArea ? (
+              <span className="flex items-center space-x-1">
+                <i className="fas fa-home text-yellow-200" />
+                <span>{property.floorArea}m²</span>
+              </span>
+            ) : null}
           </div>
         </div>
-      </CardContent>
-    </Card>
+
+        <div className="flex items-center justify-between text-xs text-white/70 mt-2">
+          <span>{property.suburb}</span>
+          {property.lotNumber && <span>{property.lotNumber}</span>}
+        </div>
+      </div>
+    </div>
   );
 }
