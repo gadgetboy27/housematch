@@ -79,7 +79,7 @@ const SwipeContainer = forwardRef<
     // Use framer motion animate with spring for smoother exit like Tinder
     await Promise.all([
       animate(x, targetX, { type: "spring", stiffness: 220, damping: 18 }),
-      animate(y, targetY, { type: "spring", stiffness: 220, damping: 18 })
+      animate(y, targetY, { type: "spring", stiffness: 220, damping: 18 }),
     ]);
 
     // Advance to next card first
@@ -94,8 +94,7 @@ const SwipeContainer = forwardRef<
       await animate(y, 0, { 
         type: "spring", 
         stiffness: 240,  // More responsive
-        damping: 22,     // Quick settling
-        duration: 0.6    // Snappier timing
+        damping: 22     // Quick settling
       });
     } else {
       // For left/right swipes, just reset to center
@@ -122,8 +121,8 @@ const SwipeContainer = forwardRef<
       handleSwipe("up", "super_like");
     } else {
       // Smooth spring reset using framer motion animate
-      animate(x, 0, { type: "spring", stiffness: 400, damping: 30 });
-      animate(y, 0, { type: "spring", stiffness: 400, damping: 30 });
+      animate(x, 0, { type: "spring", stiffness: 180, damping: 18 });
+      animate(y, 0, { type: "spring", stiffness: 180, damping: 18 });
     }
   };
 
