@@ -83,13 +83,13 @@ const SwipeContainer = forwardRef<
     animate(x, targetX, { type: "spring", stiffness: 300, damping: 25, duration: 0.6 });
     animate(y, targetY, { type: "spring", stiffness: 300, damping: 25, duration: 0.6 });
     
-    // After animation completes, reset for the next swipe
+    // Reset immediately after starting animation for next swipe
     setTimeout(() => {
       x.set(0);
       y.set(0);
       setIsSwipingDisabled(false);
       setHeartTrigger(false);
-    }, 600);
+    }, 100); // Much shorter delay
 
     onSwipe();
     onSwipeAction(direction, action);
@@ -126,7 +126,7 @@ const SwipeContainer = forwardRef<
     <div className="absolute inset-2">
       {properties.slice(currentIndex + 1, currentIndex + 3).map((p, i) => (
         <div
-          key={`${p.id}-${currentIndex}-${i}`}
+          key={`bg-${p.id}-${i}`}
           className="absolute inset-0 rounded-2xl overflow-hidden pointer-events-none"
           style={{ 
             transform: `scale(${0.98 - i * 0.015}) translateY(${(i + 1) * 8}px)`,
@@ -138,6 +138,7 @@ const SwipeContainer = forwardRef<
       ))}
 
       <motion.div
+        key={`main-${currentProperty.id}`}
         className="absolute inset-0 rounded-2xl overflow-hidden cursor-grab active:cursor-grabbing"
         style={{ 
           x, 
