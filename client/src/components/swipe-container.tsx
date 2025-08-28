@@ -3,7 +3,7 @@ import { motion, useMotionValue, useTransform, PanInfo } from "framer-motion";
 import PropertyCard from "./property-card";
 import HeartBubbles from "./heart-bubbles";
 import { Property } from "@shared/schema";
-import { useSwipe } from "@/utils/useSwipe";
+import { useSwipe } from "@/hooks/use-swipe";
 
 interface SwipeContainerProps {
   properties: Property[];
@@ -14,7 +14,7 @@ interface SwipeContainerProps {
 }
 
 const SwipeContainer = forwardRef<
-  { handleSwipe: (direction: "left" | "right" | "up", action: string) => void; setHeartTrigger: (val: boolean) => void },
+  { handleSwipe: (direction: "left" | "right" | "up", action: "like" | "dislike" | "super_like") => void; setHeartTrigger: (val: boolean) => void },
   SwipeContainerProps
 >(
   ({ properties, onPropertySelect, onSwipe, onSwipeAction, onPropertyTypeFilter }, ref) => {
