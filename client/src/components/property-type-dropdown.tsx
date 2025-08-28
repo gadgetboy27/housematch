@@ -73,14 +73,14 @@ export default function PropertyTypeDropdown({ currentType, onTypeChange }: Prop
         onPointerDown={(e) => e.stopPropagation()}
         onTouchStart={(e) => e.stopPropagation()}
         className={`px-3 py-1 rounded-full text-xs font-medium flex items-center gap-1 transition-all duration-300 
-                   backdrop-blur-2xl bg-gradient-to-br from-blue-400/50 via-blue-300/40 to-blue-500/30 border border-blue-300/40 shadow-2xl
-                   hover:from-blue-400/60 hover:via-blue-300/50 hover:to-blue-500/40 hover:shadow-[0_16px_40px_rgba(59,130,246,0.3)] hover:border-blue-300/50 hover:scale-105
-                   active:scale-95 active:from-blue-400/40 active:via-blue-300/30 active:to-blue-500/20 active:shadow-inner
-                   before:absolute before:inset-0 before:rounded-full before:bg-gradient-to-br before:from-blue-200/20 before:via-blue-100/10 before:to-transparent before:pointer-events-none
+                   backdrop-blur-2xl bg-gradient-to-br from-blue-800/60 via-blue-900/50 to-blue-950/40 border border-blue-700/50 shadow-2xl
+                   hover:from-blue-800/70 hover:via-blue-900/60 hover:to-blue-950/50 hover:shadow-[0_16px_40px_rgba(30,58,138,0.4)] hover:border-blue-700/60 hover:scale-105
+                   active:scale-95 active:from-blue-800/50 active:via-blue-900/40 active:to-blue-950/30 active:shadow-inner
+                   before:absolute before:inset-0 before:rounded-full before:bg-gradient-to-br before:from-blue-600/20 before:via-blue-700/10 before:to-transparent before:pointer-events-none
                    relative overflow-hidden`}
         data-testid="button-property-type-dropdown"
         style={{
-          boxShadow: '0 8px 32px rgba(59, 130, 246, 0.2), inset 0 1px 0 rgba(147, 197, 253, 0.3)',
+          boxShadow: '0 8px 32px rgba(30, 58, 138, 0.3), inset 0 1px 0 rgba(96, 165, 250, 0.2)',
         }}
       >
         <span className="text-white font-semibold drop-shadow-sm">
@@ -102,9 +102,9 @@ export default function PropertyTypeDropdown({ currentType, onTypeChange }: Prop
           />
           
           {/* Menu */}
-          <div className="absolute top-full left-0 mt-2 w-48 backdrop-blur-2xl bg-white/40 rounded-xl shadow-2xl border border-white/30 z-20 overflow-hidden"
+          <div className="absolute top-full left-0 mt-2 w-48 backdrop-blur-2xl bg-gradient-to-br from-blue-800/70 via-blue-900/60 to-blue-950/50 rounded-xl shadow-2xl border border-blue-700/50 z-20 overflow-hidden"
                style={{
-                 boxShadow: '0 20px 60px rgba(0,0,0,0.4), 0 8px 20px rgba(255,255,255,0.1), inset 0 2px 4px rgba(255,255,255,0.3)',
+                 boxShadow: '0 20px 60px rgba(0,0,0,0.4), 0 8px 20px rgba(30,58,138,0.2), inset 0 2px 4px rgba(96,165,250,0.15)',
                }}>
             {propertyTypes.map((type) => {
               const isSelected = type.value === currentType;
@@ -116,9 +116,9 @@ export default function PropertyTypeDropdown({ currentType, onTypeChange }: Prop
                   key={type.value}
                   onClick={() => handleTypeSelect(type.value)}
                   className={`w-full px-4 py-2 text-left text-sm transition-all duration-150 
-                             hover:bg-white/25 hover:backdrop-blur-lg
-                             ${isSelected ? 'bg-white/20 font-semibold text-white' : 'text-white/90'}
-                             border-b border-white/10 last:border-b-0`}
+                             hover:bg-blue-700/30 hover:backdrop-blur-lg
+                             ${isSelected ? 'bg-blue-700/40 font-semibold text-white' : 'text-white/90'}
+                             border-b border-blue-600/20 last:border-b-0`}
                   data-testid={`option-property-type-${type.value}`}
                 >
                   <div className="flex justify-between items-center">
