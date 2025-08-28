@@ -82,10 +82,21 @@ const SwipeContainer = forwardRef<
       animate(y, targetY, { type: "spring", stiffness: 300, damping: 25, duration: 0.6 })
     ]);
 
-    // Reset position and advance to next card
-    x.set(0);
-    y.set(0);
+    // Advance to next card first
     setCurrentIndex(prev => (prev + 1) % properties.length);
+    
+    // For superlike (up swipe), animate new card in from above
+    if (direction === "up") {
+      y.set(-window.innerHeight * 0.3); // Start new card from above
+      x.set(0);
+      // Smoothly animate new card down into position
+      await animate(y, 0, { type: "spring", stiffness: 200, damping: 25, duration: 0.8 });
+    } else {
+      // For left/right swipes, just reset to center
+      x.set(0);
+      y.set(0);
+    }
+    
     setIsSwipingDisabled(false);
     setHeartTrigger(false);
 
