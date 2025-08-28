@@ -1,7 +1,8 @@
 import SwipeContainer from "../components/swipe-container";
 import ActionButtons from "../components/action-buttons";
+import PropertyDropdown from "../components/property-dropdown";
 import { Property } from "@shared/schema";
-import { useRef } from "react";
+import { useRef, useState } from "react";
 
 const mockProperties: Property[] = [
   {
@@ -60,6 +61,7 @@ const mockProperties: Property[] = [
 
 export default function Home() {
   const swipeRef = useRef<{ handleSwipe: (direction: "left" | "right" | "up", action: string) => void; setHeartTrigger: (val: boolean) => void }>(null);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
   const handlePropertySelect = (property: Property) => {
     console.log(`Selected property: ${property.title}`);
@@ -89,6 +91,14 @@ export default function Home() {
     swipeRef.current?.setHeartTrigger(true);
   };
 
+  const handlePropertyList = () => {
+    setIsDropdownOpen(true);
+  };
+
+  const handleDropdownClose = () => {
+    setIsDropdownOpen(false);
+  };
+
   return (
     <div className="relative min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 pb-24">
       {/* Swipe Container */}
@@ -110,9 +120,18 @@ export default function Home() {
           onReject={handleReject}
           onLike={handleLike}
           onSuperLike={handleSuperLike}
+          onPropertyList={handlePropertyList}
           onLikeEffect={handleLikeEffect}
         />
       </div>
+
+      {/* Property Dropdown */}
+      <PropertyDropdown
+        properties={mockProperties}
+        isOpen={isDropdownOpen}
+        onClose={handleDropdownClose}
+        onPropertySelect={handlePropertySelect}
+      />
     </div>
   );
 }
