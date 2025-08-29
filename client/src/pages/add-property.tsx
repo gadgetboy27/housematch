@@ -321,6 +321,8 @@ export default function AddProperty() {
       carSpaces: parseInt(data.carSpaces) || 0,
       yearBuilt: parseInt(data.yearBuilt) || new Date().getFullYear(),
       hideCertificateOfTitle: data.hideCertificateOfTitle,
+      // Remove parkingType as it's not in schema
+      parkingType: undefined,
     };
 
     console.log("🔍 Transformed property data:", propertyData);
