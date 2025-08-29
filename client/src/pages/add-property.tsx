@@ -387,6 +387,50 @@ export default function AddProperty() {
     console.log(`Upload progress: ${files.length} files processed`);
   };
 
+  // Price formatting function
+  const formatPrice = (value: string): string => {
+    // Remove all non-numeric characters except decimal point
+    const numericValue = value.replace(/[^\d.]/g, '');
+    
+    // If empty, return empty
+    if (!numericValue) return '';
+    
+    // Convert to number and format with commas
+    const number = parseFloat(numericValue);
+    if (isNaN(number)) return value;
+    
+    // Format with commas and add dollar sign
+    const formatted = number.toLocaleString('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0
+    });
+    
+    return formatted;
+  };
+
+  // Handle price input change with formatting
+  const handlePriceChange = (e: React.ChangeEvent<HTMLInputElement>, onChange: (value: string) => void) => {
+    const inputValue = e.target.value;
+    
+    // If user is typing special text like "Tender", "POA", etc., allow it
+    if (/^[a-zA-Z\s\/]+$/.test(inputValue)) {
+      onChange(inputValue);
+      return;
+    }
+    
+    // If contains numbers, format it
+    if (/\d/.test(inputValue)) {
+      const formatted = formatPrice(inputValue);
+      onChange(formatted);
+      return;
+    }
+    
+    // Otherwise allow the input as-is
+    onChange(inputValue);
+  };
+
   // LINZ Validation Functions
   const validateWithLinz = async (lotNumber: string, address: string, suburb: string) => {
     if (!lotNumber.trim() || !address.trim()) {
@@ -577,8 +621,9 @@ export default function AddProperty() {
                       <FormLabel>Price</FormLabel>
                       <FormControl>
                         <Input 
-                          placeholder="$1,250,000 or $650/week" 
+                          placeholder="$1,250,000 or $650/week or POA" 
                           {...field}
+                          onChange={(e) => handlePriceChange(e, field.onChange)}
                           data-testid="input-price"
                         />
                       </FormControl>
