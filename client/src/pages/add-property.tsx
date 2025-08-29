@@ -473,7 +473,6 @@ export default function AddProperty() {
                   name="address"
                   render={({ field }) => {
                     const fieldStatus = getRequiredFieldStatus('address', field.value);
-                    const validation = fieldValidation.address;
                     
                     return (
                       <FormItem>
@@ -481,39 +480,13 @@ export default function AddProperty() {
                           Address {fieldStatus.isRequired && <span className="text-red-500">*</span>}
                         </FormLabel>
                         <FormControl>
-                          <div className="relative">
-                            <Input 
-                              placeholder="123 Example Street" 
-                              {...field}
-                              onChange={(e) => {
-                                field.onChange(e);
-                                const address = e.target.value;
-                                const suburb = form.getValues('suburb');
-                                if (address.length > 3) {
-                                  validateAddress(address, suburb);
-                                }
-                              }}
-                              className={`pr-10 ${fieldStatus.hasError ? 'border-red-500 focus:ring-red-500' : ''}`}
-                              data-testid="input-address"
-                            />
-                            <div className="absolute right-2 top-1/2 transform -translate-y-1/2 flex items-center">
-                              {validation.loading && (
-                                <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-                              )}
-                              {!validation.loading && validation.verified && (
-                                <div className="text-green-600 font-bold text-lg">✓</div>
-                              )}
-                              {!validation.loading && validation.message && !validation.verified && field.value && (
-                                <div className="text-red-600 font-bold text-lg">✗</div>
-                              )}
-                            </div>
-                          </div>
+                          <Input 
+                            placeholder="123 Example Street, Auckland" 
+                            {...field}
+                            className={fieldStatus.hasError ? 'border-red-500 focus:ring-red-500' : ''}
+                            data-testid="input-address"
+                          />
                         </FormControl>
-                        {validation.message && (
-                          <div className={`text-xs ${validation.verified ? 'text-green-600' : 'text-red-600'}`}>
-                            {validation.message}
-                          </div>
-                        )}
                         <FormMessage />
                       </FormItem>
                     );
@@ -619,47 +592,22 @@ export default function AddProperty() {
                   name="lotNumber"
                   render={({ field }) => {
                     const fieldStatus = getRequiredFieldStatus('lotNumber', field.value);
-                    const validation = fieldValidation.lotNumber;
                     
                     return (
                       <FormItem>
                         <FormLabel className={`flex items-center space-x-1 ${fieldStatus.hasError ? "text-red-600" : ""}`}>
                           <span>Council Lot Number</span>
                           <span className="text-red-500 text-xs">*</span>
+                          <span className="text-xs text-muted-foreground">(Must match official records)</span>
                         </FormLabel>
                         <FormControl>
-                          <div className="relative">
-                            <Input 
-                              placeholder="PT LOT 15 DP 123456" 
-                              {...field}
-                              onChange={(e) => {
-                                field.onChange(e);
-                                const lotNumber = e.target.value;
-                                if (lotNumber.length > 3) {
-                                  validateLotNumber(lotNumber);
-                                }
-                              }}
-                              className={`pr-10 ${fieldStatus.hasError ? 'border-red-500 focus:ring-red-500' : ''}`}
-                              data-testid="input-lot-number"
-                            />
-                            <div className="absolute right-2 top-1/2 transform -translate-y-1/2 flex items-center">
-                              {validation.loading && (
-                                <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-                              )}
-                              {!validation.loading && validation.verified && (
-                                <div className="text-green-600 font-bold text-lg">✓</div>
-                              )}
-                              {!validation.loading && validation.message && !validation.verified && field.value && (
-                                <div className="text-red-600 font-bold text-lg">✗</div>
-                              )}
-                            </div>
-                          </div>
+                          <Input 
+                            placeholder="PT LOT 15 DP 123456" 
+                            {...field}
+                            className={fieldStatus.hasError ? 'border-red-500 focus:ring-red-500' : ''}
+                            data-testid="input-lot-number"
+                          />
                         </FormControl>
-                        {validation.message && (
-                          <div className={`text-xs ${validation.verified ? 'text-green-600' : 'text-red-600'}`}>
-                            {validation.message}
-                          </div>
-                        )}
                         <FormMessage />
                       </FormItem>
                     );
@@ -671,47 +619,22 @@ export default function AddProperty() {
                   name="certificateOfTitle"
                   render={({ field }) => {
                     const fieldStatus = getRequiredFieldStatus('certificateOfTitle', field.value);
-                    const validation = fieldValidation.certificateOfTitle;
                     
                     return (
                       <FormItem>
                         <FormLabel className={`flex items-center space-x-1 ${fieldStatus.hasError ? "text-red-600" : ""}`}>
                           <span>Certificate of Title</span>
                           <span className="text-red-500 text-xs">*</span>
+                          <span className="text-xs text-muted-foreground">(Must match official records)</span>
                         </FormLabel>
                         <FormControl>
-                          <div className="relative">
-                            <Input 
-                              placeholder="CT 456789/123" 
-                              {...field}
-                              onChange={(e) => {
-                                field.onChange(e);
-                                const certificate = e.target.value;
-                                if (certificate.length > 3) {
-                                  validateCertificate(certificate);
-                                }
-                              }}
-                              className={`pr-10 ${fieldStatus.hasError ? 'border-red-500 focus:ring-red-500' : ''}`}
-                              data-testid="input-certificate-title"
-                            />
-                            <div className="absolute right-2 top-1/2 transform -translate-y-1/2 flex items-center">
-                              {validation.loading && (
-                                <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-                              )}
-                              {!validation.loading && validation.verified && (
-                                <div className="text-green-600 font-bold text-lg">✓</div>
-                              )}
-                              {!validation.loading && validation.message && !validation.verified && field.value && (
-                                <div className="text-red-600 font-bold text-lg">✗</div>
-                              )}
-                            </div>
-                          </div>
+                          <Input 
+                            placeholder="CT 456789/123" 
+                            {...field}
+                            className={fieldStatus.hasError ? 'border-red-500 focus:ring-red-500' : ''}
+                            data-testid="input-certificate-title"
+                          />
                         </FormControl>
-                        {validation.message && (
-                          <div className={`text-xs ${validation.verified ? 'text-green-600' : 'text-red-600'}`}>
-                            {validation.message}
-                          </div>
-                        )}
                         <FormMessage />
                       </FormItem>
                     );
@@ -745,46 +668,21 @@ export default function AddProperty() {
                   )}
                 />
 
-                {/* LINZ Validation Status */}
-                {(validationStatus.isValidating || validationStatus.message) && (
-                  <div className={`p-3 rounded-lg border ${
-                    validationStatus.isValidating 
-                      ? 'bg-blue-50 border-blue-200' 
-                      : validationStatus.isValid 
-                        ? 'bg-green-50 border-green-200'
-                        : 'bg-red-50 border-red-200'
-                  }`}>
-                    <div className="flex items-center space-x-2">
-                      {validationStatus.isValidating ? (
-                        <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
-                      ) : (
-                        <i className={`fas ${validationStatus.isValid ? 'fa-check-circle text-green-600' : 'fa-exclamation-triangle text-red-600'}`} />
-                      )}
-                      <span className={`text-sm font-medium ${
-                        validationStatus.isValidating 
-                          ? 'text-blue-700' 
-                          : validationStatus.isValid 
-                            ? 'text-green-700' 
-                            : 'text-red-700'
-                      }`}>
-                        {validationStatus.message}
-                      </span>
-                    </div>
-                    {validationStatus.details && !validationStatus.isValid && (
-                      <div className="mt-2 text-xs text-red-600">
-                        {!validationStatus.details.lotNumberValid && (
-                          <div>• Lot number not found in LINZ records</div>
-                        )}
-                        {!validationStatus.details.addressValid && (
-                          <div>• Address not found in LINZ records</div>
-                        )}
-                        {!validationStatus.details.crossMatch && validationStatus.details.lotNumberValid && validationStatus.details.addressValid && (
-                          <div>• Lot number and address don't match the same property</div>
-                        )}
+                {/* Important Notice */}
+                <div className="p-4 rounded-lg border bg-amber-50 border-amber-200">
+                  <div className="flex items-start space-x-3">
+                    <div className="text-amber-600 text-lg">⚠️</div>
+                    <div className="flex-1">
+                      <div className="font-medium text-amber-800 text-sm mb-1">
+                        Property Information Accuracy
                       </div>
-                    )}
+                      <div className="text-xs text-amber-700">
+                        Please ensure all property details are accurate and match official records. 
+                        Incorrect information may cause issues for potential buyers and could affect the listing.
+                      </div>
+                    </div>
                   </div>
-                )}
+                </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <FormField
