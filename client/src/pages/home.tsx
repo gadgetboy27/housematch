@@ -65,6 +65,7 @@ export default function Home() {
           onSwipe={handleSwipe}
           onSwipeAction={handleSwipeAction}
           onPropertyTypeFilter={handlePropertyTypeFilter}
+          selectedPropertyType={selectedPropertyType}
         />
       </div>
 

@@ -11,6 +11,7 @@ interface PropertyCardProps {
   property: Property;
   isBackground?: boolean;
   onPropertyTypeFilter?: (type: string) => void;
+  selectedPropertyType?: string;
 }
 
 const propertyTypeColors = {
@@ -20,7 +21,7 @@ const propertyTypeColors = {
   lease: "border-purple-500 bg-purple-50 text-purple-700",
 };
 
-export default function PropertyCard({ property, isBackground = false, onPropertyTypeFilter }: PropertyCardProps) {
+export default function PropertyCard({ property, isBackground = false, onPropertyTypeFilter, selectedPropertyType }: PropertyCardProps) {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [showTutorial, setShowTutorial] = useState(false);
   const [isFlipped, setIsFlipped] = useState(false);
@@ -167,7 +168,7 @@ export default function PropertyCard({ property, isBackground = false, onPropert
                 onPointerDown={(e) => e.stopPropagation()}
                 onTouchStart={(e) => e.stopPropagation()}
               >
-                <PropertyTypeDropdown currentType={property.propertyType} onTypeChange={onPropertyTypeFilter} />
+                <PropertyTypeDropdown currentType={selectedPropertyType || property.propertyType} onTypeChange={onPropertyTypeFilter} />
               </div>
             )}
             </>

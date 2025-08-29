@@ -13,6 +13,7 @@ interface SwipeContainerProps {
   onSwipe: () => void;
   onSwipeAction: (direction: "left" | "right" | "up", action: string) => void;
   onPropertyTypeFilter?: (type: string) => void;
+  selectedPropertyType?: string;
 }
 
 const SwipeContainer = forwardRef<
@@ -23,6 +24,7 @@ const SwipeContainer = forwardRef<
   onSwipe,
   onSwipeAction,
   onPropertyTypeFilter,
+  selectedPropertyType,
 }, ref) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isSwipingDisabled, setIsSwipingDisabled] = useState(false);
@@ -206,7 +208,7 @@ const SwipeContainer = forwardRef<
           mass: 0.8       // Lighter feel
         }}
       >
-        <PropertyCard property={currentProperty} onPropertyTypeFilter={onPropertyTypeFilter} />
+        <PropertyCard property={currentProperty} onPropertyTypeFilter={onPropertyTypeFilter} selectedPropertyType={selectedPropertyType} />
 
         <motion.div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none z-30" style={{ opacity: likeOpacity }}>
           <div className="text-green-500 text-6xl font-bold transform -rotate-12 drop-shadow-lg">LIKE</div>
