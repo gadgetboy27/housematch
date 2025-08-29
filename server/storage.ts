@@ -1,5 +1,7 @@
-import { type User, type InsertUser, type Property, type InsertProperty, type UserSwipe, type InsertUserSwipe, type UserPreferences, type InsertUserPreferences, type PurchaseOrder, type InsertPurchaseOrder } from "@shared/schema";
+import { type User, type InsertUser, type Property, type InsertProperty, type UserSwipe, type InsertUserSwipe, type UserPreferences, type InsertUserPreferences, type PurchaseOrder, type InsertPurchaseOrder, users, properties, userSwipes, userPreferences, purchaseOrders } from "@shared/schema";
 import { randomUUID } from "crypto";
+import { db } from "./db";
+import { eq, and } from "drizzle-orm";
 
 export interface IStorage {
   // Users
@@ -49,6 +51,7 @@ export class MemStorage implements IStorage {
   private seedProperties() {
     const mockProperties = [
       {
+        userId: "demo-user",
         title: "Modern Family Home",
         address: "123 Queen Street, Auckland Central",
         suburb: "Ponsonby",
@@ -76,6 +79,7 @@ export class MemStorage implements IStorage {
         selfDeclaration: true
       },
       {
+        userId: "demo-user",
         title: "Luxury Apartment",
         address: "89 The Terrace, Wellington Central",
         suburb: "Wellington Central",
@@ -709,4 +713,106 @@ export class MemStorage implements IStorage {
   }
 }
 
-export const storage = new MemStorage();
+export class DatabaseStorage implements IStorage {
+  async getUser(id: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user || undefined;
+  }
+
+  async getUserByUsername(username: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.username, username));
+    return user || undefined;
+  }
+
+  async createUser(insertUser: InsertUser): Promise<User> {
+    const [user] = await db.insert(users).values(insertUser).returning();
+    return user;
+  }
+
+  async getProperty(id: string): Promise<Property | undefined> {
+    const [property] = await db.select().from(properties).where(eq(properties.id, id));
+    return property || undefined;
+  }
+
+  async getAllProperties(): Promise<Property[]> {
+    return await db.select().from(properties).where(eq(properties.isActive, true));
+  }
+
+  async getPropertiesByType(type: string): Promise<Property[]> {
+    return await db.select().from(properties).where(and(eq(properties.propertyType, type), eq(properties.isActive, true)));
+  }
+
+  async createProperty(insertProperty: InsertProperty): Promise<Property> {
+    const [property] = await db.insert(properties).values([insertProperty]).returning();
+    return property;
+  }
+
+  async updatePropertyMetrics(id: string, views?: number, likes?: number, saves?: number): Promise<void> {
+    const updates: any = {};
+    if (views !== undefined) updates.views = views;
+    if (likes !== undefined) updates.likes = likes;
+    if (saves !== undefined) updates.saves = saves;
+    
+    if (Object.keys(updates).length > 0) {
+      await db.update(properties).set(updates).where(eq(properties.id, id));
+    }
+  }
+
+  async searchProperties(query: { suburb?: string; propertyType?: string; minPrice?: number; maxPrice?: number }): Promise<Property[]> {
+    // For now, return all properties - we can add filtering later
+    return await this.getAllProperties();
+  }
+
+  async createUserSwipe(insertSwipe: InsertUserSwipe): Promise<UserSwipe> {
+    const [swipe] = await db.insert(userSwipes).values(insertSwipe).returning();
+    return swipe;
+  }
+
+  async getUserSwipes(userId: string): Promise<UserSwipe[]> {
+    return await db.select().from(userSwipes).where(eq(userSwipes.userId, userId));
+  }
+
+  async getUserSwipeCount(userId: string): Promise<number> {
+    const swipes = await this.getUserSwipes(userId);
+    return swipes.length;
+  }
+
+  async getUserPreferences(userId: string): Promise<UserPreferences | undefined> {
+    const [prefs] = await db.select().from(userPreferences).where(eq(userPreferences.userId, userId));
+    return prefs || undefined;
+  }
+
+  async createOrUpdateUserPreferences(insertPreferences: InsertUserPreferences): Promise<UserPreferences> {
+    const existing = await this.getUserPreferences(insertPreferences.userId!);
+    
+    if (existing) {
+      const [updated] = await db.update(userPreferences)
+        .set({ ...insertPreferences, updatedAt: new Date() })
+        .where(eq(userPreferences.userId, insertPreferences.userId!))
+        .returning();
+      return updated;
+    } else {
+      const [created] = await db.insert(userPreferences).values(insertPreferences).returning();
+      return created;
+    }
+  }
+
+  async createPurchaseOrder(insertOrder: InsertPurchaseOrder): Promise<PurchaseOrder> {
+    const [order] = await db.insert(purchaseOrders).values(insertOrder).returning();
+    return order;
+  }
+
+  async getUserPurchaseOrders(userId: string): Promise<PurchaseOrder[]> {
+    return await db.select().from(purchaseOrders).where(eq(purchaseOrders.userId, userId));
+  }
+
+  async updatePurchaseOrderStatus(id: string, status: string): Promise<void> {
+    const updates: any = { status };
+    if (status === 'completed') {
+      updates.completedAt = new Date();
+    }
+    await db.update(purchaseOrders).set(updates).where(eq(purchaseOrders.id, id));
+  }
+}
+
+export const storage = new DatabaseStorage();
