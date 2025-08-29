@@ -31,12 +31,30 @@ const SwipeContainer = forwardRef<
   const [heartTrigger, setHeartTrigger] = useState(false);
   const [propertyHistory, setPropertyHistory] = useState<number[]>([]);
 
-  // Reset index when properties change (e.g., due to filtering)
+  // Create storage key based on property type filter
+  const getStorageKey = () => `property-position-${selectedPropertyType || 'all'}`;
+
+  // Save current index to localStorage whenever it changes
   useEffect(() => {
-    setCurrentIndex(0);
+    if (currentIndex >= 0 && properties.length > 0) {
+      localStorage.setItem(getStorageKey(), currentIndex.toString());
+    }
+  }, [currentIndex, selectedPropertyType, properties.length]);
+
+  // Restore index when properties change or component mounts
+  useEffect(() => {
+    const savedIndex = localStorage.getItem(getStorageKey());
+    if (savedIndex && properties.length > 0) {
+      const parsedIndex = parseInt(savedIndex, 10);
+      // Make sure saved index is within bounds
+      const validIndex = Math.min(parsedIndex, properties.length - 1);
+      setCurrentIndex(validIndex);
+    } else {
+      setCurrentIndex(0);
+    }
     x.set(0);
     y.set(0);
-  }, [properties]);
+  }, [properties, selectedPropertyType]);
 
   const x = useMotionValue(0);
   const y = useMotionValue(0);
@@ -94,7 +112,8 @@ const SwipeContainer = forwardRef<
     setPropertyHistory(prev => [...prev, currentIndex]);
     
     // Advance to next card first
-    setCurrentIndex(prev => (prev + 1) % properties.length);
+    const nextIndex = (currentIndex + 1) % properties.length;
+    setCurrentIndex(nextIndex);
     
     // For superlike (up swipe), animate new card in from above
     if (direction === "up") {
