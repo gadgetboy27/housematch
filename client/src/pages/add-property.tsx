@@ -47,6 +47,12 @@ export default function AddProperty() {
     message: string;
     details?: any;
   }>({ isValidating: false, isValid: false, message: '' });
+  
+  const [fieldValidation, setFieldValidation] = useState({
+    lotNumber: { verified: false, loading: false, message: "" },
+    address: { verified: false, loading: false, message: "" },
+    certificateOfTitle: { verified: false, loading: false, message: "" }
+  });
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -124,6 +130,132 @@ export default function AddProperty() {
       });
     },
   });
+
+  // Individual field validation functions
+  const validateLotNumber = async (lotNumber: string) => {
+    if (!lotNumber.trim()) {
+      setFieldValidation(prev => ({
+        ...prev,
+        lotNumber: { verified: false, loading: false, message: "" }
+      }));
+      return;
+    }
+
+    setFieldValidation(prev => ({
+      ...prev,
+      lotNumber: { verified: false, loading: true, message: "Validating..." }
+    }));
+
+    try {
+      const response = await fetch('/api/validate-lot-number', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ lotNumber })
+      });
+      const result = await response.json();
+      
+      setFieldValidation(prev => ({
+        ...prev,
+        lotNumber: { 
+          verified: result.valid, 
+          loading: false, 
+          message: result.message || (result.valid ? "Verified" : "Not found") 
+        }
+      }));
+    } catch (error) {
+      setFieldValidation(prev => ({
+        ...prev,
+        lotNumber: { verified: false, loading: false, message: "Validation failed" }
+      }));
+    }
+  };
+
+  const validateAddress = async (address: string, suburb: string) => {
+    if (!address.trim()) {
+      setFieldValidation(prev => ({
+        ...prev,
+        address: { verified: false, loading: false, message: "" }
+      }));
+      return;
+    }
+
+    setFieldValidation(prev => ({
+      ...prev,
+      address: { verified: false, loading: true, message: "Validating..." }
+    }));
+
+    try {
+      const response = await fetch('/api/validate-address', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ address, suburb })
+      });
+      const result = await response.json();
+      
+      setFieldValidation(prev => ({
+        ...prev,
+        address: { 
+          verified: result.valid, 
+          loading: false, 
+          message: result.message || (result.valid ? "Valid NZ address" : "Invalid format") 
+        }
+      }));
+    } catch (error) {
+      setFieldValidation(prev => ({
+        ...prev,
+        address: { verified: false, loading: false, message: "Validation failed" }
+      }));
+    }
+  };
+
+  const validateCertificate = async (certificate: string) => {
+    if (!certificate.trim()) {
+      setFieldValidation(prev => ({
+        ...prev,
+        certificateOfTitle: { verified: false, loading: false, message: "" }
+      }));
+      return;
+    }
+
+    setFieldValidation(prev => ({
+      ...prev,
+      certificateOfTitle: { verified: false, loading: true, message: "Validating..." }
+    }));
+
+    try {
+      const response = await fetch('/api/validate-certificate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ certificate })
+      });
+      const result = await response.json();
+      
+      setFieldValidation(prev => ({
+        ...prev,
+        certificateOfTitle: { 
+          verified: result.valid, 
+          loading: false, 
+          message: result.message || (result.valid ? "Certificate found" : "Not found") 
+        }
+      }));
+    } catch (error) {
+      setFieldValidation(prev => ({
+        ...prev,
+        certificateOfTitle: { verified: false, loading: false, message: "Validation failed" }
+      }));
+    }
+  };
+
+  // Helper function to check if required fields are filled
+  const getRequiredFieldStatus = (fieldName: string, value: any) => {
+    const requiredFields = ['title', 'address', 'suburb', 'price', 'lotNumber', 'certificateOfTitle'];
+    const isEmpty = !value || (typeof value === 'string' && !value.trim());
+    return {
+      isRequired: requiredFields.includes(fieldName),
+      isEmpty,
+      hasError: requiredFields.includes(fieldName) && isEmpty
+    };
+  };
 
   const onSubmit = (data: any) => {
     // Transform data to match backend schema
@@ -339,19 +471,53 @@ export default function AddProperty() {
                 <FormField
                   control={form.control}
                   name="address"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Address</FormLabel>
-                      <FormControl>
-                        <Input 
-                          placeholder="123 Example Street" 
-                          {...field}
-                          data-testid="input-address"
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
+                  render={({ field }) => {
+                    const fieldStatus = getRequiredFieldStatus('address', field.value);
+                    const validation = fieldValidation.address;
+                    
+                    return (
+                      <FormItem>
+                        <FormLabel className={fieldStatus.hasError ? "text-red-600" : ""}>
+                          Address {fieldStatus.isRequired && <span className="text-red-500">*</span>}
+                        </FormLabel>
+                        <FormControl>
+                          <div className="relative">
+                            <Input 
+                              placeholder="123 Example Street" 
+                              {...field}
+                              onChange={(e) => {
+                                field.onChange(e);
+                                const address = e.target.value;
+                                const suburb = form.getValues('suburb');
+                                if (address.length > 3) {
+                                  validateAddress(address, suburb);
+                                }
+                              }}
+                              className={`pr-10 ${fieldStatus.hasError ? 'border-red-500 focus:ring-red-500' : ''}`}
+                              data-testid="input-address"
+                            />
+                            <div className="absolute right-2 top-1/2 transform -translate-y-1/2 flex items-center">
+                              {validation.loading && (
+                                <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                              )}
+                              {!validation.loading && validation.verified && (
+                                <div className="text-green-600 font-bold text-lg">✓</div>
+                              )}
+                              {!validation.loading && validation.message && !validation.verified && field.value && (
+                                <div className="text-red-600 font-bold text-lg">✗</div>
+                              )}
+                            </div>
+                          </div>
+                        </FormControl>
+                        {validation.message && (
+                          <div className={`text-xs ${validation.verified ? 'text-green-600' : 'text-red-600'}`}>
+                            {validation.message}
+                          </div>
+                        )}
+                        <FormMessage />
+                      </FormItem>
+                    );
+                  }}
                 />
 
                 <FormField
@@ -451,45 +617,105 @@ export default function AddProperty() {
                 <FormField
                   control={form.control}
                   name="lotNumber"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="flex items-center space-x-1">
-                        <span>Council Lot Number</span>
-                        <span className="text-red-500 text-xs">*</span>
-                        <span className="text-xs text-muted-foreground">(Required - must match LINZ records)</span>
-                      </FormLabel>
-                      <FormControl>
-                        <Input 
-                          placeholder="PT LOT 15 DP 123456" 
-                          {...field}
-                          data-testid="input-lot-number"
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
+                  render={({ field }) => {
+                    const fieldStatus = getRequiredFieldStatus('lotNumber', field.value);
+                    const validation = fieldValidation.lotNumber;
+                    
+                    return (
+                      <FormItem>
+                        <FormLabel className={`flex items-center space-x-1 ${fieldStatus.hasError ? "text-red-600" : ""}`}>
+                          <span>Council Lot Number</span>
+                          <span className="text-red-500 text-xs">*</span>
+                        </FormLabel>
+                        <FormControl>
+                          <div className="relative">
+                            <Input 
+                              placeholder="PT LOT 15 DP 123456" 
+                              {...field}
+                              onChange={(e) => {
+                                field.onChange(e);
+                                const lotNumber = e.target.value;
+                                if (lotNumber.length > 3) {
+                                  validateLotNumber(lotNumber);
+                                }
+                              }}
+                              className={`pr-10 ${fieldStatus.hasError ? 'border-red-500 focus:ring-red-500' : ''}`}
+                              data-testid="input-lot-number"
+                            />
+                            <div className="absolute right-2 top-1/2 transform -translate-y-1/2 flex items-center">
+                              {validation.loading && (
+                                <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                              )}
+                              {!validation.loading && validation.verified && (
+                                <div className="text-green-600 font-bold text-lg">✓</div>
+                              )}
+                              {!validation.loading && validation.message && !validation.verified && field.value && (
+                                <div className="text-red-600 font-bold text-lg">✗</div>
+                              )}
+                            </div>
+                          </div>
+                        </FormControl>
+                        {validation.message && (
+                          <div className={`text-xs ${validation.verified ? 'text-green-600' : 'text-red-600'}`}>
+                            {validation.message}
+                          </div>
+                        )}
+                        <FormMessage />
+                      </FormItem>
+                    );
+                  }}
                 />
 
                 <FormField
                   control={form.control}
                   name="certificateOfTitle"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="flex items-center space-x-1">
-                        <span>Certificate of Title</span>
-                        <span className="text-red-500 text-xs">*</span>
-                        <span className="text-xs text-muted-foreground">(Required - must match LINZ records)</span>
-                      </FormLabel>
-                      <FormControl>
-                        <Input 
-                          placeholder="CT 456789/123" 
-                          {...field}
-                          data-testid="input-certificate-title"
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
+                  render={({ field }) => {
+                    const fieldStatus = getRequiredFieldStatus('certificateOfTitle', field.value);
+                    const validation = fieldValidation.certificateOfTitle;
+                    
+                    return (
+                      <FormItem>
+                        <FormLabel className={`flex items-center space-x-1 ${fieldStatus.hasError ? "text-red-600" : ""}`}>
+                          <span>Certificate of Title</span>
+                          <span className="text-red-500 text-xs">*</span>
+                        </FormLabel>
+                        <FormControl>
+                          <div className="relative">
+                            <Input 
+                              placeholder="CT 456789/123" 
+                              {...field}
+                              onChange={(e) => {
+                                field.onChange(e);
+                                const certificate = e.target.value;
+                                if (certificate.length > 3) {
+                                  validateCertificate(certificate);
+                                }
+                              }}
+                              className={`pr-10 ${fieldStatus.hasError ? 'border-red-500 focus:ring-red-500' : ''}`}
+                              data-testid="input-certificate-title"
+                            />
+                            <div className="absolute right-2 top-1/2 transform -translate-y-1/2 flex items-center">
+                              {validation.loading && (
+                                <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                              )}
+                              {!validation.loading && validation.verified && (
+                                <div className="text-green-600 font-bold text-lg">✓</div>
+                              )}
+                              {!validation.loading && validation.message && !validation.verified && field.value && (
+                                <div className="text-red-600 font-bold text-lg">✗</div>
+                              )}
+                            </div>
+                          </div>
+                        </FormControl>
+                        {validation.message && (
+                          <div className={`text-xs ${validation.verified ? 'text-green-600' : 'text-red-600'}`}>
+                            {validation.message}
+                          </div>
+                        )}
+                        <FormMessage />
+                      </FormItem>
+                    );
+                  }}
                 />
 
                 <FormField

@@ -333,6 +333,89 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Individual field validation routes
+  app.post("/api/validate-lot-number", async (req, res) => {
+    try {
+      const { lotNumber } = req.body;
+      
+      if (!lotNumber) {
+        return res.status(400).json({ 
+          message: "Lot number is required" 
+        });
+      }
+
+      const linzService = new LINZValidationService();
+      const validation = await linzService.validateLotNumber(lotNumber);
+      
+      res.json({
+        valid: validation.isValid,
+        message: validation.isValid 
+          ? `Lot number verified in LINZ database` 
+          : `Lot number not found in LINZ database`,
+        suggestions: validation.suggestions || []
+      });
+    } catch (error) {
+      console.error('Lot number validation error:', error);
+      res.status(500).json({ 
+        message: "Validation service temporarily unavailable" 
+      });
+    }
+  });
+
+  app.post("/api/validate-address", async (req, res) => {
+    try {
+      const { address, suburb } = req.body;
+      
+      if (!address) {
+        return res.status(400).json({ 
+          message: "Address is required" 
+        });
+      }
+
+      const linzService = new LINZValidationService();
+      const validation = await linzService.validateNZAddress(address, suburb);
+      
+      res.json({
+        valid: validation.isValid,
+        message: validation.isValid 
+          ? `Valid New Zealand address format` 
+          : validation.error || `Invalid address format`,
+      });
+    } catch (error) {
+      console.error('Address validation error:', error);
+      res.status(500).json({ 
+        message: "Validation service temporarily unavailable" 
+      });
+    }
+  });
+
+  app.post("/api/validate-certificate", async (req, res) => {
+    try {
+      const { certificate } = req.body;
+      
+      if (!certificate) {
+        return res.status(400).json({ 
+          message: "Certificate is required" 
+        });
+      }
+
+      // Basic certificate format validation
+      const isValid = /^CT\s+\d+\/\d+$/i.test(certificate.trim());
+      
+      res.json({
+        valid: isValid,
+        message: isValid 
+          ? `Valid certificate format` 
+          : `Invalid certificate format (should be CT XXXXXX/XXX)`,
+      });
+    } catch (error) {
+      console.error('Certificate validation error:', error);
+      res.status(500).json({ 
+        message: "Validation service temporarily unavailable" 
+      });
+    }
+  });
+
   app.get("/api/property-suggestions", async (req, res) => {
     try {
       const { q } = req.query;
