@@ -71,8 +71,8 @@ export default function PropertyCard({ property, isBackground = false, onPropert
     }
   };
 
-  const handleCardTap = (e: React.MouseEvent | React.TouchEvent) => {
-    // Only flip if not tapping on image navigation zones or other interactive elements
+  const handleCardDoubleTap = (e: React.MouseEvent | React.TouchEvent) => {
+    // Only flip if not double-tapping on image navigation zones or other interactive elements
     const target = e.target as HTMLElement;
     if (!target.closest('[data-testid^="tap-zone-"]') && !target.closest('.z-50')) {
       setIsFlipped(!isFlipped);
@@ -83,8 +83,7 @@ export default function PropertyCard({ property, isBackground = false, onPropert
     <div 
       className="w-full h-full relative select-none cursor-pointer"
       style={{ perspective: "1000px" }}
-      onClick={handleCardTap}
-      onTouchEnd={handleCardTap}
+      onDoubleClick={handleCardDoubleTap}
     >
       <motion.div
         className="w-full h-full relative"
