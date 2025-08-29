@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -108,6 +108,20 @@ export default function AddProperty() {
       selfDeclaration: false,
     },
   });
+
+  // Sync selectedPropertyType with form
+  useEffect(() => {
+    if (selectedPropertyType) {
+      form.setValue("propertyType", selectedPropertyType);
+    }
+  }, [selectedPropertyType, form]);
+
+  // Sync uploadedImages with form
+  useEffect(() => {
+    if (uploadedImages.length > 0) {
+      form.setValue("imageUrl", uploadedImages[0]);
+    }
+  }, [uploadedImages, form]);
 
   // Check if all required fields are filled
   const watchedFields = form.watch();
