@@ -235,23 +235,7 @@ export default function PropertyCard({ property, isBackground = false, onPropert
             transform: "rotateY(180deg)"
           }}
         >
-          <div className="h-full overflow-y-auto">
-            {/* Close Button */}
-            <div className="sticky top-0 z-10 flex justify-end p-4 bg-gradient-to-b from-gray-900/90 to-transparent">
-              <button 
-                className="text-gray-400 hover:text-white p-2 bg-gray-800/80 rounded-full backdrop-blur-sm"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setLocation("/");
-                }}
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-
-            <div className="px-6 pb-6 space-y-4">
+          <div className="h-full overflow-y-auto p-6 space-y-4">
               {/* Main Image */}
               <div className="space-y-3">
                 <img
@@ -372,12 +356,6 @@ export default function PropertyCard({ property, isBackground = false, onPropert
                   <span className="text-xs text-blue-400 font-medium">Property Details Verified</span>
                 </div>
               )}
-
-              {/* Tap to flip back hint */}
-              <div className="pt-4 text-center">
-                <div className="text-xs text-gray-500">Tap to flip back</div>
-              </div>
-              </div>
             </div>
           </div>
         </motion.div>
