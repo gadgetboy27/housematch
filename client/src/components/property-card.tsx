@@ -227,34 +227,67 @@ export default function PropertyCard({ property, isBackground = false, onPropert
 
         {/* Back Side - Property Details */}
         <motion.div
-          className="absolute inset-0 w-full h-full bg-gradient-to-br from-gray-900 to-gray-800 p-6 text-white overflow-y-auto"
+          className="absolute inset-0 w-full h-full bg-gradient-to-br from-gray-900 to-gray-800 text-white"
           style={{ 
             backfaceVisibility: "hidden",
             transform: "rotateY(180deg)"
           }}
         >
-          <div className="h-full flex flex-col">
-            {/* Header with flip back button */}
-            <div className="flex items-start justify-between mb-4">
-              <div>
-                <h2 className="text-xl font-bold mb-1">{property.title}</h2>
-                <p className="text-gray-300 text-sm">{property.address}</p>
-              </div>
+          <div className="h-full overflow-y-auto">
+            {/* Close Button */}
+            <div className="sticky top-0 z-10 flex justify-end p-4 bg-gradient-to-b from-gray-900/90 to-transparent">
               <button 
-                className="text-gray-400 hover:text-white p-2 -mr-2 -mt-2"
+                className="text-gray-400 hover:text-white p-2 bg-gray-800/80 rounded-full backdrop-blur-sm"
                 onClick={(e) => {
                   e.stopPropagation();
                   setIsFlipped(false);
                 }}
               >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
             </div>
 
-            {/* Property Details */}
-            <div className="flex-1 space-y-4">
+            <div className="px-6 pb-6 space-y-4">
+              {/* Main Image */}
+              <div className="space-y-3">
+                <img
+                  src={currentImage}
+                  alt={`${property.title} - Main view`}
+                  className="w-full h-48 object-cover rounded-lg"
+                />
+                
+                {/* Thumbnail Images */}
+                {hasMultipleImages && (
+                  <div className="flex gap-2 overflow-x-auto pb-2">
+                    {allImages.map((image, index) => (
+                      <img
+                        key={index}
+                        src={image}
+                        alt={`${property.title} - View ${index + 1}`}
+                        className={`w-16 h-16 object-cover rounded cursor-pointer flex-shrink-0 border-2 transition-all ${
+                          index === currentImageIndex ? 'border-white' : 'border-transparent opacity-70 hover:opacity-100'
+                        }`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setCurrentImageIndex(index);
+                        }}
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Title and Address */}
+              <div className="border-b border-gray-700 pb-4">
+                <h2 className="text-xl font-bold mb-1">{property.title}</h2>
+                <p className="text-gray-300 text-sm">{property.address}</p>
+                <p className="text-gray-400 text-sm">{property.suburb}</p>
+              </div>
+
+              {/* Property Details */}
+              <div className="space-y-4">
               {/* Price */}
               <div className="bg-gray-800/50 rounded-lg p-3">
                 <div className="text-gray-400 text-xs uppercase tracking-wide mb-1">Price</div>
@@ -339,8 +372,9 @@ export default function PropertyCard({ property, isBackground = false, onPropert
               )}
 
               {/* Tap to flip back hint */}
-              <div className="mt-auto pt-4 text-center">
+              <div className="pt-4 text-center">
                 <div className="text-xs text-gray-500">Tap to flip back</div>
+              </div>
               </div>
             </div>
           </div>
