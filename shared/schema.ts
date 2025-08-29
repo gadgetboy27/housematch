@@ -4,7 +4,7 @@ import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
 export const users = pgTable("users", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  id: varchar("id").primaryKey(),  // Removed default for manual ID setting
   username: text("username").notNull().unique(),
   password: text("password").notNull(),
   createdAt: timestamp("created_at").defaultNow(),
@@ -74,12 +74,14 @@ export const purchaseOrders = pgTable("purchase_orders", {
 });
 
 export const insertUserSchema = createInsertSchema(users).pick({
+  id: true,
   username: true,
   password: true,
 });
 
 export const insertPropertySchema = createInsertSchema(properties).omit({
   id: true,
+  userId: true,  // Added - server adds this after auth
   views: true,
   likes: true,
   saves: true,
