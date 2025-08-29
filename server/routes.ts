@@ -287,8 +287,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const linzService = new LINZValidationService();
       const validation = await linzService.crossValidateProperty(lotNumber, address, suburb);
       
+      // Generate more nuanced message based on what we could verify
+      let message = '';
+      let valid = false;
+      
+      if (validation.lotValid.isValid && validation.addressValid.isValid) {
+        if (validation.crossMatch) {
+          message = 'Property details verified with LINZ records';
+          valid = true;
+        } else {
+          message = 'Lot number and address exist in LINZ but unable to confirm they match the same property';
+          valid = false; // Still block submission for safety
+        }
+      } else if (validation.lotValid.isValid) {
+        message = 'Lot number verified in LINZ records. Address verification unavailable';
+        valid = false; // Block submission but softer message
+      } else if (validation.addressValid.isValid) {
+        message = 'Address found in records but lot number verification failed';
+        valid = false;
+      } else {
+        message = 'Unable to verify property details in LINZ database';
+        valid = false;
+      }
+
       res.json({
-        valid: validation.overallValid,
+        valid,
         details: {
           lotNumberValid: validation.lotValid.isValid,
           addressValid: validation.addressValid.isValid,
@@ -300,9 +323,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             addressSuggestions: validation.addressValid.suggestions || []
           }
         },
-        message: validation.overallValid 
-          ? "Property details match LINZ records" 
-          : "Property details do not match LINZ records - please verify and correct"
+        message
       });
     } catch (error) {
       console.error('Property validation error:', error);

@@ -31,7 +31,7 @@ export class LINZValidationService {
   }
 
   /**
-   * Validate lot number against LINZ records
+   * Validate lot number exists in LINZ records (without address requirement)
    */
   async validateLotNumber(lotNumber: string): Promise<ValidationResult> {
     if (!this.apiKey) {
@@ -42,8 +42,10 @@ export class LINZValidationService {
     }
 
     try {
-      // Clean up lot number format for searching
+      // Clean up lot number format for searching - try both formats
       const cleanLotNumber = lotNumber.trim().toUpperCase();
+      // Remove PT prefix if present for broader search
+      const searchLotNumber = cleanLotNumber.replace(/^PT\s+/, '');
       
       // LINZ WFS query for property titles by legal description
       const wfsUrl = `${this.baseUrl};key=${this.apiKey}/wfs`;
@@ -52,7 +54,7 @@ export class LINZValidationService {
         version: '2.0.0',
         request: 'GetFeature',
         typeNames: 'layer-50772', // NZ Primary Parcels layer
-        cql_filter: `appellation LIKE '%${cleanLotNumber}%'`,
+        cql_filter: `appellation LIKE '%${searchLotNumber}%' OR appellation LIKE '%${cleanLotNumber}%'`,
         outputformat: 'json',
         count: '10'
       });
@@ -68,11 +70,12 @@ export class LINZValidationService {
       if (data.features && data.features.length > 0) {
         // Find exact or close matches
         const exactMatch = data.features.find(feature => 
+          feature.properties.appellation?.toUpperCase().includes(searchLotNumber) ||
           feature.properties.appellation?.toUpperCase().includes(cleanLotNumber)
         );
 
         return {
-          isValid: !!exactMatch,
+          isValid: true, // Lot number exists in LINZ
           matchedRecord: exactMatch || data.features[0],
           suggestions: data.features.slice(0, 3).map(f => f.properties.appellation)
         };
@@ -80,7 +83,7 @@ export class LINZValidationService {
 
       return {
         isValid: false,
-        error: 'Lot number not found in LINZ records'
+        error: 'Lot number not found in LINZ database'
       };
 
     } catch (error) {
