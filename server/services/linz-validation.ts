@@ -3,11 +3,11 @@ import fetch from 'node-fetch';
 interface LINZPropertyData {
   id: string;
   properties: {
-    title_no: string;
-    legal_desc_1: string;
+    titles: string;
+    appellation: string;
     land_district: string;
-    status: string;
-    type: string;
+    parcel_intent: string;
+    topology_type: string;
   };
   geometry?: any;
 }
@@ -46,13 +46,14 @@ export class LINZValidationService {
       const cleanLotNumber = lotNumber.trim().toUpperCase();
       
       // LINZ WFS query for property titles by legal description
-      const wfsUrl = `${this.baseUrl}/wfs`;
+      const wfsUrl = `${this.baseUrl};key=${this.apiKey}/wfs`;
       const params = new URLSearchParams({
-        key: this.apiKey,
-        REQUEST: 'GetFeature',
-        typeNames: 'layer-50804', // NZ Property Titles layer
-        cql_filter: `legal_desc_1 LIKE '%${cleanLotNumber}%'`,
-        outputFormat: 'json',
+        service: 'WFS',
+        version: '2.0.0',
+        request: 'GetFeature',
+        typeNames: 'layer-50772', // NZ Primary Parcels layer
+        cql_filter: `appellation LIKE '%${cleanLotNumber}%'`,
+        outputformat: 'json',
         count: '10'
       });
 
@@ -67,13 +68,13 @@ export class LINZValidationService {
       if (data.features && data.features.length > 0) {
         // Find exact or close matches
         const exactMatch = data.features.find(feature => 
-          feature.properties.legal_desc_1?.toUpperCase().includes(cleanLotNumber)
+          feature.properties.appellation?.toUpperCase().includes(cleanLotNumber)
         );
 
         return {
           isValid: !!exactMatch,
           matchedRecord: exactMatch || data.features[0],
-          suggestions: data.features.slice(0, 3).map(f => f.properties.legal_desc_1)
+          suggestions: data.features.slice(0, 3).map(f => f.properties.appellation)
         };
       }
 
@@ -86,7 +87,7 @@ export class LINZValidationService {
       console.error('LINZ lot validation error:', error);
       return {
         isValid: false,
-        error: `Validation failed: ${error.message}`
+        error: `Validation failed: ${error instanceof Error ? error.message : 'Unknown error'}`
       };
     }
   }
@@ -107,13 +108,14 @@ export class LINZValidationService {
       // For now, we'll use a simplified approach with property titles
       const searchTerm = `${address}${suburb ? ` ${suburb}` : ''}`.trim();
       
-      const wfsUrl = `${this.baseUrl}/wfs`;
+      const wfsUrl = `${this.baseUrl};key=${this.apiKey}/wfs`;
       const params = new URLSearchParams({
-        key: this.apiKey,
-        REQUEST: 'GetFeature',
-        typeNames: 'layer-50804',
-        cql_filter: `legal_desc_1 LIKE '%${searchTerm}%' OR title_no LIKE '%${searchTerm}%'`,
-        outputFormat: 'json',
+        service: 'WFS',
+        version: '2.0.0',
+        request: 'GetFeature',
+        typeNames: 'layer-50772',
+        cql_filter: `appellation LIKE '%${searchTerm}%' OR titles LIKE '%${searchTerm}%'`,
+        outputformat: 'json',
         count: '5'
       });
 
@@ -128,14 +130,14 @@ export class LINZValidationService {
       return {
         isValid: data.features && data.features.length > 0,
         matchedRecord: data.features?.[0],
-        suggestions: data.features?.slice(0, 3).map(f => f.properties.legal_desc_1) || []
+        suggestions: data.features?.slice(0, 3).map(f => f.properties.appellation) || []
       };
 
     } catch (error) {
       console.error('LINZ address validation error:', error);
       return {
         isValid: false,
-        error: `Address validation failed: ${error.message}`
+        error: `Address validation failed: ${error instanceof Error ? error.message : 'Unknown error'}`
       };
     }
   }
@@ -157,7 +159,7 @@ export class LINZValidationService {
     // Check if lot number and address refer to the same property
     let crossMatch = false;
     if (lotResult.matchedRecord && addressResult.matchedRecord) {
-      crossMatch = lotResult.matchedRecord.properties.title_no === addressResult.matchedRecord.properties.title_no;
+      crossMatch = lotResult.matchedRecord.properties.titles === addressResult.matchedRecord.properties.titles;
     }
 
     return {
@@ -177,20 +179,21 @@ export class LINZValidationService {
     }
 
     try {
-      const wfsUrl = `${this.baseUrl}/wfs`;
+      const wfsUrl = `${this.baseUrl};key=${this.apiKey}/wfs`;
       const params = new URLSearchParams({
-        key: this.apiKey,
-        REQUEST: 'GetFeature',
-        typeNames: 'layer-50804',
-        cql_filter: `legal_desc_1 LIKE '%${searchTerm}%'`,
-        outputFormat: 'json',
+        service: 'WFS',
+        version: '2.0.0',
+        request: 'GetFeature',
+        typeNames: 'layer-50772',
+        cql_filter: `appellation LIKE '%${searchTerm}%'`,
+        outputformat: 'json',
         count: '5'
       });
 
       const response = await fetch(`${wfsUrl}?${params}`);
       const data = await response.json() as { features: LINZPropertyData[] };
       
-      return data.features?.map(f => f.properties.legal_desc_1).filter(Boolean) || [];
+      return data.features?.map(f => f.properties.appellation).filter(Boolean) || [];
 
     } catch (error) {
       console.error('LINZ suggestions error:', error);
