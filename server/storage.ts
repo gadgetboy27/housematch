@@ -722,6 +722,193 @@ export class MemStorage implements IStorage {
 }
 
 export class DatabaseStorage implements IStorage {
+  private seeded = false;
+
+  private async seedDatabase() {
+    if (this.seeded) return;
+    
+    // Create demo user first
+    let demoUser;
+    try {
+      demoUser = await this.getUserByUsername("demo-user");
+      if (!demoUser) {
+        demoUser = await this.createUser({
+          username: "demo-user",
+          password: "demo123"
+        });
+      }
+    } catch (error) {
+      console.log("Demo user already exists or error creating:", error.message);
+      demoUser = await this.getUserByUsername("demo-user");
+    }
+
+    if (!demoUser) return;
+
+    // Check if properties already exist (avoid calling getAllProperties to prevent circular dependency)
+    const existingProperties = await db.select().from(properties).where(eq(properties.isActive, true));
+    if (existingProperties.length > 0) {
+      this.seeded = true;
+      return;
+    }
+
+    // Seed properties with beautiful images and good metrics
+    const mockProperties = [
+      {
+        userId: demoUser.id,
+        title: "Modern Family Home",
+        address: "123 Queen Street, Auckland Central",
+        suburb: "Ponsonby",
+        price: "$1,250,000",
+        bedrooms: 4,
+        bathrooms: 2,
+        floorArea: 180,
+        landArea: 450,
+        propertyType: "residential",
+        lotNumber: "Lot 15 DP 456789",
+        certificateOfTitle: "CT 456789/123",
+        zoning: "Residential Mixed Use",
+        yearBuilt: 2018,
+        imageUrl: "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=600",
+        description: "Stunning modern family home in the heart of Ponsonby",
+        additionalImages: [
+          "https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=600",
+          "https://images.unsplash.com/photo-1586023492125-27b2c045efd7?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=600",
+          "https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=600"
+        ],
+        views: 147,
+        likes: 23,
+        saves: 8,
+        isLinzValidated: true,
+        selfDeclaration: true
+      },
+      {
+        userId: demoUser.id,
+        title: "Luxury Apartment",
+        address: "89 The Terrace, Wellington Central",
+        suburb: "Wellington Central",
+        price: "$950,000",
+        bedrooms: 2,
+        bathrooms: 2,
+        floorArea: 95,
+        landArea: 0,
+        propertyType: "residential",
+        lotNumber: "Lot 3 DP 567890",
+        certificateOfTitle: "CT 567890/456",
+        zoning: "Residential",
+        yearBuilt: 2020,
+        imageUrl: "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=600",
+        description: "Luxury apartment with harbour views",
+        additionalImages: [
+          "https://images.unsplash.com/photo-1507089947368-19c1da9775ae?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=600",
+          "https://images.unsplash.com/photo-1540932239986-30128078f3c5?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=600",
+          "https://images.unsplash.com/photo-1574269909862-7e1d70bb8078?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=600"
+        ],
+        views: 89,
+        likes: 15,
+        saves: 5,
+        isLinzValidated: true,
+        selfDeclaration: true,
+        isActive: true
+      },
+      {
+        userId: demoUser.id,
+        title: "Family Villa",
+        address: "456 Colombo Street, Christchurch",
+        suburb: "Sydenham",
+        price: "$720,000",
+        bedrooms: 3,
+        bathrooms: 2,
+        floorArea: 150,
+        landArea: 600,
+        propertyType: "residential",
+        lotNumber: "Lot 8 DP 678901",
+        certificateOfTitle: "CT 678901/789",
+        zoning: "Residential",
+        yearBuilt: 1995,
+        imageUrl: "https://images.unsplash.com/photo-1449844908441-8829872d2607?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=600",
+        description: "Charming family villa with large garden",
+        additionalImages: [
+          "https://images.unsplash.com/photo-1570129477492-45c003edd2be?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=600",
+          "https://images.unsplash.com/photo-1513475382585-d06e58bcb0e0?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=600"
+        ],
+        views: 234,
+        likes: 34,
+        saves: 12,
+        isLinzValidated: true,
+        selfDeclaration: true,
+        isActive: true
+      },
+      {
+        userId: demoUser.id,
+        title: "Commercial Space",
+        address: "78 High Street, Auckland CBD",
+        suburb: "Auckland Central",
+        price: "$2,200,000",
+        bedrooms: 0,
+        bathrooms: 3,
+        floorArea: 300,
+        landArea: 0,
+        propertyType: "commercial",
+        lotNumber: "Lot 2 DP 789012",
+        certificateOfTitle: "CT 789012/890",
+        zoning: "Commercial",
+        yearBuilt: 2015,
+        imageUrl: "https://images.unsplash.com/photo-1587293852726-70cdb56c2866?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=600",
+        description: "Prime commercial space in CBD",
+        additionalImages: [
+          "https://images.unsplash.com/photo-1565444563072-6c8065ade936?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=600",
+          "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=600"
+        ],
+        views: 56,
+        likes: 7,
+        saves: 2,
+        isLinzValidated: true,
+        selfDeclaration: true,
+        isActive: true
+      },
+      {
+        userId: demoUser.id,
+        title: "Luxury Villa",
+        address: "45 Orakei Road, Auckland",
+        suburb: "Orakei",
+        price: "$3,500,000",
+        bedrooms: 5,
+        bathrooms: 4,
+        floorArea: 350,
+        landArea: 1200,
+        propertyType: "residential",
+        lotNumber: "Lot 1 DP 345678",
+        certificateOfTitle: "CT 345678/123",
+        zoning: "Residential",
+        yearBuilt: 2020,
+        imageUrl: "https://images.unsplash.com/photo-1613545325278-f24b0cae1224?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=600",
+        description: "Exclusive luxury villa with water views",
+        additionalImages: [
+          "https://images.unsplash.com/photo-1583847268964-b28dc8f51f92?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=600",
+          "https://images.unsplash.com/photo-1560448075-bb485b067938?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=600"
+        ],
+        views: 156,
+        likes: 67,
+        saves: 28,
+        isLinzValidated: true,
+        selfDeclaration: true,
+        isActive: true
+      }
+    ];
+
+    // Insert mock properties
+    for (const property of mockProperties) {
+      try {
+        await db.insert(properties).values(property);
+      } catch (error) {
+        console.log("Property already exists or error:", error.message);
+      }
+    }
+
+    this.seeded = true;
+    console.log("Database seeded with beautiful mock properties!");
+  }
+
   async getUser(id: string): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.id, id));
     return user || undefined;
