@@ -136,12 +136,18 @@ export default function AddProperty() {
 
   const createPropertyMutation = useMutation({
     mutationFn: async (data: any) => {
+      console.log("🔍 MUTATION STARTED - sending to API");
+      console.log("🔍 API data payload:", data);
       const response = await apiRequest("POST", "/api/properties", data, {
         'x-user-id': 'demo-user' // Add authentication header
       });
-      return response.json();
+      console.log("🔍 API response status:", response.status);
+      const result = await response.json();
+      console.log("🔍 API response data:", result);
+      return result;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      console.log("🔍 MUTATION SUCCESS:", data);
       queryClient.invalidateQueries({ queryKey: ["/api/properties"] });
       toast({
         title: "Success",
@@ -150,6 +156,7 @@ export default function AddProperty() {
       setLocation("/");
     },
     onError: (error: any) => {
+      console.log("🔍 MUTATION ERROR:", error);
       toast({
         title: "Error",
         description: error.message || "Failed to add property",
@@ -275,6 +282,14 @@ export default function AddProperty() {
 
 
   const onSubmit = (data: any) => {
+    console.log("🔍 FORM SUBMISSION STARTED");
+    console.log("🔍 Raw form data:", data);
+    console.log("🔍 Selected property type:", selectedPropertyType);
+    console.log("🔍 Uploaded images:", uploadedImages);
+    console.log("🔍 Validation status:", validationStatus);
+    console.log("🔍 Form complete status:", isFormComplete);
+    console.log("🔍 Form errors:", form.formState.errors);
+
     // Transform data to match backend schema
     const propertyData = {
       ...data,
@@ -294,7 +309,8 @@ export default function AddProperty() {
       hideCertificateOfTitle: data.hideCertificateOfTitle,
     };
 
-    console.log("Submitting property data:", propertyData);
+    console.log("🔍 Transformed property data:", propertyData);
+    console.log("🔍 About to call mutation...");
     createPropertyMutation.mutate(propertyData);
   };
 
@@ -943,6 +959,14 @@ export default function AddProperty() {
               className="w-full bg-primary text-primary-foreground h-12 font-semibold hover:bg-primary/90"
               disabled={createPropertyMutation.isPending}
               data-testid="button-submit-property"
+              onClick={() => {
+                console.log("🔍 SUBMIT BUTTON CLICKED!");
+                console.log("🔍 Form state:", form.getValues());
+                console.log("🔍 Form valid:", form.formState.isValid);
+                console.log("🔍 Form errors:", form.formState.errors);
+                console.log("🔍 Mutation pending:", createPropertyMutation.isPending);
+                console.log("🔍 Form complete:", isFormComplete);
+              }}
             >
               {createPropertyMutation.isPending ? (
                 <>

@@ -15,6 +15,7 @@ function Router() {
     <Switch>
       <Route path="/" component={Home} />
       <Route path="/liked" component={Liked} />
+      <Route path="/add-property" component={AddProperty} />
       <Route path="/add" component={AddProperty} />
       <Route path="/reports" component={Reports} />
       <Route path="/profile" component={Profile} />
