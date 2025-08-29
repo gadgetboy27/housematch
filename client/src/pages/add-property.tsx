@@ -467,11 +467,19 @@ export default function AddProperty() {
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
             
             {/* Property Type Selection */}
-            <Card>
+            <Card className={form.formState.errors.propertyType ? 'border-red-500 border-2' : ''}>
               <CardHeader>
-                <CardTitle className="text-base">Property Type</CardTitle>
+                <CardTitle className={`text-base ${form.formState.errors.propertyType ? 'text-red-600' : ''}`}>
+                  Property Type
+                  {form.formState.errors.propertyType && <span className="text-red-500 ml-1">*</span>}
+                </CardTitle>
               </CardHeader>
               <CardContent>
+                {form.formState.errors.propertyType && (
+                  <div className="text-sm font-medium text-red-600 bg-red-50 border border-red-200 rounded-md px-2 py-1 mb-3">
+                    {form.formState.errors.propertyType.message}
+                  </div>
+                )}
                 <div className="grid grid-cols-2 gap-3">
                   {propertyTypeOptions.map((option) => (
                     <button
@@ -876,9 +884,15 @@ export default function AddProperty() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div>
-                  <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 mb-2 block">
+                  <label className={`text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 mb-2 block ${form.formState.errors.imageUrl ? 'text-red-600' : ''}`}>
                     Property Image
+                    {form.formState.errors.imageUrl && <span className="text-red-500 ml-1">*</span>}
                   </label>
+                  {form.formState.errors.imageUrl && (
+                    <div className="text-sm font-medium text-red-600 bg-red-50 border border-red-200 rounded-md px-2 py-1 mb-3">
+                      {form.formState.errors.imageUrl.message}
+                    </div>
+                  )}
                   <ObjectUploader
                     maxNumberOfFiles={4}
                     maxFileSize={10485760} // 10MB
@@ -886,7 +900,7 @@ export default function AddProperty() {
                     onGetUploadParameters={handleGetUploadParameters}
                     onComplete={handleUploadComplete}
                     onUploadProgress={handleUploadProgress}
-                    buttonClassName="w-full bg-primary/10 border-2 border-dashed border-primary/30 text-primary hover:bg-primary/20 h-24 flex flex-col items-center justify-center space-y-2"
+                    buttonClassName={`w-full ${form.formState.errors.imageUrl ? 'bg-red-50 border-2 border-dashed border-red-500 text-red-600' : 'bg-primary/10 border-2 border-dashed border-primary/30 text-primary'} hover:bg-primary/20 h-24 flex flex-col items-center justify-center space-y-2`}
                   >
                     <div className="flex flex-col items-center space-y-1">
                       <i className="fas fa-camera text-xl"></i>
@@ -939,7 +953,7 @@ export default function AddProperty() {
             </Card>
 
             {/* Self-Declaration Card */}
-            <Card>
+            <Card className={form.formState.errors.selfDeclaration ? 'border-red-500 border-2' : ''}>
               <CardContent className="p-4">
                 <FormField
                   control={form.control}
@@ -951,7 +965,7 @@ export default function AddProperty() {
                           type="checkbox"
                           checked={field.value}
                           onChange={field.onChange}
-                          className="w-4 h-4 mt-1 text-primary focus:ring-primary border-gray-300 rounded"
+                          className={`w-4 h-4 mt-1 text-primary focus:ring-primary border-gray-300 rounded ${form.formState.errors.selfDeclaration ? 'border-red-500 focus:ring-red-500' : ''}`}
                           data-testid="checkbox-self-declaration"
                         />
                       </FormControl>
