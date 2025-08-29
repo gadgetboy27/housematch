@@ -4,7 +4,7 @@ import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
 export const users = pgTable("users", {
-  id: varchar("id").primaryKey(),  // Removed default for manual ID setting
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),  // Back to auto-generated UUIDs
   username: text("username").notNull().unique(),
   password: text("password").notNull(),
   createdAt: timestamp("created_at").defaultNow(),
@@ -39,7 +39,12 @@ export const properties = pgTable("properties", {
   isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-});
+}, (table) => ({
+  // Prevent duplicate properties with same address and lot number (fraud detection)
+  uniqueProperty: sql`UNIQUE(address, "lot_number")`,
+  // Also prevent duplicate certificate of titles
+  uniqueCertificate: sql`UNIQUE("certificate_of_title")`,
+}));
 
 export const userSwipes = pgTable("user_swipes", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -74,7 +79,6 @@ export const purchaseOrders = pgTable("purchase_orders", {
 });
 
 export const insertUserSchema = createInsertSchema(users).pick({
-  id: true,
   username: true,
   password: true,
 });

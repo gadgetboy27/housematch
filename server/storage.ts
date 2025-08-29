@@ -16,6 +16,7 @@ export interface IStorage {
   createProperty(property: InsertProperty): Promise<Property>;
   updatePropertyMetrics(id: string, views?: number, likes?: number, saves?: number): Promise<void>;
   searchProperties(query: { suburb?: string; propertyType?: string; minPrice?: number; maxPrice?: number }): Promise<Property[]>;
+  findPropertyByAddressAndLot(address: string, lotNumber: string): Promise<Property | undefined>;
 
   // User Swipes
   createUserSwipe(swipe: InsertUserSwipe): Promise<UserSwipe>;
@@ -639,6 +640,13 @@ export class MemStorage implements IStorage {
     });
   }
 
+  async findPropertyByAddressAndLot(address: string, lotNumber: string): Promise<Property | undefined> {
+    return Array.from(this.properties.values()).find(property => 
+      property.address.toLowerCase() === address.toLowerCase() && 
+      property.lotNumber.toLowerCase() === lotNumber.toLowerCase()
+    );
+  }
+
   async createUserSwipe(insertSwipe: InsertUserSwipe): Promise<UserSwipe> {
     const id = randomUUID();
     const swipe: UserSwipe = {
@@ -761,6 +769,13 @@ export class DatabaseStorage implements IStorage {
   async searchProperties(query: { suburb?: string; propertyType?: string; minPrice?: number; maxPrice?: number }): Promise<Property[]> {
     // For now, return all properties - we can add filtering later
     return await this.getAllProperties();
+  }
+
+  async findPropertyByAddressAndLot(address: string, lotNumber: string): Promise<Property | undefined> {
+    const [property] = await db.select().from(properties).where(
+      and(eq(properties.address, address), eq(properties.lotNumber, lotNumber))
+    );
+    return property || undefined;
   }
 
   async createUserSwipe(insertSwipe: InsertUserSwipe): Promise<UserSwipe> {

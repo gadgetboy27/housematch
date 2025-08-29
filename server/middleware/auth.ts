@@ -11,26 +11,21 @@ declare global {
 // Simple authentication middleware for demo purposes
 // In production, this would validate JWT tokens or session cookies
 export const requireAuth = async (req: Request, res: Response, next: NextFunction) => {
-  // For now, we'll require x-user-id header for authentication
+  // For real authentication, check x-user-id header 
   // In production, extract from JWT token or session
-  const username = req.headers['x-user-id'] as string;
+  const userId = req.headers['x-user-id'] as string;
   
-  if (!username) {
-    return res.status(401).json({ message: 'Authentication required - please provide x-user-id header' });
+  if (!userId) {
+    return res.status(401).json({ message: 'Authentication required - please log in' });
   }
   
   try {
-    // For demo purposes, create user if it doesn't exist
+    // Verify user exists in database
     const { storage } = await import('../storage');
-    let user = await storage.getUserByUsername(username);
+    const user = await storage.getUser(userId);
     
     if (!user) {
-      // Create demo user with fixed ID for development
-      user = await storage.createUser({
-        id: username, // Use username as ID for simplicity
-        username: username,
-        password: 'demo123'
-      });
+      return res.status(401).json({ message: 'Invalid user - please log in again' });
     }
     
     req.userId = user.id;

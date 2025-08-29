@@ -12,6 +12,51 @@ import { LINZValidationService } from "./services/linz-validation";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   
+  // User registration and auth routes
+  app.post("/api/register", async (req, res) => {
+    try {
+      const validatedData = insertUserSchema.parse(req.body);
+      
+      // Check if username already exists
+      const existingUser = await storage.getUserByUsername(validatedData.username);
+      if (existingUser) {
+        return res.status(409).json({ 
+          message: "Username already exists", 
+          error: "This username is already taken. Please choose a different username." 
+        });
+      }
+
+      const user = await storage.createUser(validatedData);
+      
+      // Return user without password
+      const { password, ...userWithoutPassword } = user;
+      res.status(201).json(userWithoutPassword);
+    } catch (error) {
+      res.status(400).json({ message: "Invalid user data", error: error.message });
+    }
+  });
+
+  app.post("/api/login", async (req, res) => {
+    try {
+      const { username, password } = req.body;
+      
+      if (!username || !password) {
+        return res.status(400).json({ message: "Username and password are required" });
+      }
+
+      const user = await storage.getUserByUsername(username);
+      if (!user || user.password !== password) {
+        return res.status(401).json({ message: "Invalid username or password" });
+      }
+
+      // Return user without password
+      const { password: _, ...userWithoutPassword } = user;
+      res.json(userWithoutPassword);
+    } catch (error) {
+      res.status(500).json({ message: "Login failed" });
+    }
+  });
+
   // Property routes with personalization
   app.get("/api/properties", async (req, res) => {
     try {
@@ -67,9 +112,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const validatedData = insertPropertySchema.parse(req.body);
       // Add userId to property data from authenticated user
       const propertyData = { ...validatedData, userId: req.userId! };
+      
+      // Check for duplicate properties (fraud detection)
+      const existingProperty = await storage.findPropertyByAddressAndLot(
+        propertyData.address, 
+        propertyData.lotNumber
+      );
+      
+      if (existingProperty) {
+        return res.status(409).json({ 
+          message: "Property already exists", 
+          error: "A property with this address and lot number already exists in our system. This may indicate duplicate listing or fraud.",
+          existingProperty: {
+            id: existingProperty.id,
+            title: existingProperty.title,
+            createdAt: existingProperty.createdAt
+          }
+        });
+      }
+
       const property = await storage.createProperty(propertyData);
       res.status(201).json(property);
     } catch (error) {
+      // Handle database constraint violations
+      if (error.message.includes('unique constraint') || error.message.includes('UNIQUE constraint')) {
+        return res.status(409).json({ 
+          message: "Duplicate property detected", 
+          error: "This property appears to already exist in our system (same address/lot number or certificate of title). Please verify your information."
+        });
+      }
+      
       res.status(400).json({ message: "Invalid property data", error: error.message });
     }
   });
