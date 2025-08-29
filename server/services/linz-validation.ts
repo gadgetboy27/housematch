@@ -46,8 +46,9 @@ export class LINZValidationService {
       const cleanLotNumber = lotNumber.trim().toUpperCase();
       
       // LINZ WFS query for property titles by legal description
-      const wfsUrl = `${this.baseUrl};key=${this.apiKey}/wfs`;
+      const wfsUrl = `${this.baseUrl}/wfs`;
       const params = new URLSearchParams({
+        key: this.apiKey,
         REQUEST: 'GetFeature',
         typeNames: 'layer-50804', // NZ Property Titles layer
         cql_filter: `legal_desc_1 LIKE '%${cleanLotNumber}%'`,
@@ -106,8 +107,9 @@ export class LINZValidationService {
       // For now, we'll use a simplified approach with property titles
       const searchTerm = `${address}${suburb ? ` ${suburb}` : ''}`.trim();
       
-      const wfsUrl = `${this.baseUrl};key=${this.apiKey}/wfs`;
+      const wfsUrl = `${this.baseUrl}/wfs`;
       const params = new URLSearchParams({
+        key: this.apiKey,
         REQUEST: 'GetFeature',
         typeNames: 'layer-50804',
         cql_filter: `legal_desc_1 LIKE '%${searchTerm}%' OR title_no LIKE '%${searchTerm}%'`,
@@ -175,8 +177,9 @@ export class LINZValidationService {
     }
 
     try {
-      const wfsUrl = `${this.baseUrl};key=${this.apiKey}/wfs`;
+      const wfsUrl = `${this.baseUrl}/wfs`;
       const params = new URLSearchParams({
+        key: this.apiKey,
         REQUEST: 'GetFeature',
         typeNames: 'layer-50804',
         cql_filter: `legal_desc_1 LIKE '%${searchTerm}%'`,
