@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -62,19 +62,20 @@ export default function AddProperty() {
     title: z.string().min(1, "Title is required"),
     address: z.string().min(1, "Address is required"),
     suburb: z.string().min(1, "Suburb is required"),
-    price: z.string().min(1, "Price is required"),
-    propertyType: z.string(),
-    bedrooms: z.string().transform(val => parseInt(val) || 0),
-    bathrooms: z.string().transform(val => parseInt(val) || 0),
-    floorArea: z.string().transform(val => parseInt(val) || 0),
-    landArea: z.string().transform(val => parseInt(val) || 0),
+    price: z.string().optional(), // Optional now
+    propertyType: z.string().min(1, "Property type is required"),
+    bedrooms: z.string().transform(val => parseInt(val) || 0).optional(),
+    bathrooms: z.string().transform(val => parseInt(val) || 0).optional(),
+    floorArea: z.string().transform(val => parseInt(val) || 0).optional(),
+    landArea: z.string().transform(val => parseInt(val) || 0).optional(),
     carSpaces: z.string().transform(val => parseInt(val) || 0).optional(),
+    parkingType: z.string().optional(), // New parking dropdown
     lotNumber: z.string().min(1, "Council Lot Number is required for security verification"),
     certificateOfTitle: z.string().min(1, "Certificate of Title is required for security verification"),
     hideCertificateOfTitle: z.boolean().default(false),
     zoning: z.string().optional(),
-    yearBuilt: z.string().transform(val => parseInt(val) || new Date().getFullYear()),
-    imageUrl: z.string().optional(),
+    yearBuilt: z.string().transform(val => parseInt(val) || new Date().getFullYear()).optional(),
+    imageUrl: z.string().min(1, "At least one image is required"), // Images now required
     description: z.string().optional(),
     isLinzValidated: z.boolean().default(false),
     selfDeclaration: z.boolean().refine((val) => val === true, {
@@ -89,12 +90,13 @@ export default function AddProperty() {
       address: "",
       suburb: "",
       price: "",
-      propertyType: "residential",
+      propertyType: "", // Start empty to force selection
       bedrooms: "3",
       bathrooms: "2",
       floorArea: "120",
       landArea: "400",
       carSpaces: "1",
+      parkingType: "", // New parking field
       lotNumber: "",
       certificateOfTitle: "",
       hideCertificateOfTitle: false,
@@ -106,6 +108,31 @@ export default function AddProperty() {
       selfDeclaration: false,
     },
   });
+
+  // Check if all required fields are filled
+  const watchedFields = form.watch();
+  const isFormComplete = useMemo(() => {
+    const requiredFields = ['title', 'address', 'suburb', 'propertyType', 'lotNumber', 'certificateOfTitle'];
+    const hasRequiredFields = requiredFields.every(field => {
+      const fieldValue = (watchedFields as any)[field];
+      return fieldValue && fieldValue.toString().trim() !== '';
+    });
+    const hasImages = uploadedImages.length > 0;
+    const hasDeclaration = watchedFields.selfDeclaration === true;
+    
+    return hasRequiredFields && hasImages && hasDeclaration;
+  }, [watchedFields, uploadedImages]);
+
+  // Helper function to get required field status
+  const getRequiredFieldStatus = (fieldName: string, value: any) => {
+    const requiredFields = ['title', 'address', 'suburb', 'propertyType', 'lotNumber', 'certificateOfTitle'];
+    const isRequired = requiredFields.includes(fieldName);
+    const isEmpty = !value || value.toString().trim() === '';
+    return {
+      isRequired,
+      hasError: isRequired && isEmpty,
+    };
+  };
 
   const createPropertyMutation = useMutation({
     mutationFn: async (data: any) => {
@@ -246,16 +273,6 @@ export default function AddProperty() {
     }
   };
 
-  // Helper function to check if required fields are filled
-  const getRequiredFieldStatus = (fieldName: string, value: any) => {
-    const requiredFields = ['title', 'address', 'suburb', 'price', 'lotNumber', 'certificateOfTitle'];
-    const isEmpty = !value || (typeof value === 'string' && !value.trim());
-    return {
-      isRequired: requiredFields.includes(fieldName),
-      isEmpty,
-      hasError: requiredFields.includes(fieldName) && isEmpty
-    };
-  };
 
   const onSubmit = (data: any) => {
     // Transform data to match backend schema
@@ -578,6 +595,57 @@ export default function AddProperty() {
                     )}
                   />
                 </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="carSpaces"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Parking Spaces</FormLabel>
+                        <Select value={field.value} onValueChange={field.onChange}>
+                          <FormControl>
+                            <SelectTrigger data-testid="select-car-spaces">
+                              <SelectValue placeholder="0" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {[0, 1, 2, 3, 4, 5, 6].map(num => (
+                              <SelectItem key={num} value={num.toString()}>{num}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="parkingType"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Parking Type</FormLabel>
+                        <Select value={field.value} onValueChange={field.onChange}>
+                          <FormControl>
+                            <SelectTrigger data-testid="select-parking-type">
+                              <SelectValue placeholder="Select type" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="garage">Garage</SelectItem>
+                            <SelectItem value="covered">Covered</SelectItem>
+                            <SelectItem value="carport">Carport</SelectItem>
+                            <SelectItem value="driveway">Driveway</SelectItem>
+                            <SelectItem value="street">Street Parking</SelectItem>
+                            <SelectItem value="none">No Parking</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
               </CardContent>
             </Card>
 
@@ -872,8 +940,12 @@ export default function AddProperty() {
 
             <Button 
               type="submit" 
-              className="w-full bg-primary text-primary-foreground h-12 font-semibold"
-              disabled={createPropertyMutation.isPending}
+              className={`w-full h-12 font-semibold ${
+                isFormComplete 
+                  ? "bg-primary text-primary-foreground hover:bg-primary/90" 
+                  : "bg-gray-300 text-gray-500 cursor-not-allowed"
+              }`}
+              disabled={createPropertyMutation.isPending || !isFormComplete}
               data-testid="button-submit-property"
             >
               {createPropertyMutation.isPending ? (
@@ -881,6 +953,8 @@ export default function AddProperty() {
                   <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
                   Adding Property...
                 </>
+              ) : !isFormComplete ? (
+                "Complete All Required Fields"
               ) : (
                 "Add Property Listing"
               )}
