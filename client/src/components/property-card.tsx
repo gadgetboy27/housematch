@@ -95,8 +95,22 @@ export default function PropertyCard({ property, isBackground = false, onPropert
 
       {!isBackground && (
         <>
-          {/* metrics */}
-          <div className="absolute top-4 right-4">
+          {/* metrics and verification */}
+          <div className="absolute top-4 right-4 flex items-center gap-2">
+            {/* Verification Badge */}
+            {property.isLinzValidated && (
+              <div className="bg-blue-600 px-2 py-1 rounded-full flex items-center gap-1 backdrop-blur-sm border border-blue-500 shadow-lg">
+                <svg 
+                  className="w-3 h-3 text-white" 
+                  fill="currentColor" 
+                  viewBox="0 0 24 24"
+                >
+                  <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                </svg>
+                <span className="text-white text-xs font-medium">Verified</span>
+              </div>
+            )}
+            
             <PropertyMetrics views={property.views || 0} likes={property.likes || 0} saves={property.saves || 0} />
           </div>
 

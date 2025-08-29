@@ -34,6 +34,8 @@ export const properties = pgTable("properties", {
   views: integer("views").default(0),
   likes: integer("likes").default(0),
   saves: integer("saves").default(0),
+  isLinzValidated: boolean("is_linz_validated").notNull().default(false),
+  selfDeclaration: boolean("self_declaration").notNull().default(false),
   isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),

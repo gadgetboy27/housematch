@@ -71,6 +71,9 @@ export default function AddProperty() {
     imageUrl: z.string().optional(),
     description: z.string().optional(),
     isLinzValidated: z.boolean().default(false),
+    selfDeclaration: z.boolean().refine((val) => val === true, {
+      message: "You must confirm the accuracy of the property details",
+    }),
   });
 
   const form = useForm({
@@ -94,6 +97,7 @@ export default function AddProperty() {
       imageUrl: "",
       description: "",
       isLinzValidated: false,
+      selfDeclaration: false,
     },
   });
 
@@ -128,6 +132,9 @@ export default function AddProperty() {
       propertyType: selectedPropertyType || data.propertyType,
       imageUrl: uploadedImages.length > 0 ? uploadedImages[0] : data.imageUrl,
       additionalImages: uploadedImages.slice(1), // Store additional images
+      // Store validation status and self-declaration
+      isLinzValidated: validationStatus.isValid,
+      selfDeclaration: data.selfDeclaration,
       // Ensure numeric fields are actually numbers
       bedrooms: parseInt(data.bedrooms) || 0,
       bathrooms: parseInt(data.bathrooms) || 0,
@@ -136,7 +143,6 @@ export default function AddProperty() {
       carSpaces: parseInt(data.carSpaces) || 0,
       yearBuilt: parseInt(data.yearBuilt) || new Date().getFullYear(),
       hideCertificateOfTitle: data.hideCertificateOfTitle,
-      isLinzValidated: data.isLinzValidated,
     };
 
     console.log("Submitting property data:", propertyData);
@@ -707,10 +713,43 @@ export default function AddProperty() {
               </CardContent>
             </Card>
 
+            {/* Self-Declaration Card */}
+            <Card>
+              <CardContent className="p-4">
+                <FormField
+                  control={form.control}
+                  name="selfDeclaration"
+                  render={({ field }) => (
+                    <FormItem className="flex items-start space-x-3">
+                      <FormControl>
+                        <input
+                          type="checkbox"
+                          checked={field.value}
+                          onChange={field.onChange}
+                          className="w-4 h-4 mt-1 text-primary focus:ring-primary border-gray-300 rounded"
+                          data-testid="checkbox-self-declaration"
+                        />
+                      </FormControl>
+                      <div className="flex-1">
+                        <FormLabel className="text-sm font-medium text-foreground cursor-pointer">
+                          Property Information Declaration
+                        </FormLabel>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          I declare that the property information provided is accurate to the best of my knowledge. 
+                          I understand that providing false information may result in legal consequences.
+                        </p>
+                        <FormMessage />
+                      </div>
+                    </FormItem>
+                  )}
+                />
+              </CardContent>
+            </Card>
+
             <Button 
               type="submit" 
               className="w-full bg-primary text-primary-foreground h-12 font-semibold"
-              disabled={createPropertyMutation.isPending || (validationStatus.message && !validationStatus.isValid)}
+              disabled={createPropertyMutation.isPending}
               data-testid="button-submit-property"
             >
               {createPropertyMutation.isPending ? (

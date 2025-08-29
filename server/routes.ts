@@ -287,27 +287,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const linzService = new LINZValidationService();
       const validation = await linzService.crossValidateProperty(lotNumber, address, suburb);
       
-      // Generate more nuanced message based on what we could verify
+      // Simplified verification approach
       let message = '';
       let valid = false;
+      let verifiedComponents = [];
       
-      if (validation.lotValid.isValid && validation.addressValid.isValid) {
-        if (validation.crossMatch) {
-          message = 'Property details verified with LINZ records';
-          valid = true;
-        } else {
-          message = 'Lot number and address exist in LINZ but unable to confirm they match the same property';
-          valid = false; // Still block submission for safety
-        }
-      } else if (validation.lotValid.isValid) {
-        message = 'Lot number verified in LINZ records. Address verification unavailable';
-        valid = false; // Block submission but softer message
-      } else if (validation.addressValid.isValid) {
-        message = 'Address found in records but lot number verification failed';
-        valid = false;
+      if (validation.lotValid.isValid) {
+        verifiedComponents.push('Lot number');
+      }
+      if (validation.addressValid.isValid) {
+        verifiedComponents.push('Address format');
+      }
+      
+      if (verifiedComponents.length === 2) {
+        message = 'Property components verified. Please confirm details are accurate.';
+        valid = true; // Allow submission with self-declaration
+      } else if (verifiedComponents.length === 1) {
+        message = `${verifiedComponents[0]} verified. Please check other details.`;
+        valid = true; // Still allow with warning
       } else {
-        message = 'Unable to verify property details in LINZ database';
-        valid = false;
+        message = 'Unable to verify property details. Please check your information.';
+        valid = false; // Block obvious errors
       }
 
       res.json({
