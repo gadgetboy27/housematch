@@ -930,7 +930,16 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getAllProperties(): Promise<Property[]> {
-    return await db.select().from(properties).where(eq(properties.isActive, true));
+    try {
+      console.log("🔍 Getting all properties...");
+      const result = await db.select().from(properties).where(eq(properties.isActive, true));
+      console.log("🔍 Found properties:", result.length);
+      console.log("🔍 First property:", result[0]?.title || "None");
+      return result;
+    } catch (error) {
+      console.error("❌ Error getting properties:", error);
+      return [];
+    }
   }
 
   async getPropertiesByType(type: string): Promise<Property[]> {
@@ -938,7 +947,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createProperty(insertProperty: InsertProperty): Promise<Property> {
-    const [property] = await db.insert(properties).values([insertProperty]).returning();
+    const [property] = await db.insert(properties).values(insertProperty).returning();
     return property;
   }
 

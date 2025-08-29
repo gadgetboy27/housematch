@@ -78,9 +78,9 @@ export const purchaseOrders = pgTable("purchase_orders", {
   completedAt: timestamp("completed_at"),
 });
 
-export const insertUserSchema = createInsertSchema(users).pick({
-  username: true,
-  password: true,
+export const insertUserSchema = createInsertSchema(users).omit({
+  id: true,
+  createdAt: true,
 });
 
 export const insertPropertySchema = createInsertSchema(properties).omit({
