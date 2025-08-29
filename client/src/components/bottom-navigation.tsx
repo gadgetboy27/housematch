@@ -22,7 +22,7 @@ const navigationItems = [
   {
     path: "/reports",
     icon: "fa-shopping-cart",
-    label: "Reports",
+    label: "Services",
     testId: "nav-reports"
   },
   {
