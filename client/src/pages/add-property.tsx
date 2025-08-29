@@ -940,12 +940,8 @@ export default function AddProperty() {
 
             <Button 
               type="submit" 
-              className={`w-full h-12 font-semibold ${
-                isFormComplete 
-                  ? "bg-primary text-primary-foreground hover:bg-primary/90" 
-                  : "bg-gray-300 text-gray-500 cursor-not-allowed"
-              }`}
-              disabled={createPropertyMutation.isPending || !isFormComplete}
+              className="w-full bg-primary text-primary-foreground h-12 font-semibold hover:bg-primary/90"
+              disabled={createPropertyMutation.isPending}
               data-testid="button-submit-property"
             >
               {createPropertyMutation.isPending ? (
@@ -953,8 +949,6 @@ export default function AddProperty() {
                   <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
                   Adding Property...
                 </>
-              ) : !isFormComplete ? (
-                "Complete All Required Fields"
               ) : (
                 "Add Property Listing"
               )}
