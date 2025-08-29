@@ -10,7 +10,6 @@ import HeartBubbles from "./heart-bubbles";
 
 interface SwipeContainerProps {
   properties: Property[];
-  onPropertySelect: (property: Property) => void;
   onSwipe: () => void;
   onSwipeAction: (direction: "left" | "right" | "up", action: string) => void;
   onPropertyTypeFilter?: (type: string) => void;
@@ -21,7 +20,6 @@ const SwipeContainer = forwardRef<
   SwipeContainerProps
 >(({
   properties,
-  onPropertySelect,
   onSwipe,
   onSwipeAction,
   onPropertyTypeFilter,
@@ -163,9 +161,6 @@ const SwipeContainer = forwardRef<
     }
   };
 
-  const handleClick = () => {
-    if (Math.abs(x.get()) < 10 && currentProperty) onPropertySelect(currentProperty);
-  };
 
   if (!currentProperty) return (
     <div className="absolute inset-2 flex items-center justify-center text-white/80">
@@ -199,7 +194,6 @@ const SwipeContainer = forwardRef<
           power: 0.3 // Smoother mobile dragging
         }}
         onDragEnd={handleDragEnd}
-        onClick={handleClick}
         whileTap={{ scale: 0.98 }}
         whileDrag={{ 
           scale: 1.02, // Less aggressive scale for mobile performance

@@ -3,14 +3,11 @@ import { useQuery } from "@tanstack/react-query";
 import SwipeContainer from "@/components/swipe-container";
 import ActionButtons from "@/components/action-buttons";
 import BottomNavigation from "@/components/bottom-navigation";
-import PropertyDetailsModal from "@/components/modals/property-details-modal";
 import AISuggestionsModal from "@/components/modals/ai-suggestions-modal";
 import AIBrainPopup from "@/components/ai-brain-popup";
 import { Property } from "@shared/schema";
 
 export default function Home() {
-  const [selectedProperty, setSelectedProperty] = useState<Property | null>(null);
-  const [showPropertyDetails, setShowPropertyDetails] = useState(false);
   const [showAISuggestions, setShowAISuggestions] = useState(false);
   const [showAIBrain, setShowAIBrain] = useState(false);
   const [swipeCount, setSwipeCount] = useState(0);
@@ -35,10 +32,6 @@ export default function Home() {
 
   const handleSwipe = () => setSwipeCount(prev => prev + 1);
 
-  const handlePropertySelect = (p: Property) => {
-    setSelectedProperty(p);
-    setShowPropertyDetails(true);
-  };
 
   const handleSwipeAction = (_: "left" | "right" | "up", __: string) => {
     setIsSwipingDisabled(true);
@@ -69,7 +62,6 @@ export default function Home() {
         <SwipeContainer
           ref={swipeRef}
           properties={properties}
-          onPropertySelect={handlePropertySelect}
           onSwipe={handleSwipe}
           onSwipeAction={handleSwipeAction}
           onPropertyTypeFilter={handlePropertyTypeFilter}
@@ -92,13 +84,6 @@ export default function Home() {
       {showAIBrain && <AIBrainPopup onClick={handleAIBrainClick} />}
       <BottomNavigation />
 
-      {showPropertyDetails && selectedProperty && (
-        <PropertyDetailsModal
-          property={selectedProperty}
-          isOpen={showPropertyDetails}
-          onClose={() => setShowPropertyDetails(false)}
-        />
-      )}
 
       {showAISuggestions && <AISuggestionsModal isOpen={showAISuggestions} onClose={() => setShowAISuggestions(false)} />}
     </div>
