@@ -61,7 +61,10 @@ export default function PropertyCard({ property, isBackground = false, onPropert
     e.stopPropagation();
     e.preventDefault();
     if (hasMultipleImages) {
-      setCurrentImageIndex((prev) => (prev === 0 ? allImages.length - 1 : prev - 1));
+      // Add small delay to prevent accidental rapid triggers
+      setTimeout(() => {
+        setCurrentImageIndex((prev) => (prev === 0 ? allImages.length - 1 : prev - 1));
+      }, 50);
     }
   };
 
@@ -69,7 +72,10 @@ export default function PropertyCard({ property, isBackground = false, onPropert
     e.stopPropagation();
     e.preventDefault();
     if (hasMultipleImages) {
-      setCurrentImageIndex((prev) => (prev === allImages.length - 1 ? 0 : prev + 1));
+      // Add small delay to prevent accidental rapid triggers
+      setTimeout(() => {
+        setCurrentImageIndex((prev) => (prev === allImages.length - 1 ? 0 : prev + 1));
+      }, 50);
     }
   };
 
@@ -110,11 +116,7 @@ export default function PropertyCard({ property, isBackground = false, onPropert
         <>
           {/* Left tap zone */}
           <div 
-            className="absolute top-0 left-0 w-[30%] h-full z-10 cursor-pointer"
-            onPointerDown={(e) => {
-              e.stopPropagation();
-              handlePreviousImage(e);
-            }}
+            className="absolute top-0 left-0 w-[20%] h-full z-10 cursor-pointer"
             onClick={(e) => {
               e.stopPropagation();
               handlePreviousImage(e);
@@ -124,11 +126,7 @@ export default function PropertyCard({ property, isBackground = false, onPropert
           
           {/* Right tap zone */}
           <div 
-            className="absolute top-0 right-0 w-[30%] h-full z-10 cursor-pointer"
-            onPointerDown={(e) => {
-              e.stopPropagation();
-              handleNextImage(e);
-            }}
+            className="absolute top-0 right-0 w-[20%] h-full z-10 cursor-pointer"
             onClick={(e) => {
               e.stopPropagation();
               handleNextImage(e);
