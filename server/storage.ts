@@ -1,4 +1,4 @@
-import { type User, type InsertUser, type Property, type InsertProperty, type UserSwipe, type InsertUserSwipe, type UserPreferences, type InsertUserPreferences, type PurchaseOrder, type InsertPurchaseOrder, users, properties, userSwipes, userPreferences, purchaseOrders } from "@shared/schema";
+import { type User, type InsertUser, type Property, type InsertProperty, type UserSwipe, type InsertUserSwipe, type UserPreferences, type InsertUserPreferences, type PurchaseOrder, type InsertPurchaseOrder, type ServiceProvider, type InsertServiceProvider, users, properties, userSwipes, userPreferences, purchaseOrders, serviceProviders } from "@shared/schema";
 import { randomUUID } from "crypto";
 import { db } from "./db";
 import { eq, and } from "drizzle-orm";
@@ -31,6 +31,14 @@ export interface IStorage {
   createPurchaseOrder(order: InsertPurchaseOrder): Promise<PurchaseOrder>;
   getUserPurchaseOrders(userId: string): Promise<PurchaseOrder[]>;
   updatePurchaseOrderStatus(id: string, status: string): Promise<void>;
+
+  // Service Providers
+  createServiceProvider(provider: InsertServiceProvider): Promise<ServiceProvider>;
+  getAllServiceProviders(): Promise<ServiceProvider[]>;
+  getServiceProvidersByCategory(category: string): Promise<ServiceProvider[]>;
+  getServiceProviderById(id: string): Promise<ServiceProvider | undefined>;
+  updateServiceProviderStatus(id: string, status: string, reviewNotes?: string): Promise<void>;
+  getApprovedServiceProviders(): Promise<ServiceProvider[]>;
 }
 
 export class MemStorage implements IStorage {
@@ -1023,6 +1031,41 @@ export class DatabaseStorage implements IStorage {
       updates.completedAt = new Date();
     }
     await db.update(purchaseOrders).set(updates).where(eq(purchaseOrders.id, id));
+  }
+
+  // Service Providers
+  async createServiceProvider(insertProvider: InsertServiceProvider): Promise<ServiceProvider> {
+    const [provider] = await db.insert(serviceProviders).values(insertProvider).returning();
+    return provider;
+  }
+
+  async getAllServiceProviders(): Promise<ServiceProvider[]> {
+    return await db.select().from(serviceProviders);
+  }
+
+  async getServiceProvidersByCategory(category: string): Promise<ServiceProvider[]> {
+    return await db.select().from(serviceProviders)
+      .where(and(eq(serviceProviders.category, category), eq(serviceProviders.status, 'approved'), eq(serviceProviders.isActive, true)));
+  }
+
+  async getServiceProviderById(id: string): Promise<ServiceProvider | undefined> {
+    const [provider] = await db.select().from(serviceProviders).where(eq(serviceProviders.id, id));
+    return provider || undefined;
+  }
+
+  async updateServiceProviderStatus(id: string, status: string, reviewNotes?: string): Promise<void> {
+    const updates: any = { 
+      status, 
+      reviewedAt: new Date(),
+      updatedAt: new Date()
+    };
+    if (reviewNotes) updates.reviewNotes = reviewNotes;
+    await db.update(serviceProviders).set(updates).where(eq(serviceProviders.id, id));
+  }
+
+  async getApprovedServiceProviders(): Promise<ServiceProvider[]> {
+    return await db.select().from(serviceProviders)
+      .where(and(eq(serviceProviders.status, 'approved'), eq(serviceProviders.isActive, true)));
   }
 }
 

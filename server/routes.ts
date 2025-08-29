@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertPropertySchema, insertUserSwipeSchema, insertPurchaseOrderSchema } from "@shared/schema";
+import { insertPropertySchema, insertUserSwipeSchema, insertPurchaseOrderSchema, insertServiceProviderSchema } from "@shared/schema";
 import { analyzeUserPreferences, generatePropertyRecommendations, generateMarketInsights } from "./services/openai";
 import { requireAuth, requirePropertyOwnership } from "./middleware/auth";
 import {
@@ -564,6 +564,72 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error setting property image:", error);
       res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // Service Provider Routes
+  app.get("/api/service-providers", async (req, res) => {
+    try {
+      const { category } = req.query;
+      let providers;
+      
+      if (category && category !== "all") {
+        providers = await storage.getServiceProvidersByCategory(category as string);
+      } else {
+        providers = await storage.getApprovedServiceProviders();
+      }
+      
+      res.json(providers);
+    } catch (error) {
+      console.error("Failed to fetch service providers:", error);
+      res.status(500).json({ message: "Failed to fetch service providers" });
+    }
+  });
+
+  app.get("/api/service-providers/:id", async (req, res) => {
+    try {
+      const provider = await storage.getServiceProviderById(req.params.id);
+      if (!provider) {
+        return res.status(404).json({ message: "Service provider not found" });
+      }
+      res.json(provider);
+    } catch (error) {
+      console.error("Failed to fetch service provider:", error);
+      res.status(500).json({ message: "Failed to fetch service provider" });
+    }
+  });
+
+  app.post("/api/service-providers", async (req, res) => {
+    try {
+      const validatedData = insertServiceProviderSchema.parse(req.body);
+      const provider = await storage.createServiceProvider(validatedData);
+      res.status(201).json(provider);
+    } catch (error) {
+      console.error("Failed to create service provider:", error);
+      if (error.code === '23505') { // Unique constraint violation
+        res.status(409).json({ 
+          message: "Email already exists", 
+          error: "A service provider with this email already exists." 
+        });
+      } else {
+        res.status(400).json({ message: "Invalid service provider data", error: error.message });
+      }
+    }
+  });
+
+  // Admin routes (you can add authentication later)
+  app.put("/api/service-providers/:id/status", async (req, res) => {
+    try {
+      const { status, reviewNotes } = req.body;
+      if (!['pending', 'approved', 'rejected', 'suspended'].includes(status)) {
+        return res.status(400).json({ message: "Invalid status" });
+      }
+      
+      await storage.updateServiceProviderStatus(req.params.id, status, reviewNotes);
+      res.json({ message: "Status updated successfully" });
+    } catch (error) {
+      console.error("Failed to update service provider status:", error);
+      res.status(500).json({ message: "Failed to update service provider status" });
     }
   });
 

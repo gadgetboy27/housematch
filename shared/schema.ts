@@ -78,6 +78,41 @@ export const purchaseOrders = pgTable("purchase_orders", {
   completedAt: timestamp("completed_at"),
 });
 
+// Service providers table for professional services marketplace
+export const serviceProviders = pgTable("service_providers", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  businessName: text("business_name").notNull(),
+  contactName: text("contact_name").notNull(),
+  email: text("email").notNull().unique(),
+  phone: text("phone").notNull(),
+  category: text("category").notNull(), // 'photographer', 'lawyer', 'mortgage_broker', 'banker', 'inspector', 'surveyor', 'other'
+  description: text("description").notNull(),
+  websiteUrl: text("website_url"),
+  logoUrl: text("logo_url"),
+  certifications: json("certifications").$type<string[]>().default([]),
+  servicesOffered: json("services_offered").$type<string[]>().default([]),
+  priceRange: text("price_range"), // e.g., "$100-500", "Contact for quote"
+  serviceAreas: json("service_areas").$type<string[]>().default([]), // Geographic areas they serve
+  businessAddress: text("business_address"),
+  licenseNumber: text("license_number"), // For regulated professions
+  insuranceDetails: text("insurance_details"),
+  
+  // Admin approval workflow
+  status: text("status").default('pending'), // pending, approved, rejected, suspended
+  submittedAt: timestamp("submitted_at").defaultNow(),
+  reviewedAt: timestamp("reviewed_at"),
+  reviewedBy: varchar("reviewed_by").references(() => users.id),
+  reviewNotes: text("review_notes"),
+  
+  // Display settings
+  featured: boolean("featured").default(false),
+  displayOrder: integer("display_order").default(0),
+  isActive: boolean("is_active").default(true),
+  
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
   createdAt: true,
@@ -109,6 +144,20 @@ export const insertPurchaseOrderSchema = createInsertSchema(purchaseOrders).omit
   completedAt: true,
 });
 
+export const insertServiceProviderSchema = createInsertSchema(serviceProviders).omit({
+  id: true,
+  status: true, // Defaults to pending
+  submittedAt: true,
+  reviewedAt: true,
+  reviewedBy: true,
+  reviewNotes: true,
+  featured: true,
+  displayOrder: true,
+  isActive: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 export type InsertProperty = z.infer<typeof insertPropertySchema>;
@@ -119,3 +168,5 @@ export type InsertUserPreferences = z.infer<typeof insertUserPreferencesSchema>;
 export type UserPreferences = typeof userPreferences.$inferSelect;
 export type InsertPurchaseOrder = z.infer<typeof insertPurchaseOrderSchema>;
 export type PurchaseOrder = typeof purchaseOrders.$inferSelect;
+export type InsertServiceProvider = z.infer<typeof insertServiceProviderSchema>;
+export type ServiceProvider = typeof serviceProviders.$inferSelect;
