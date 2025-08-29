@@ -7,7 +7,7 @@ import Home from "@/pages/home";
 import Liked from "@/pages/liked";
 import AddProperty from "@/pages/add-property";
 import Reports from "@/pages/reports";
-import Services from "@/pages/services";
+import ServiceSubmission from "@/pages/service-submission";
 import Profile from "@/pages/profile";
 import NotFound from "@/pages/not-found";
 
@@ -19,7 +19,7 @@ function Router() {
       <Route path="/add-property" component={AddProperty} />
       <Route path="/add" component={AddProperty} />
       <Route path="/reports" component={Reports} />
-      <Route path="/services" component={Services} />
+      <Route path="/service-submission" component={ServiceSubmission} />
       <Route path="/profile" component={Profile} />
       <Route component={NotFound} />
     </Switch>

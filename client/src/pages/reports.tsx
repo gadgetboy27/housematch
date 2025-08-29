@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
+import { useLocation } from "wouter";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import BottomNavigation from "@/components/bottom-navigation";
@@ -69,6 +70,7 @@ const reportTypes = [
 export default function Reports() {
   const [showPurchaseModal, setShowPurchaseModal] = useState(false);
   const [selectedReport, setSelectedReport] = useState<any>(null);
+  const [, setLocation] = useLocation();
   const { toast } = useToast();
 
   // Mock user ID for demo
@@ -243,6 +245,27 @@ export default function Reports() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Professional Services */}
+        <div className="bg-gradient-to-r from-purple-600 to-purple-700 rounded-xl p-4 text-white mt-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="font-semibold mb-1">Professional Services</h3>
+              <p className="text-sm text-purple-100 mb-3">
+                Are you a professional service provider? Join our network of trusted experts.
+              </p>
+            </div>
+            <div className="text-3xl">🏆</div>
+          </div>
+          
+          <button
+            onClick={() => setLocation("/service-submission")}
+            className="w-full bg-white text-purple-600 py-3 px-4 rounded-lg font-semibold hover:bg-purple-50 transition-colors"
+            data-testid="button-submit-new-service"
+          >
+            Submit New Service
+          </button>
+        </div>
       </div>
 
       {/* Purchase Modal */}

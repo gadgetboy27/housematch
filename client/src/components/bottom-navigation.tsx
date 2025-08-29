@@ -20,10 +20,10 @@ const navigationItems = [
     testId: "nav-add"
   },
   {
-    path: "/services",
-    icon: "fa-concierge-bell",
-    label: "Services",
-    testId: "nav-services"
+    path: "/reports",
+    icon: "fa-shopping-cart",
+    label: "Reports",
+    testId: "nav-reports"
   },
   {
     path: "/profile",
