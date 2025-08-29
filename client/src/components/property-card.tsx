@@ -1,5 +1,6 @@
 // src/components/property-card.tsx
 import { useState, useEffect } from "react";
+import { useLocation } from "wouter";
 import { Property } from "@shared/schema";
 import PropertyMetrics from "./property-metrics";
 import PropertyTypeDropdown from "./property-type-dropdown";
@@ -23,6 +24,7 @@ export default function PropertyCard({ property, isBackground = false, onPropert
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [showTutorial, setShowTutorial] = useState(false);
   const [isFlipped, setIsFlipped] = useState(false);
+  const [, setLocation] = useLocation();
   
   const typeColor =
     propertyTypeColors[property.propertyType as keyof typeof propertyTypeColors] || propertyTypeColors.residential;
@@ -240,7 +242,7 @@ export default function PropertyCard({ property, isBackground = false, onPropert
                 className="text-gray-400 hover:text-white p-2 bg-gray-800/80 rounded-full backdrop-blur-sm"
                 onClick={(e) => {
                   e.stopPropagation();
-                  setIsFlipped(false);
+                  setLocation("/");
                 }}
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
