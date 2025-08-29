@@ -1,8 +1,9 @@
 // src/components/property-card.tsx
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Property } from "@shared/schema";
 import PropertyMetrics from "./property-metrics";
 import PropertyTypeDropdown from "./property-type-dropdown";
+import ImageSwipeTutorial from "./image-swipe-tutorial";
 
 interface PropertyCardProps {
   property: Property;
@@ -19,6 +20,7 @@ const propertyTypeColors = {
 
 export default function PropertyCard({ property, isBackground = false, onPropertyTypeFilter }: PropertyCardProps) {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [showTutorial, setShowTutorial] = useState(false);
   
   const typeColor =
     propertyTypeColors[property.propertyType as keyof typeof propertyTypeColors] || propertyTypeColors.residential;
@@ -31,6 +33,25 @@ export default function PropertyCard({ property, isBackground = false, onPropert
 
   const hasMultipleImages = allImages.length > 1;
   const currentImage = allImages[currentImageIndex];
+
+  // Tutorial logic - show once when user first encounters multiple images
+  useEffect(() => {
+    if (!hasMultipleImages || isBackground) return;
+    
+    const hasSeenTutorial = localStorage.getItem('image-swipe-tutorial-seen');
+    if (!hasSeenTutorial) {
+      const timer = setTimeout(() => {
+        setShowTutorial(true);
+      }, 1000); // Delay to let user see the property first
+      
+      return () => clearTimeout(timer);
+    }
+  }, [hasMultipleImages, isBackground]);
+
+  const handleTutorialComplete = () => {
+    setShowTutorial(false);
+    localStorage.setItem('image-swipe-tutorial-seen', 'true');
+  };
 
   const handlePreviousImage = (e: React.MouseEvent | React.TouchEvent) => {
     e.stopPropagation();
@@ -167,6 +188,15 @@ export default function PropertyCard({ property, isBackground = false, onPropert
           {property.lotNumber && <span>{property.lotNumber}</span>}
         </div>
       </div>
+
+      {/* Image Swipe Tutorial */}
+      {hasMultipleImages && (
+        <ImageSwipeTutorial
+          isVisible={showTutorial}
+          onComplete={handleTutorialComplete}
+          imageCount={allImages.length}
+        />
+      )}
     </div>
   );
 }

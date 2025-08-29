@@ -47,7 +47,7 @@ export class MemStorage implements IStorage {
   }
 
   private seedProperties() {
-    const mockProperties: InsertProperty[] = [
+    const mockProperties = [
       {
         title: "Modern Family Home",
         address: "123 Queen Street, Auckland Central",
@@ -71,7 +71,9 @@ export class MemStorage implements IStorage {
         ],
         views: 147,
         likes: 23,
-        saves: 8
+        saves: 8,
+        isLinzValidated: true,
+        selfDeclaration: true
       },
       {
         title: "Luxury Apartment",
@@ -96,7 +98,9 @@ export class MemStorage implements IStorage {
         ],
         views: 89,
         likes: 15,
-        saves: 5
+        saves: 5,
+        isLinzValidated: true,
+        selfDeclaration: true
       },
       {
         title: "Family Villa",
@@ -121,7 +125,9 @@ export class MemStorage implements IStorage {
         ],
         views: 203,
         likes: 31,
-        saves: 12
+        saves: 12,
+        isLinzValidated: false,
+        selfDeclaration: true
       },
       {
         title: "Modern Rental",
@@ -146,7 +152,9 @@ export class MemStorage implements IStorage {
         ],
         views: 134,
         likes: 19,
-        saves: 7
+        saves: 7,
+        isLinzValidated: true,
+        selfDeclaration: true
       },
       {
         title: "Office Building",
@@ -171,7 +179,9 @@ export class MemStorage implements IStorage {
         ],
         views: 67,
         likes: 8,
-        saves: 3
+        saves: 3,
+        isLinzValidated: false,
+        selfDeclaration: true
       },
       {
         title: "Waterfront Apartment",
