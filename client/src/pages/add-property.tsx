@@ -338,7 +338,7 @@ export default function AddProperty() {
                       <FormLabel>Address</FormLabel>
                       <FormControl>
                         <Input 
-                          placeholder="123 Queen Street, Auckland Central" 
+                          placeholder="27 Tutanekai Street" 
                           {...field}
                           data-testid="input-address"
                         />
@@ -454,7 +454,7 @@ export default function AddProperty() {
                       </FormLabel>
                       <FormControl>
                         <Input 
-                          placeholder="Lot 15 DP 456789" 
+                          placeholder="PT LOT 106 DP 3147" 
                           {...field}
                           data-testid="input-lot-number"
                         />
@@ -476,7 +476,7 @@ export default function AddProperty() {
                       </FormLabel>
                       <FormControl>
                         <Input 
-                          placeholder="CT 456789/123" 
+                          placeholder="NA309/223" 
                           {...field}
                           data-testid="input-certificate-title"
                         />
