@@ -57,15 +57,17 @@ export default function PropertyCard({ property, isBackground = false, onPropert
     localStorage.setItem('image-swipe-tutorial-seen', 'true');
   };
 
-  const handlePreviousImage = (e: React.MouseEvent | React.TouchEvent) => {
+  const handlePreviousImage = (e: React.MouseEvent | React.TouchEvent | React.PointerEvent) => {
     e.stopPropagation();
+    e.preventDefault();
     if (hasMultipleImages) {
       setCurrentImageIndex((prev) => (prev === 0 ? allImages.length - 1 : prev - 1));
     }
   };
 
-  const handleNextImage = (e: React.MouseEvent | React.TouchEvent) => {
+  const handleNextImage = (e: React.MouseEvent | React.TouchEvent | React.PointerEvent) => {
     e.stopPropagation();
+    e.preventDefault();
     if (hasMultipleImages) {
       setCurrentImageIndex((prev) => (prev === allImages.length - 1 ? 0 : prev + 1));
     }
@@ -109,16 +111,28 @@ export default function PropertyCard({ property, isBackground = false, onPropert
           {/* Left tap zone */}
           <div 
             className="absolute top-0 left-0 w-[30%] h-full z-10 cursor-pointer"
-            onClick={handlePreviousImage}
-            onTouchEnd={handlePreviousImage}
+            onPointerDown={(e) => {
+              e.stopPropagation();
+              handlePreviousImage(e);
+            }}
+            onClick={(e) => {
+              e.stopPropagation();
+              handlePreviousImage(e);
+            }}
             data-testid="tap-zone-previous-image"
           />
           
           {/* Right tap zone */}
           <div 
             className="absolute top-0 right-0 w-[30%] h-full z-10 cursor-pointer"
-            onClick={handleNextImage}
-            onTouchEnd={handleNextImage}
+            onPointerDown={(e) => {
+              e.stopPropagation();
+              handleNextImage(e);
+            }}
+            onClick={(e) => {
+              e.stopPropagation();
+              handleNextImage(e);
+            }}
             data-testid="tap-zone-next-image"
           />
           
