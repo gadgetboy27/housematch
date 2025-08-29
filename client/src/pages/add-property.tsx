@@ -507,6 +507,7 @@ export default function AddProperty() {
                         <Input 
                           placeholder="Modern Family Home" 
                           {...field}
+                          className={form.formState.errors.title ? 'border-red-500 focus:ring-red-500 focus:border-red-500' : ''}
                           data-testid="input-title"
                         />
                       </FormControl>
@@ -530,7 +531,7 @@ export default function AddProperty() {
                           <Input 
                             placeholder="123 Example Street, Auckland" 
                             {...field}
-                            className={fieldStatus.hasError ? 'border-red-500 focus:ring-red-500' : ''}
+                            className={`${fieldStatus.hasError ? 'border-red-500 focus:ring-red-500' : ''} ${form.formState.errors.address ? 'border-red-500 focus:ring-red-500 focus:border-red-500' : ''}`}
                             data-testid="input-address"
                           />
                         </FormControl>
@@ -702,7 +703,7 @@ export default function AddProperty() {
                           <Input 
                             placeholder="PT LOT 15 DP 123456" 
                             {...field}
-                            className={fieldStatus.hasError ? 'border-red-500 focus:ring-red-500' : ''}
+                            className={`${fieldStatus.hasError ? 'border-red-500 focus:ring-red-500' : ''} ${form.formState.errors.lotNumber ? 'border-red-500 focus:ring-red-500 focus:border-red-500' : ''}`}
                             data-testid="input-lot-number"
                           />
                         </FormControl>
@@ -973,13 +974,39 @@ export default function AddProperty() {
               className="w-full bg-primary text-primary-foreground h-12 font-semibold hover:bg-primary/90"
               disabled={createPropertyMutation.isPending}
               data-testid="button-submit-property"
-              onClick={() => {
-                console.log("🔍 SUBMIT BUTTON CLICKED!");
-                console.log("🔍 Form state:", form.getValues());
-                console.log("🔍 Form valid:", form.formState.isValid);
+              onClick={async (e) => {
+                console.log("🔍 VALIDATION BUTTON CLICKED!");
+                
+                // Force validation of all fields
+                const isValid = await form.trigger();
+                
+                console.log("🔍 Form validation result:", isValid);
                 console.log("🔍 Form errors:", form.formState.errors);
-                console.log("🔍 Mutation pending:", createPropertyMutation.isPending);
-                console.log("🔍 Form complete:", isFormComplete);
+                
+                if (!isValid) {
+                  // Scroll to first error field
+                  const firstErrorField = Object.keys(form.formState.errors)[0];
+                  if (firstErrorField) {
+                    const errorElement = document.querySelector(`[name="${firstErrorField}"]`);
+                    if (errorElement) {
+                      errorElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                      // Add visual flash to highlight the field
+                      errorElement.focus();
+                    }
+                  }
+                  
+                  toast({
+                    title: "Please complete required fields",
+                    description: "Some fields need your attention. Check the highlighted areas above.",
+                    variant: "destructive",
+                  });
+                  
+                  // Prevent form submission
+                  e.preventDefault();
+                  return;
+                }
+                
+                console.log("🔍 Validation passed - form will submit");
               }}
             >
               {createPropertyMutation.isPending ? (
