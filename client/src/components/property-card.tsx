@@ -80,11 +80,30 @@ export default function PropertyCard({ property, isBackground = false, onPropert
     }
   };
 
+  // Handle double-tap for both mouse and touch
+  let tapCount = 0;
+  let tapTimer: NodeJS.Timeout;
+
   const handleCardDoubleTap = (e: React.MouseEvent | React.TouchEvent) => {
-    // Only flip if not double-tapping on image navigation zones or other interactive elements
     const target = e.target as HTMLElement;
     if (!target.closest('[data-testid^="tap-zone-"]') && !target.closest('.z-50')) {
       setIsFlipped(!isFlipped);
+    }
+  };
+
+  const handleCardTap = (e: React.MouseEvent | React.TouchEvent) => {
+    const target = e.target as HTMLElement;
+    if (!target.closest('[data-testid^="tap-zone-"]') && !target.closest('.z-50')) {
+      tapCount++;
+      if (tapCount === 1) {
+        tapTimer = setTimeout(() => {
+          tapCount = 0;
+        }, 300);
+      } else if (tapCount === 2) {
+        clearTimeout(tapTimer);
+        tapCount = 0;
+        setIsFlipped(!isFlipped);
+      }
     }
   };
 
@@ -93,6 +112,8 @@ export default function PropertyCard({ property, isBackground = false, onPropert
       className="w-full h-full relative select-none cursor-pointer"
       style={{ perspective: "1000px" }}
       onDoubleClick={handleCardDoubleTap}
+      onTouchEnd={handleCardTap}
+      onClick={handleCardTap}
     >
       <motion.div
         className="w-full h-full relative"
@@ -122,6 +143,10 @@ export default function PropertyCard({ property, isBackground = false, onPropert
               e.stopPropagation();
               handlePreviousImage(e);
             }}
+            onTouchEnd={(e) => {
+              e.stopPropagation();
+              handlePreviousImage(e);
+            }}
             data-testid="tap-zone-previous-image"
           />
           
@@ -129,6 +154,10 @@ export default function PropertyCard({ property, isBackground = false, onPropert
           <div 
             className="absolute top-0 right-0 w-[20%] h-full z-10 cursor-pointer"
             onClick={(e) => {
+              e.stopPropagation();
+              handleNextImage(e);
+            }}
+            onTouchEnd={(e) => {
               e.stopPropagation();
               handleNextImage(e);
             }}
