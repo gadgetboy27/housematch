@@ -196,16 +196,29 @@ export function setupAuth(app: Express) {
     });
   });
 
-  // Get current user
-  app.get("/api/auth/user", (req, res) => {
+  // Get current user (with fresh data from database)
+  app.get("/api/auth/user", async (req, res) => {
     if (!req.isAuthenticated() || !req.user) {
       return res.status(401).json({ message: "Not authenticated" });
     }
-    res.json({ 
-      id: req.user.id, 
-      email: req.user.email, 
-      name: req.user.name 
-    });
+    
+    try {
+      // Fetch fresh user data from database to include profile picture updates
+      const freshUser = await storage.getUser(req.user.id);
+      if (!freshUser) {
+        return res.status(401).json({ message: "User not found" });
+      }
+      
+      res.json({ 
+        id: freshUser.id, 
+        email: freshUser.email, 
+        name: freshUser.name,
+        profilePicture: freshUser.profilePicture 
+      });
+    } catch (error) {
+      console.error("Failed to fetch user data:", error);
+      res.status(500).json({ message: "Failed to fetch user data" });
+    }
   });
 }
 

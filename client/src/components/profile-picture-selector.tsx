@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -35,6 +35,11 @@ export function ProfilePictureSelector({ currentProfilePicture, userId }: Profil
   const [activeTab, setActiveTab] = useState<'emoji' | 'standard'>('emoji');
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  // Reset selected picture when current profile picture changes
+  useEffect(() => {
+    setSelectedPicture(currentProfilePicture);
+  }, [currentProfilePicture]);
 
   const updateProfilePictureMutation = useMutation({
     mutationFn: async (profilePicture: string) => {
