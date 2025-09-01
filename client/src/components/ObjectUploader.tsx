@@ -64,6 +64,33 @@ export function ObjectUploader({
     if (files.length === 0) return;
 
     console.log("🔍 Files selected:", files.length);
+    
+    // Check if adding these files would exceed the limit
+    const totalFiles = uploadedFiles.length + files.length;
+    if (totalFiles > maxNumberOfFiles) {
+      console.error("🔍 Too many files selected");
+      // Reset the input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+      // Call onComplete with empty array to trigger error handling
+      onComplete?.([]);
+      return;
+    }
+
+    // Check file sizes
+    const oversizedFiles = files.filter(file => file.size > maxFileSize);
+    if (oversizedFiles.length > 0) {
+      console.error("🔍 Files too large:", oversizedFiles.map(f => f.name));
+      // Reset the input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+      // Call onComplete with empty array to trigger error handling
+      onComplete?.([]);
+      return;
+    }
+
     setIsUploading(true);
 
     try {

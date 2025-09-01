@@ -149,6 +149,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get user's properties
+  app.get("/api/users/:userId/properties", requireAuth, async (req, res) => {
+    try {
+      // Ensure user can only access their own properties
+      if (req.params.userId !== req.userId) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+      
+      const properties = await storage.getUserProperties(req.params.userId);
+      res.json(properties);
+    } catch (error) {
+      console.error("Failed to fetch user properties:", error);
+      res.status(500).json({ message: "Failed to fetch properties" });
+    }
+  });
+
+  // Update property
+  app.put("/api/properties/:id", requireAuth, requirePropertyOwnership, async (req, res) => {
+    try {
+      const validatedData = insertPropertySchema.parse(req.body);
+      const updatedProperty = await storage.updateProperty(req.params.id, validatedData);
+      
+      res.json({
+        message: "Property updated successfully",
+        property: updatedProperty
+      });
+    } catch (error) {
+      console.error("Failed to update property:", error);
+      res.status(400).json({ 
+        message: "Failed to update property", 
+        error: error.message 
+      });
+    }
+  });
+
+  // Delete property (soft delete)
+  app.delete("/api/properties/:id", requireAuth, requirePropertyOwnership, async (req, res) => {
+    try {
+      await storage.softDeleteProperty(req.params.id);
+      res.json({ message: "Property removed from listings" });
+    } catch (error) {
+      console.error("Failed to delete property:", error);
+      res.status(500).json({ message: "Failed to remove property" });
+    }
+  });
+
   // User swipe routes
   app.post("/api/swipes", async (req, res) => {
     try {

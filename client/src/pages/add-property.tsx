@@ -351,6 +351,25 @@ export default function AddProperty() {
 
   // Handle upload completion
   const handleUploadComplete = async (uploadedUrls: string[]) => {
+    // Check for validation errors
+    if (uploadedUrls.length === 0 && uploadedImages.length >= 4) {
+      toast({
+        title: "Photo Limit Reached",
+        description: "You can only upload 4 photos maximum. Upgrade to Premium for more photos.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    if (uploadedUrls.length === 0) {
+      toast({
+        title: "Upload Error",
+        description: "Files are too large (max 10MB each) or invalid format. Please try smaller image files.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     if (uploadedUrls.length > 0) {
       const newImagePaths: string[] = [];
       

@@ -39,6 +39,11 @@ export interface IStorage {
   getServiceProviderById(id: string): Promise<ServiceProvider | undefined>;
   updateServiceProviderStatus(id: string, status: string, reviewNotes?: string): Promise<void>;
   getApprovedServiceProviders(): Promise<ServiceProvider[]>;
+
+  // Property Management
+  getUserProperties(userId: string): Promise<Property[]>;
+  updateProperty(id: string, data: Partial<InsertProperty>): Promise<Property>;
+  softDeleteProperty(id: string): Promise<void>;
 }
 
 export class MemStorage implements IStorage {
@@ -1066,6 +1071,29 @@ export class DatabaseStorage implements IStorage {
   async getApprovedServiceProviders(): Promise<ServiceProvider[]> {
     return await db.select().from(serviceProviders)
       .where(and(eq(serviceProviders.status, 'approved'), eq(serviceProviders.isActive, true)));
+  }
+
+  // Property Management
+  async getUserProperties(userId: string): Promise<Property[]> {
+    return await db.select().from(properties)
+      .where(and(eq(properties.userId, userId), eq(properties.isActive, true)));
+  }
+
+  async updateProperty(id: string, data: Partial<InsertProperty>): Promise<Property> {
+    const [updatedProperty] = await db.update(properties)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(properties.id, id))
+      .returning();
+    return updatedProperty;
+  }
+
+  async softDeleteProperty(id: string): Promise<void> {
+    await db.update(properties)
+      .set({ 
+        isActive: false, 
+        updatedAt: new Date() 
+      })
+      .where(eq(properties.id, id));
   }
 }
 

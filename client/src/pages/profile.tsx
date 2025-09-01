@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import BottomNavigation from "@/components/bottom-navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -6,6 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { LocalStorageService, UserSession } from "@/lib/local-storage";
+import { apiRequest } from "@/lib/queryClient";
+import type { Property } from "@shared/schema";
 
 export default function Profile() {
   const [userSession, setUserSession] = useState<UserSession>({ isLoggedIn: false });
@@ -17,7 +20,9 @@ export default function Profile() {
   const [isSyncing, setIsSyncing] = useState(false);
   const [loginForm, setLoginForm] = useState({ email: "", password: "" });
   const [signupForm, setSignupForm] = useState({ name: "", email: "", password: "" });
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     // Load user session and liked properties count
@@ -186,6 +191,49 @@ export default function Profile() {
       });
     }
     setIsSyncing(false);
+  };
+
+  // Fetch user's properties
+  const { data: userProperties = [] } = useQuery({
+    queryKey: ["/api/users", userSession.userId, "properties"],
+    queryFn: async () => {
+      if (!userSession.userId) return [];
+      const response = await apiRequest("GET", `/api/users/${userSession.userId}/properties`, undefined, {
+        'x-user-id': userSession.userId
+      });
+      return response.json();
+    },
+    enabled: !!userSession.userId,
+  });
+
+  // Delete property mutation
+  const deletePropertyMutation = useMutation({
+    mutationFn: async (propertyId: string) => {
+      const response = await apiRequest("DELETE", `/api/properties/${propertyId}`, undefined, {
+        'x-user-id': userSession.userId!
+      });
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/users", userSession.userId, "properties"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/properties"] });
+      toast({
+        title: "Property Removed",
+        description: "Your property has been removed from listings",
+      });
+      setShowDeleteConfirm(null);
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Delete Failed",
+        description: error.message || "Failed to remove property",
+        variant: "destructive",
+      });
+    }
+  });
+
+  const handleDeleteProperty = (propertyId: string) => {
+    deletePropertyMutation.mutate(propertyId);
   };
 
   return (
@@ -365,24 +413,114 @@ export default function Profile() {
               </CardContent>
             </Card>
 
+            {/* My Properties */}
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+                <CardTitle className="text-base">My Properties</CardTitle>
+                <Button 
+                  size="sm" 
+                  onClick={() => window.location.href = '/add-property'}
+                  data-testid="button-add-property"
+                >
+                  <i className="fas fa-plus mr-1 text-xs"></i>
+                  Add
+                </Button>
+              </CardHeader>
+              <CardContent>
+                {userProperties.length === 0 ? (
+                  <div className="text-center py-6 text-muted-foreground">
+                    <i className="fas fa-home text-3xl mb-3 block opacity-20"></i>
+                    <p className="text-sm">You haven't listed any properties yet</p>
+                    <Button 
+                      size="sm" 
+                      className="mt-3"
+                      onClick={() => window.location.href = '/add-property'}
+                    >
+                      List Your First Property
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {userProperties.map((property: Property) => (
+                      <div 
+                        key={property.id} 
+                        className="border rounded-lg p-3 bg-white"
+                      >
+                        <div className="flex gap-3">
+                          <img 
+                            src={property.imageUrl || "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?ixlib=rb-4.0.3&auto=format&fit=crop&w=100&h=80"}
+                            alt={property.title}
+                            className="w-20 h-16 rounded object-cover flex-shrink-0"
+                          />
+                          <div className="flex-1 min-w-0">
+                            <h3 className="font-medium text-sm truncate" data-testid={`property-title-${property.id}`}>
+                              {property.title}
+                            </h3>
+                            <p className="text-xs text-muted-foreground truncate">
+                              {property.address}
+                            </p>
+                            <div className="flex items-center gap-4 mt-1">
+                              <span className="text-xs font-semibold text-green-600">
+                                {property.price}
+                              </span>
+                              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                <span><i className="fas fa-eye"></i> {property.views || 0}</span>
+                                <span><i className="fas fa-heart text-pink-400"></i> {property.likes || 0}</span>
+                              </div>
+                            </div>
+                          </div>
+                          <div className="flex flex-col gap-1">
+                            <Button 
+                              size="sm"
+                              variant="ghost"
+                              className="h-7 w-7 p-0"
+                              onClick={() => window.location.href = `/edit-property/${property.id}`}
+                              data-testid={`button-edit-${property.id}`}
+                            >
+                              <i className="fas fa-edit text-xs text-blue-500"></i>
+                            </Button>
+                            <Button 
+                              size="sm"
+                              variant="ghost"
+                              className="h-7 w-7 p-0"
+                              onClick={() => setShowDeleteConfirm(property.id)}
+                              data-testid={`button-delete-${property.id}`}
+                            >
+                              <i className="fas fa-trash text-xs text-red-500"></i>
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
             {/* Statistics */}
             <Card>
               <CardHeader>
                 <CardTitle className="text-base">Your Activity</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-2 gap-4 text-center">
+                <div className="grid grid-cols-3 gap-4 text-center">
                   <div>
-                    <div className="text-2xl font-bold text-pink-500" data-testid="text-stat-liked">
+                    <div className="text-xl font-bold text-pink-500" data-testid="text-stat-liked">
                       {likedCount}
                     </div>
-                    <div className="text-xs text-muted-foreground">Liked Properties</div>
+                    <div className="text-xs text-muted-foreground">Liked</div>
                   </div>
                   <div>
-                    <div className="text-2xl font-bold text-blue-500" data-testid="text-stat-synced">
-                      <i className="fas fa-cloud text-lg"></i>
+                    <div className="text-xl font-bold text-green-500" data-testid="text-stat-properties">
+                      {userProperties.length}
                     </div>
-                    <div className="text-xs text-muted-foreground">Cloud Synced</div>
+                    <div className="text-xs text-muted-foreground">Listed</div>
+                  </div>
+                  <div>
+                    <div className="text-xl font-bold text-blue-500" data-testid="text-stat-synced">
+                      <i className="fas fa-cloud text-base"></i>
+                    </div>
+                    <div className="text-xs text-muted-foreground">Synced</div>
                   </div>
                 </div>
               </CardContent>
@@ -470,6 +608,40 @@ export default function Profile() {
           </Button>
         )}
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 px-4">
+          <div className="bg-white rounded-lg p-6 max-w-sm w-full">
+            <div className="flex items-center mb-4">
+              <i className="fas fa-exclamation-triangle text-red-500 text-xl mr-3"></i>
+              <h3 className="font-semibold">Remove Property?</h3>
+            </div>
+            <p className="text-sm text-muted-foreground mb-6">
+              This will remove your property from all listings. This action cannot be undone.
+            </p>
+            <div className="flex gap-3">
+              <Button 
+                variant="destructive"
+                onClick={() => handleDeleteProperty(showDeleteConfirm)}
+                disabled={deletePropertyMutation.isPending}
+                className="flex-1"
+                data-testid="button-confirm-delete"
+              >
+                {deletePropertyMutation.isPending ? "Removing..." : "Remove"}
+              </Button>
+              <Button 
+                variant="outline"
+                onClick={() => setShowDeleteConfirm(null)}
+                className="flex-1"
+                data-testid="button-cancel-delete"
+              >
+                Cancel
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <BottomNavigation />
     </div>
