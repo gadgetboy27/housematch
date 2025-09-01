@@ -35,7 +35,9 @@ export function setupAuth(app: Express) {
     saveUninitialized: false,
     cookie: {
       secure: false, // Set to true in production with HTTPS
+      httpOnly: true, // Prevent XSS attacks
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      sameSite: 'lax', // CSRF protection
     },
   };
 

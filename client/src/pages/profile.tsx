@@ -115,8 +115,8 @@ export default function Profile() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-background pb-20">
-        <div className="container mx-auto px-4 py-6">
+      <div className="max-w-sm mx-auto min-h-screen bg-background pb-20">
+        <div className="px-4 py-6">
           <div className="flex items-center justify-center py-8">
             <div className="text-center">
               <i className="fas fa-spinner fa-spin text-3xl text-muted-foreground mb-4"></i>
@@ -130,8 +130,8 @@ export default function Profile() {
   }
 
   return (
-    <div className="min-h-screen bg-background pb-20">
-      <div className="container mx-auto px-4 py-6 space-y-6">
+    <div className="max-w-sm mx-auto min-h-screen bg-background pb-20">
+      <div className="px-4 py-6 space-y-6">
         <div className="text-center mb-8">
           <h1 className="text-2xl font-bold text-secondary">My Profile</h1>
           <p className="text-muted-foreground text-sm">Manage your account and properties</p>
