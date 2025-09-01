@@ -25,29 +25,50 @@ export function AuthModal({ isOpen, onClose, onSuccess, mode, onToggleMode }: Au
   // Login mutation
   const loginMutation = useMutation({
     mutationFn: async (data: { email: string; password: string }) => {
+      console.log("🔐 LOGIN ATTEMPT:", { email: data.email, timestamp: new Date().toISOString() });
+      
       const response = await apiRequest("POST", "/api/auth/login", data);
-      return response.json();
+      const result = await response.json();
+      
+      console.log("🔐 LOGIN RESPONSE:", { 
+        status: response.status, 
+        success: result.success, 
+        hasUser: !!result.user,
+        message: result.message 
+      });
+      
+      if (!response.ok) {
+        throw new Error(result.message || `HTTP ${response.status}: Login request failed`);
+      }
+      return result;
     },
     onSuccess: (result) => {
+      console.log("✅ LOGIN SUCCESS:", result);
       if (result.success) {
         onSuccess(result.user);
         onClose();
         toast({
           title: "Welcome back!",
-          description: "Successfully logged in",
+          description: `Logged in as ${result.user.name}`,
         });
       } else {
+        console.error("❌ Login success but result.success is false:", result);
         toast({
           title: "Login failed",
-          description: result.message || "Please check your credentials",
+          description: result.message || "Unexpected server response",
           variant: "destructive",
         });
       }
     },
-    onError: () => {
+    onError: (error: Error) => {
+      console.error("❌ LOGIN ERROR:", {
+        message: error.message,
+        stack: error.stack,
+        timestamp: new Date().toISOString()
+      });
       toast({
-        title: "Login failed",
-        description: "Please try again",
+        title: "Login failed", 
+        description: error.message || "Please check your credentials and try again",
         variant: "destructive",
       });
     }
@@ -56,29 +77,50 @@ export function AuthModal({ isOpen, onClose, onSuccess, mode, onToggleMode }: Au
   // Register mutation  
   const registerMutation = useMutation({
     mutationFn: async (data: { email: string; name: string; password: string }) => {
+      console.log("📝 REGISTER ATTEMPT:", { email: data.email, name: data.name, timestamp: new Date().toISOString() });
+      
       const response = await apiRequest("POST", "/api/auth/register", data);
-      return response.json();
+      const result = await response.json();
+      
+      console.log("📝 REGISTER RESPONSE:", { 
+        status: response.status, 
+        success: result.success, 
+        hasUser: !!result.user,
+        message: result.message 
+      });
+      
+      if (!response.ok) {
+        throw new Error(result.message || `HTTP ${response.status}: Registration failed`);
+      }
+      return result;
     },
     onSuccess: (result) => {
+      console.log("✅ REGISTRATION SUCCESS:", result);
       if (result.success) {
         onSuccess(result.user);
         onClose();
         toast({
           title: "Welcome!",
-          description: "Account created successfully",
+          description: `Account created for ${result.user.name}`,
         });
       } else {
+        console.error("❌ Registration success but result.success is false:", result);
         toast({
           title: "Registration failed",
-          description: result.message || "Please try again",
+          description: result.message || "Unexpected server response",
           variant: "destructive",
         });
       }
     },
-    onError: () => {
+    onError: (error: Error) => {
+      console.error("❌ REGISTRATION ERROR:", {
+        message: error.message,
+        stack: error.stack,
+        timestamp: new Date().toISOString()
+      });
       toast({
         title: "Registration failed", 
-        description: "Please try again",
+        description: error.message || "Please check your details and try again",
         variant: "destructive",
       });
     }
