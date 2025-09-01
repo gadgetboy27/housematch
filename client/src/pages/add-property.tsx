@@ -750,10 +750,11 @@ export default function AddProperty() {
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
+                            <SelectItem value="0">0 (Land/Commercial)</SelectItem>
                             {[1, 2, 3, 4, 5].map(num => (
                               <SelectItem key={num} value={num.toString()}>{num}</SelectItem>
                             ))}
-                            <SelectItem value="6">5+</SelectItem>
+                            <SelectItem value="6">6+</SelectItem>
                           </SelectContent>
                         </Select>
                         <FormMessage />
@@ -774,10 +775,11 @@ export default function AddProperty() {
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
+                            <SelectItem value="0">0 (Land/Commercial)</SelectItem>
                             {[1, 2, 3, 4].map(num => (
                               <SelectItem key={num} value={num.toString()}>{num}</SelectItem>
                             ))}
-                            <SelectItem value="5">4+</SelectItem>
+                            <SelectItem value="5">5+</SelectItem>
                           </SelectContent>
                         </Select>
                         <FormMessage />

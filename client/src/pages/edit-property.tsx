@@ -282,21 +282,34 @@ export default function EditProperty() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="text-sm font-medium">Bedrooms</label>
-                  <Input
-                    type="number"
+                  <select
                     value={formData.bedrooms}
-                    onChange={(e) => handleInputChange("bedrooms", parseInt(e.target.value) || 0)}
-                    min="0"
-                  />
+                    onChange={(e) => handleInputChange("bedrooms", parseInt(e.target.value))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  >
+                    <option value="0">0 (Land/Commercial)</option>
+                    <option value="1">1</option>
+                    <option value="2">2</option>
+                    <option value="3">3</option>
+                    <option value="4">4</option>
+                    <option value="5">5</option>
+                    <option value="6">6+</option>
+                  </select>
                 </div>
                 <div>
                   <label className="text-sm font-medium">Bathrooms</label>
-                  <Input
-                    type="number"
+                  <select
                     value={formData.bathrooms}
-                    onChange={(e) => handleInputChange("bathrooms", parseInt(e.target.value) || 0)}
-                    min="0"
-                  />
+                    onChange={(e) => handleInputChange("bathrooms", parseInt(e.target.value))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  >
+                    <option value="0">0 (Land/Commercial)</option>
+                    <option value="1">1</option>
+                    <option value="2">2</option>
+                    <option value="3">3</option>
+                    <option value="4">4</option>
+                    <option value="5">5+</option>
+                  </select>
                 </div>
               </div>
 
@@ -323,12 +336,19 @@ export default function EditProperty() {
 
               <div>
                 <label className="text-sm font-medium">Car Spaces</label>
-                <Input
-                  type="number"
+                <select
                   value={formData.carSpaces}
-                  onChange={(e) => handleInputChange("carSpaces", parseInt(e.target.value) || 0)}
-                  min="0"
-                />
+                  onChange={(e) => handleInputChange("carSpaces", parseInt(e.target.value))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+                >
+                  <option value="0">0 (No Parking)</option>
+                  <option value="1">1</option>
+                  <option value="2">2</option>
+                  <option value="3">3</option>
+                  <option value="4">4</option>
+                  <option value="5">5</option>
+                  <option value="6">6+</option>
+                </select>
               </div>
 
               <div>
