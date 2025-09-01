@@ -1,4 +1,4 @@
-import { type User, type InsertUser, type Property, type InsertProperty, type UserSwipe, type InsertUserSwipe, type UserPreferences, type InsertUserPreferences, type PurchaseOrder, type InsertPurchaseOrder, type ServiceProvider, type InsertServiceProvider, users, properties, userSwipes, userPreferences, purchaseOrders, serviceProviders } from "@shared/schema";
+import { type User, type InsertUser, type Property, type InsertProperty, type UserSwipe, type InsertUserSwipe, type UserPreferences, type InsertUserPreferences, type PurchaseOrder, type InsertPurchaseOrder, type ServiceProvider, type InsertServiceProvider, users, properties, userSwipes, userPreferences, purchaseOrders, serviceProviders, passwordResetTokens } from "@shared/schema";
 import { randomUUID } from "crypto";
 import { db } from "./db";
 import { eq, and } from "drizzle-orm";
@@ -44,6 +44,13 @@ export interface IStorage {
   getUserProperties(userId: string): Promise<Property[]>;
   updateProperty(id: string, data: Partial<InsertProperty>): Promise<Property>;
   softDeleteProperty(id: string): Promise<void>;
+
+  // Password Reset
+  createPasswordResetToken(userId: string, token: string, expiresAt: Date): Promise<void>;
+  validatePasswordResetToken(token: string): Promise<{ userId: string } | null>;
+  markTokenAsUsed(token: string): Promise<void>;
+  updateUserPassword(userId: string, hashedPassword: string): Promise<void>;
+  cleanupExpiredTokens(): Promise<void>;
 }
 
 export class MemStorage implements IStorage {
