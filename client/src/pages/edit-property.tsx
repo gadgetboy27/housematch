@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import BottomNavigation from "@/components/bottom-navigation";
+import { ImageManager } from "@/components/image-manager";
 import type { Property } from "@shared/schema";
 
 export default function EditProperty() {
@@ -57,6 +58,7 @@ export default function EditProperty() {
     landArea: 0,
     carSpaces: 0,
     imageUrl: "",
+    additionalImages: [] as string[],
     hideCertificateOfTitle: false,
     isLinzValidated: false,
     selfDeclaration: true,
@@ -82,6 +84,7 @@ export default function EditProperty() {
         landArea: property.landArea || 0,
         carSpaces: property.carSpaces || 0,
         imageUrl: property.imageUrl || "",
+        additionalImages: property.additionalImages || [],
         hideCertificateOfTitle: property.hideCertificateOfTitle || false,
         isLinzValidated: property.isLinzValidated || false,
         selfDeclaration: true,
@@ -121,6 +124,14 @@ export default function EditProperty() {
 
   const handleInputChange = (field: string, value: string | number) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleMainImageChange = (url: string) => {
+    setFormData(prev => ({ ...prev, imageUrl: url }));
+  };
+
+  const handleAdditionalImagesChange = (images: string[]) => {
+    setFormData(prev => ({ ...prev, additionalImages: images }));
   };
 
   // Redirect if not authenticated
@@ -360,7 +371,22 @@ export default function EditProperty() {
                   rows={4}
                 />
               </div>
+            </form>
+          </CardContent>
+        </Card>
 
+        {/* Image Management */}
+        <ImageManager
+          mainImage={formData.imageUrl}
+          additionalImages={formData.additionalImages}
+          onMainImageChange={handleMainImageChange}
+          onAdditionalImagesChange={handleAdditionalImagesChange}
+          maxAdditionalImages={10}
+        />
+
+        <Card>
+          <CardContent className="pt-6">
+            <form onSubmit={handleSubmit}>
               <Button
                 type="submit"
                 className="w-full bg-purple-600 hover:bg-purple-700"

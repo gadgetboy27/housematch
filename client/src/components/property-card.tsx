@@ -36,16 +36,6 @@ export default function PropertyCard({ property, isBackground = false, onPropert
     ...(property.additionalImages || [])
   ];
 
-  // Debug logging - check all properties for multiple images
-  useEffect(() => {
-    if (property.additionalImages && property.additionalImages.length > 0) {
-      console.log("🖼️ FOUND MULTI-IMAGE PROPERTY:", {
-        title: property.title,
-        totalImages: allImages.length,
-        additionalImages: property.additionalImages.length
-      });
-    }
-  }, [property.title, property.additionalImages, allImages.length]);
 
   const hasMultipleImages = allImages.length > 1;
   const currentImage = allImages[currentImageIndex];
