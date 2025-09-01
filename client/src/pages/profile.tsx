@@ -4,218 +4,99 @@ import { useToast } from "@/hooks/use-toast";
 import BottomNavigation from "@/components/bottom-navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Switch } from "@/components/ui/switch";
-import { LocalStorageService, UserSession } from "@/lib/local-storage";
+import { LocalStorageService } from "@/lib/local-storage";
 import { apiRequest } from "@/lib/queryClient";
 import type { Property } from "@shared/schema";
 
 export default function Profile() {
-  const [userSession, setUserSession] = useState<UserSession>({ isLoggedIn: false });
   const [likedCount, setLikedCount] = useState(0);
-  const [isLoggingIn, setIsLoggingIn] = useState(false);
-  const [isSigningUp, setIsSigningUp] = useState(false);
-  const [showLoginForm, setShowLoginForm] = useState(false);
-  const [showSignupForm, setShowSignupForm] = useState(false);
-  const [isSyncing, setIsSyncing] = useState(false);
-  const [loginForm, setLoginForm] = useState({ email: "", password: "" });
-  const [signupForm, setSignupForm] = useState({ name: "", email: "", password: "" });
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
+  const [isSyncing, setIsSyncing] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
+  // Check if user is authenticated using real auth system
+  const { data: user, isLoading } = useQuery({
+    queryKey: ["/api/auth/user"],
+    queryFn: async () => {
+      try {
+        const response = await apiRequest("GET", "/api/auth/user");
+        return response.json();
+      } catch (error) {
+        return null; // User not authenticated
+      }
+    },
+    retry: false,
+  });
+
   useEffect(() => {
-    // Load user session and liked properties count
-    const session = LocalStorageService.getUserSession();
+    // Load liked properties count from localStorage
     const likedProperties = LocalStorageService.getLikedProperties();
-    setUserSession(session);
     setLikedCount(likedProperties.length);
   }, []);
 
-  const handleLogin = async () => {
-    if (!loginForm.email || !loginForm.password) {
-      toast({
-        title: "Error",
-        description: "Please fill in all fields",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setIsLoggingIn(true);
-    
+  const handleLogout = async () => {
     try {
-      // Simulate login API call (in real app, this would be actual authentication)
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Create user session
-      const session: UserSession = {
-        isLoggedIn: true,
-        userId: `user_${Date.now()}`,
-        email: loginForm.email,
-        name: loginForm.email.split('@')[0],
-      };
-
-      // Save session
-      LocalStorageService.setUserSession(session);
-      setUserSession(session);
-      
-      // Sync liked properties to server
-      if (likedCount > 0) {
-        setIsSyncing(true);
-        try {
-          await LocalStorageService.syncLikedPropertiesToServer(session.userId!);
-          toast({
-            title: "Synced!",
-            description: `${likedCount} liked properties synced to your account`,
-          });
-        } catch (error) {
-          console.error("Sync error:", error);
-          toast({
-            title: "Sync Warning",
-            description: "Login successful, but couldn't sync all data",
-            variant: "destructive",
-          });
-        }
-        setIsSyncing(false);
-      }
-
+      await apiRequest("POST", "/api/auth/logout");
+      // Clear cached user data
+      queryClient.setQueryData(["/api/auth/user"], null);
       toast({
-        title: "Welcome back!",
-        description: "Successfully logged in",
+        title: "Logged out",
+        description: "See you next time!",
       });
-
-      setShowLoginForm(false);
-      setLoginForm({ email: "", password: "" });
     } catch (error) {
       toast({
-        title: "Login failed",
-        description: "Please check your credentials and try again",
+        title: "Logout failed",
+        description: "Please try again",
         variant: "destructive",
       });
-    } finally {
-      setIsLoggingIn(false);
     }
-  };
-
-  const handleSignup = async () => {
-    if (!signupForm.name || !signupForm.email || !signupForm.password) {
-      toast({
-        title: "Error",
-        description: "Please fill in all fields",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setIsSigningUp(true);
-    
-    try {
-      // Simulate signup API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Create user session
-      const session: UserSession = {
-        isLoggedIn: true,
-        userId: `user_${Date.now()}`,
-        email: signupForm.email,
-        name: signupForm.name,
-      };
-
-      // Save session
-      LocalStorageService.setUserSession(session);
-      setUserSession(session);
-      
-      // Sync liked properties to server
-      if (likedCount > 0) {
-        setIsSyncing(true);
-        try {
-          await LocalStorageService.syncLikedPropertiesToServer(session.userId!);
-          toast({
-            title: "Account created & synced!",
-            description: `Welcome! ${likedCount} liked properties saved to your account`,
-          });
-        } catch (error) {
-          toast({
-            title: "Account created",
-            description: "Welcome! Your likes will sync next time.",
-          });
-        }
-        setIsSyncing(false);
-      } else {
-        toast({
-          title: "Account created!",
-          description: "Welcome to PropertySwipe NZ",
-        });
-      }
-
-      setShowSignupForm(false);
-      setSignupForm({ name: "", email: "", password: "" });
-    } catch (error) {
-      toast({
-        title: "Signup failed",
-        description: "Please try again later",
-        variant: "destructive",
-      });
-    } finally {
-      setIsSigningUp(false);
-    }
-  };
-
-  const handleLogout = () => {
-    LocalStorageService.clearUserSession();
-    setUserSession({ isLoggedIn: false });
-    toast({
-      title: "Logged out",
-      description: "Your liked properties are still saved locally",
-    });
   };
 
   const handleSyncData = async () => {
-    if (!userSession.userId) return;
+    if (!user?.id) return;
     
     setIsSyncing(true);
     try {
-      await LocalStorageService.syncLikedPropertiesFromServer(userSession.userId);
-      const updatedProperties = LocalStorageService.getLikedProperties();
-      setLikedCount(updatedProperties.length);
+      await LocalStorageService.syncLikedPropertiesFromServer(user.id);
+      // Refresh liked count after sync
+      const updatedLikedProperties = LocalStorageService.getLikedProperties();
+      setLikedCount(updatedLikedProperties.length);
+      
       toast({
-        title: "Data synced",
-        description: "Your liked properties are up to date",
+        title: "Data Synced",
+        description: "Your liked properties have been synced successfully",
       });
     } catch (error) {
       toast({
-        title: "Sync failed",
-        description: "Could not sync data from server",
+        title: "Sync Failed",
+        description: "Failed to sync your data. Please try again.",
         variant: "destructive",
       });
+    } finally {
+      setIsSyncing(false);
     }
-    setIsSyncing(false);
   };
 
-  // Fetch user's properties
+  // Fetch user's properties using real authenticated user ID
   const { data: userProperties = [] } = useQuery({
-    queryKey: ["/api/users", userSession.userId, "properties"],
+    queryKey: ["/api/users", user?.id, "properties"],
     queryFn: async () => {
-      if (!userSession.userId) return [];
-      const response = await apiRequest("GET", `/api/users/${userSession.userId}/properties`, undefined, {
-        'x-user-id': userSession.userId
-      });
+      if (!user?.id) return [];
+      const response = await apiRequest("GET", `/api/users/${user.id}/properties`);
       return response.json();
     },
-    enabled: !!userSession.userId,
+    enabled: !!user?.id,
   });
 
   // Delete property mutation
   const deletePropertyMutation = useMutation({
     mutationFn: async (propertyId: string) => {
-      const response = await apiRequest("DELETE", `/api/properties/${propertyId}`, undefined, {
-        'x-user-id': userSession.userId!
-      });
+      const response = await apiRequest("DELETE", `/api/properties/${propertyId}`);
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/users", userSession.userId, "properties"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/users", user?.id, "properties"] });
       queryClient.invalidateQueries({ queryKey: ["/api/properties"] });
       toast({
         title: "Property Removed",
@@ -226,174 +107,74 @@ export default function Profile() {
     onError: (error: any) => {
       toast({
         title: "Delete Failed",
-        description: error.message || "Failed to remove property",
+        description: error.message || "Failed to delete property",
         variant: "destructive",
       });
     }
   });
 
-  const handleDeleteProperty = (propertyId: string) => {
-    deletePropertyMutation.mutate(propertyId);
-  };
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background pb-20">
+        <div className="container mx-auto px-4 py-6">
+          <div className="flex items-center justify-center py-8">
+            <div className="text-center">
+              <i className="fas fa-spinner fa-spin text-3xl text-muted-foreground mb-4"></i>
+              <p className="text-muted-foreground">Loading your profile...</p>
+            </div>
+          </div>
+        </div>
+        <BottomNavigation />
+      </div>
+    );
+  }
 
   return (
-    <div className="max-w-sm mx-auto min-h-screen bg-white relative">
-      {/* Gradient transition overlay for smooth blending */}
-      <div className="fixed bottom-0 left-1/2 transform -translate-x-1/2 max-w-sm w-full h-32 bg-gradient-to-t from-white/95 via-white/60 to-transparent pointer-events-none z-40"></div>
-      
-      {/* Header */}
-      <header className="bg-white border-b border-border px-4 py-3">
-        <div className="flex items-center space-x-2">
-          <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg flex items-center justify-center">
-            <i className="fas fa-user text-white text-sm"></i>
-          </div>
-          <h1 className="text-lg font-bold text-secondary">Profile</h1>
+    <div className="min-h-screen bg-background pb-20">
+      <div className="container mx-auto px-4 py-6 space-y-6">
+        <div className="text-center mb-8">
+          <h1 className="text-2xl font-bold text-secondary">My Profile</h1>
+          <p className="text-muted-foreground text-sm">Manage your account and properties</p>
         </div>
-      </header>
 
-      {/* Content */}
-      <div className="p-4 pb-20 space-y-6">
-        
-        {!userSession.isLoggedIn ? (
-          <>
-            {/* Not Logged In */}
-            <Card>
-              <CardContent className="p-6 text-center">
-                <div className="w-20 h-20 bg-gradient-to-r from-blue-100 to-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <i className="fas fa-user text-purple-500 text-2xl"></i>
-                </div>
-                <h2 className="text-xl font-bold text-secondary mb-2">
-                  Sign In to Save Your Likes
-                </h2>
-                <p className="text-muted-foreground text-sm mb-6">
-                  You have {likedCount} properties saved locally. Sign in to sync them across devices.
+        {!user ? (
+          /* Not Authenticated */
+          <Card>
+            <CardContent className="p-6 text-center">
+              <div className="w-20 h-20 bg-gradient-to-r from-gray-400 to-gray-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                <i className="fas fa-user text-white text-2xl"></i>
+              </div>
+              <h2 className="text-xl font-bold text-secondary mb-2">Welcome to PropertySwipe</h2>
+              <p className="text-muted-foreground mb-6">
+                Sign in to manage your properties, view your listings, and access saved properties.
+              </p>
+              <div className="space-y-4">
+                <Button 
+                  onClick={() => window.location.href = '/add-property'}
+                  className="w-full"
+                  data-testid="button-get-started"
+                >
+                  Get Started - Add Property
+                </Button>
+                <p className="text-xs text-muted-foreground">
+                  You can start adding properties immediately. We'll ask you to sign up when you submit.
                 </p>
-                
-                <div className="space-y-3">
-                  <Button 
-                    onClick={() => setShowLoginForm(true)}
-                    className="w-full"
-                    data-testid="button-login"
-                  >
-                    <i className="fas fa-sign-in-alt mr-2"></i>
-                    Sign In
-                  </Button>
-                  <Button 
-                    variant="outline"
-                    onClick={() => setShowSignupForm(true)}
-                    className="w-full"
-                    data-testid="button-signup"
-                  >
-                    Create Account
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Login Form */}
-            {showLoginForm && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-base">Sign In</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <Input
-                    type="email"
-                    placeholder="Email"
-                    value={loginForm.email}
-                    onChange={(e) => setLoginForm({ ...loginForm, email: e.target.value })}
-                    data-testid="input-login-email"
-                  />
-                  <Input
-                    type="password"
-                    placeholder="Password"
-                    value={loginForm.password}
-                    onChange={(e) => setLoginForm({ ...loginForm, password: e.target.value })}
-                    data-testid="input-login-password"
-                  />
-                  <div className="flex space-x-3">
-                    <Button 
-                      onClick={handleLogin}
-                      disabled={isLoggingIn || isSyncing}
-                      className="flex-1"
-                      data-testid="button-confirm-login"
-                    >
-                      {isLoggingIn ? "Signing in..." : isSyncing ? "Syncing..." : "Sign In"}
-                    </Button>
-                    <Button 
-                      variant="outline"
-                      onClick={() => setShowLoginForm(false)}
-                      className="flex-1"
-                    >
-                      Cancel
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Signup Form */}
-            {showSignupForm && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-base">Create Account</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <Input
-                    type="text"
-                    placeholder="Full Name"
-                    value={signupForm.name}
-                    onChange={(e) => setSignupForm({ ...signupForm, name: e.target.value })}
-                    data-testid="input-signup-name"
-                  />
-                  <Input
-                    type="email"
-                    placeholder="Email"
-                    value={signupForm.email}
-                    onChange={(e) => setSignupForm({ ...signupForm, email: e.target.value })}
-                    data-testid="input-signup-email"
-                  />
-                  <Input
-                    type="password"
-                    placeholder="Password"
-                    value={signupForm.password}
-                    onChange={(e) => setSignupForm({ ...signupForm, password: e.target.value })}
-                    data-testid="input-signup-password"
-                  />
-                  <div className="flex space-x-3">
-                    <Button 
-                      onClick={handleSignup}
-                      disabled={isSigningUp || isSyncing}
-                      className="flex-1"
-                      data-testid="button-confirm-signup"
-                    >
-                      {isSigningUp ? "Creating..." : isSyncing ? "Syncing..." : "Create Account"}
-                    </Button>
-                    <Button 
-                      variant="outline"
-                      onClick={() => setShowSignupForm(false)}
-                      className="flex-1"
-                    >
-                      Cancel
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-          </>
+              </div>
+            </CardContent>
+          </Card>
         ) : (
           <>
-            {/* Logged In User Info */}
+            {/* Authenticated User */}
             <Card>
               <CardContent className="p-6 text-center">
                 <div className="w-20 h-20 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center mx-auto mb-4">
                   <i className="fas fa-user text-white text-2xl"></i>
                 </div>
                 <h2 className="text-xl font-bold text-secondary mb-1" data-testid="text-user-name">
-                  {userSession.name}
+                  {user.name}
                 </h2>
                 <p className="text-muted-foreground text-sm mb-4" data-testid="text-user-email">
-                  {userSession.email}
+                  {user.email}
                 </p>
                 <div className="flex space-x-3">
                   <Button 
@@ -406,8 +187,14 @@ export default function Profile() {
                     <i className={`fas ${isSyncing ? 'fa-spinner fa-spin' : 'fa-sync'} mr-2`}></i>
                     {isSyncing ? 'Syncing...' : 'Sync Data'}
                   </Button>
-                  <Button variant="outline" className="flex-1" data-testid="button-edit-profile">
-                    Edit Profile
+                  <Button 
+                    variant="outline" 
+                    onClick={handleLogout}
+                    className="flex-1" 
+                    data-testid="button-logout"
+                  >
+                    <i className="fas fa-sign-out-alt mr-2"></i>
+                    Logout
                   </Button>
                 </div>
               </CardContent>
@@ -528,120 +315,40 @@ export default function Profile() {
           </>
         )}
 
-        {/* Preferences */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Preferences</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="font-medium text-secondary">Push Notifications</div>
-                <div className="text-sm text-muted-foreground">Get notified of new properties</div>
-              </div>
-              <Switch data-testid="switch-notifications" />
-            </div>
-            
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="font-medium text-secondary">AI Recommendations</div>
-                <div className="text-sm text-muted-foreground">Personalized property suggestions</div>
-              </div>
-              <Switch defaultChecked data-testid="switch-ai-recommendations" />
-            </div>
-            
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="font-medium text-secondary">Email Updates</div>
-                <div className="text-sm text-muted-foreground">Weekly market insights</div>
-              </div>
-              <Switch data-testid="switch-email-updates" />
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Quick Actions */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Quick Actions</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <Button 
-              variant="outline" 
-              className="w-full justify-start"
-              data-testid="button-search-filters"
-            >
-              <i className="fas fa-filter mr-3"></i>
-              Search Filters
-            </Button>
-            
-            <Button 
-              variant="outline" 
-              className="w-full justify-start"
-              data-testid="button-saved-searches"
-            >
-              <i className="fas fa-bookmark mr-3"></i>
-              Saved Searches
-            </Button>
-            
-            <Button 
-              variant="outline" 
-              className="w-full justify-start"
-              data-testid="button-price-alerts"
-            >
-              <i className="fas fa-bell mr-3"></i>
-              Price Alerts
-            </Button>
-          </CardContent>
-        </Card>
-
-        {/* Sign Out (only if logged in) */}
-        {userSession.isLoggedIn && (
-          <Button 
-            variant="destructive" 
-            onClick={handleLogout}
-            className="w-full"
-            data-testid="button-sign-out"
-          >
-            <i className="fas fa-sign-out-alt mr-2"></i>
-            Sign Out
-          </Button>
+        {/* Delete Confirmation Modal */}
+        {showDeleteConfirm && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+            <Card className="w-full max-w-sm">
+              <CardHeader>
+                <CardTitle className="text-lg text-center">Delete Property?</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground text-center mb-6">
+                  This will remove your property from listings. This action cannot be undone.
+                </p>
+                <div className="flex space-x-2">
+                  <Button 
+                    variant="destructive"
+                    onClick={() => deletePropertyMutation.mutate(showDeleteConfirm)}
+                    disabled={deletePropertyMutation.isPending}
+                    className="flex-1"
+                    data-testid="button-confirm-delete"
+                  >
+                    {deletePropertyMutation.isPending ? "Deleting..." : "Delete"}
+                  </Button>
+                  <Button 
+                    variant="outline"
+                    onClick={() => setShowDeleteConfirm(null)}
+                    className="flex-1"
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         )}
       </div>
-
-      {/* Delete Confirmation Dialog */}
-      {showDeleteConfirm && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 px-4">
-          <div className="bg-white rounded-lg p-6 max-w-sm w-full">
-            <div className="flex items-center mb-4">
-              <i className="fas fa-exclamation-triangle text-red-500 text-xl mr-3"></i>
-              <h3 className="font-semibold">Remove Property?</h3>
-            </div>
-            <p className="text-sm text-muted-foreground mb-6">
-              This will remove your property from all listings. This action cannot be undone.
-            </p>
-            <div className="flex gap-3">
-              <Button 
-                variant="destructive"
-                onClick={() => handleDeleteProperty(showDeleteConfirm)}
-                disabled={deletePropertyMutation.isPending}
-                className="flex-1"
-                data-testid="button-confirm-delete"
-              >
-                {deletePropertyMutation.isPending ? "Removing..." : "Remove"}
-              </Button>
-              <Button 
-                variant="outline"
-                onClick={() => setShowDeleteConfirm(null)}
-                className="flex-1"
-                data-testid="button-cancel-delete"
-              >
-                Cancel
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
 
       <BottomNavigation />
     </div>
