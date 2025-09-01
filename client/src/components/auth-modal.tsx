@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
@@ -21,6 +21,7 @@ export function AuthModal({ isOpen, onClose, onSuccess, mode, onToggleMode }: Au
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   // Login mutation
   const loginMutation = useMutation({
@@ -45,6 +46,9 @@ export function AuthModal({ isOpen, onClose, onSuccess, mode, onToggleMode }: Au
     onSuccess: (result) => {
       console.log("✅ LOGIN SUCCESS:", result);
       if (result.success) {
+        // Immediately update auth cache to prevent race conditions
+        queryClient.setQueryData(["/api/auth/user"], result.user);
+        
         onSuccess(result.user);
         onClose();
         toast({
@@ -97,6 +101,9 @@ export function AuthModal({ isOpen, onClose, onSuccess, mode, onToggleMode }: Au
     onSuccess: (result) => {
       console.log("✅ REGISTRATION SUCCESS:", result);
       if (result.success) {
+        // Immediately update auth cache to prevent race conditions
+        queryClient.setQueryData(["/api/auth/user"], result.user);
+        
         onSuccess(result.user);
         onClose();
         toast({

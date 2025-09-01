@@ -331,13 +331,16 @@ export default function AddProperty() {
     console.log("🔍 Validation status:", validationStatus);
     
     // Check if user is authenticated
-    if (!currentUser && !user) {
+    const authenticatedUser = currentUser || user;
+    if (!authenticatedUser) {
       console.log("🔐 User not authenticated, showing auth modal");
       setPendingSubmitData(data);
       setAuthMode('signup'); // Default to signup for new property creators
       setShowAuthModal(true);
       return;
     }
+    
+    console.log("✅ User authenticated:", authenticatedUser.email);
     console.log("🔍 Form complete status:", isFormComplete);
     console.log("🔍 Form errors:", form.formState.errors);
 
@@ -377,13 +380,29 @@ export default function AddProperty() {
       description: `Logged in as ${user.name}. Your property will be submitted now.`,
     });
 
-    // If there's pending submit data, submit it now
+    // If there's pending submit data, submit it now with authenticated user
     if (pendingSubmitData) {
-      // Re-run the form validation with the pending data
-      setTimeout(() => {
-        onSubmit(pendingSubmitData);
-        setPendingSubmitData(null);
-      }, 100);
+      // Directly submit the property since we now have the user
+      const propertyData = {
+        ...pendingSubmitData,
+        propertyType: selectedPropertyType || pendingSubmitData.propertyType,
+        imageUrl: uploadedImages.length > 0 ? uploadedImages[0] : pendingSubmitData.imageUrl,
+        additionalImages: uploadedImages.slice(1),
+        isLinzValidated: validationStatus.isValid,
+        selfDeclaration: pendingSubmitData.selfDeclaration,
+        bedrooms: parseInt(pendingSubmitData.bedrooms) || 0,
+        bathrooms: parseInt(pendingSubmitData.bathrooms) || 0,
+        floorArea: parseInt(pendingSubmitData.floorArea) || 0,
+        landArea: parseInt(pendingSubmitData.landArea) || 0,
+        carSpaces: parseInt(pendingSubmitData.carSpaces) || 0,
+        yearBuilt: parseInt(pendingSubmitData.yearBuilt) || new Date().getFullYear(),
+        hideCertificateOfTitle: pendingSubmitData.hideCertificateOfTitle,
+        parkingType: undefined,
+      };
+      
+      console.log("🔍 SUBMITTING AFTER AUTH SUCCESS:", propertyData);
+      createPropertyMutation.mutate(propertyData);
+      setPendingSubmitData(null);
     }
   };
 
