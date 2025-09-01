@@ -36,6 +36,20 @@ export default function PropertyCard({ property, isBackground = false, onPropert
     ...(property.additionalImages || [])
   ];
 
+  // Debug logging to see what's happening with images
+  useEffect(() => {
+    if (property.title === "Tested Residential" || property.title.includes("Family Home")) {
+      console.log("🖼️ Property Card Debug:", {
+        title: property.title,
+        imageUrl: property.imageUrl,
+        additionalImages: property.additionalImages,
+        allImagesLength: allImages.length,
+        hasMultipleImages: allImages.length > 1,
+        allImages: allImages
+      });
+    }
+  }, [property.title, property.imageUrl, property.additionalImages, allImages.length]);
+
   const hasMultipleImages = allImages.length > 1;
   const currentImage = allImages[currentImageIndex];
 
