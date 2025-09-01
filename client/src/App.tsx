@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import Home from "@/pages/home";
 import Liked from "@/pages/liked";
 import AddProperty from "@/pages/add-property";
+import EditProperty from "@/pages/edit-property";
 import Reports from "@/pages/reports";
 import ServiceSubmission from "@/pages/service-submission";
 import Profile from "@/pages/profile";
@@ -18,6 +19,7 @@ function Router() {
       <Route path="/liked" component={Liked} />
       <Route path="/add-property" component={AddProperty} />
       <Route path="/add" component={AddProperty} />
+      <Route path="/edit-property/:id" component={EditProperty} />
       <Route path="/reports" component={Reports} />
       <Route path="/service-submission" component={ServiceSubmission} />
       <Route path="/profile" component={Profile} />

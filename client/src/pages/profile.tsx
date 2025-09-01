@@ -6,12 +6,15 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { LocalStorageService } from "@/lib/local-storage";
 import { apiRequest } from "@/lib/queryClient";
+import { AuthModal } from "@/components/auth-modal";
 import type { Property } from "@shared/schema";
 
 export default function Profile() {
   const [likedCount, setLikedCount] = useState(0);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
   const [isSyncing, setIsSyncing] = useState(false);
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [authMode, setAuthMode] = useState<'login' | 'signup'>('login');
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -28,6 +31,13 @@ export default function Profile() {
     },
     retry: false,
   });
+
+  // Redirect to login if not authenticated
+  useEffect(() => {
+    if (!isLoading && !user) {
+      setShowAuthModal(true);
+    }
+  }, [user, isLoading]);
 
   useEffect(() => {
     // Load liked properties count from localStorage
@@ -349,6 +359,22 @@ export default function Profile() {
           </div>
         )}
       </div>
+
+      {/* Authentication Modal */}
+      <AuthModal
+        isOpen={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
+        onSuccess={(user) => {
+          setShowAuthModal(false);
+          queryClient.setQueryData(["/api/auth/user"], user);
+          toast({
+            title: "Welcome!",
+            description: `Logged in as ${user.name}`,
+          });
+        }}
+        mode={authMode}
+        onToggleMode={() => setAuthMode(prev => prev === 'login' ? 'signup' : 'login')}
+      />
 
       <BottomNavigation />
     </div>
