@@ -65,9 +65,8 @@ export function ObjectUploader({
 
     console.log("🔍 Files selected:", files.length);
     
-    // Check if adding these files would exceed the limit
-    const totalFiles = uploadedFiles.length + files.length;
-    if (totalFiles > maxNumberOfFiles) {
+    // Check if selected files exceed the limit (for single-use uploads, don't count previous uploads)
+    if (files.length > maxNumberOfFiles) {
       console.error("🔍 Too many files selected");
       // Reset the input
       if (fileInputRef.current) {
