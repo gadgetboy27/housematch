@@ -3,7 +3,8 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { insertPropertySchema, insertUserSwipeSchema, insertPurchaseOrderSchema, insertServiceProviderSchema } from "@shared/schema";
 import { analyzeUserPreferences, generatePropertyRecommendations, generateMarketInsights } from "./services/openai";
-import { requireAuth, requirePropertyOwnership } from "./middleware/auth";
+import { setupAuth, requireAuth } from "./auth";
+import { requirePropertyOwnership } from "./middleware/auth";
 import {
   ObjectStorageService,
   ObjectNotFoundError,
@@ -12,50 +13,8 @@ import { LINZValidationService } from "./services/linz-validation";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   
-  // User registration and auth routes
-  app.post("/api/register", async (req, res) => {
-    try {
-      const validatedData = insertUserSchema.parse(req.body);
-      
-      // Check if username already exists
-      const existingUser = await storage.getUserByUsername(validatedData.username);
-      if (existingUser) {
-        return res.status(409).json({ 
-          message: "Username already exists", 
-          error: "This username is already taken. Please choose a different username." 
-        });
-      }
-
-      const user = await storage.createUser(validatedData);
-      
-      // Return user without password
-      const { password, ...userWithoutPassword } = user;
-      res.status(201).json(userWithoutPassword);
-    } catch (error) {
-      res.status(400).json({ message: "Invalid user data", error: error.message });
-    }
-  });
-
-  app.post("/api/login", async (req, res) => {
-    try {
-      const { username, password } = req.body;
-      
-      if (!username || !password) {
-        return res.status(400).json({ message: "Username and password are required" });
-      }
-
-      const user = await storage.getUserByUsername(username);
-      if (!user || user.password !== password) {
-        return res.status(401).json({ message: "Invalid username or password" });
-      }
-
-      // Return user without password
-      const { password: _, ...userWithoutPassword } = user;
-      res.json(userWithoutPassword);
-    } catch (error) {
-      res.status(500).json({ message: "Login failed" });
-    }
-  });
+  // Setup authentication
+  setupAuth(app);
 
   // Property routes with personalization
   app.get("/api/properties", async (req, res) => {

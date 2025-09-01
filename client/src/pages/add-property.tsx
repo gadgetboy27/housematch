@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { insertPropertySchema } from "@shared/schema";
 import { apiRequest } from "@/lib/queryClient";
@@ -16,6 +16,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ObjectUploader } from "@/components/ObjectUploader";
+import { AuthModal } from "@/components/auth-modal";
 import type { UploadResult } from "@uppy/core";
 import { z } from "zod";
 
@@ -53,9 +54,37 @@ export default function AddProperty() {
     address: { verified: false, loading: false, message: "" },
     certificateOfTitle: { verified: false, loading: false, message: "" }
   });
+
+  // Authentication state
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [authMode, setAuthMode] = useState<'login' | 'signup'>('signup');
+  const [pendingSubmitData, setPendingSubmitData] = useState<any>(null);
+  const [currentUser, setCurrentUser] = useState<{ id: string; name: string; email: string } | null>(null);
+  
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  // Check if user is authenticated
+  const { data: user } = useQuery({
+    queryKey: ["/api/auth/user"],
+    queryFn: async () => {
+      try {
+        const response = await apiRequest("GET", "/api/auth/user");
+        return response.json();
+      } catch (error) {
+        return null; // User not authenticated
+      }
+    },
+    retry: false,
+  });
+
+  // Update current user when query data changes
+  useEffect(() => {
+    if (user && !currentUser) {
+      setCurrentUser(user);
+    }
+  }, [user, currentUser]);
 
   // Create form schema that accepts strings and transforms to correct types
   const formSchema = z.object({
@@ -152,9 +181,8 @@ export default function AddProperty() {
     mutationFn: async (data: any) => {
       console.log("🔍 MUTATION STARTED - sending to API");
       console.log("🔍 API data payload:", data);
-      const response = await apiRequest("POST", "/api/properties", data, {
-        'x-user-id': 'demo-user' // Add authentication header
-      });
+      // Use real authentication - no more demo headers
+      const response = await apiRequest("POST", "/api/properties", data);
       console.log("🔍 API response status:", response.status);
       const result = await response.json();
       console.log("🔍 API response data:", result);
@@ -301,6 +329,15 @@ export default function AddProperty() {
     console.log("🔍 Selected property type:", selectedPropertyType);
     console.log("🔍 Uploaded images:", uploadedImages);
     console.log("🔍 Validation status:", validationStatus);
+    
+    // Check if user is authenticated
+    if (!currentUser && !user) {
+      console.log("🔐 User not authenticated, showing auth modal");
+      setPendingSubmitData(data);
+      setAuthMode('signup'); // Default to signup for new property creators
+      setShowAuthModal(true);
+      return;
+    }
     console.log("🔍 Form complete status:", isFormComplete);
     console.log("🔍 Form errors:", form.formState.errors);
 
@@ -328,6 +365,35 @@ export default function AddProperty() {
     console.log("🔍 Transformed property data:", propertyData);
     console.log("🔍 About to call mutation...");
     createPropertyMutation.mutate(propertyData);
+  };
+
+  // Handle successful authentication
+  const handleAuthSuccess = (user: { id: string; name: string; email: string }) => {
+    setCurrentUser(user);
+    queryClient.setQueryData(["/api/auth/user"], user);
+    
+    toast({
+      title: "Welcome!",
+      description: `Logged in as ${user.name}. Your property will be submitted now.`,
+    });
+
+    // If there's pending submit data, submit it now
+    if (pendingSubmitData) {
+      // Re-run the form validation with the pending data
+      setTimeout(() => {
+        onSubmit(pendingSubmitData);
+        setPendingSubmitData(null);
+      }, 100);
+    }
+  };
+
+  const handleAuthModalClose = () => {
+    setShowAuthModal(false);
+    setPendingSubmitData(null);
+  };
+
+  const toggleAuthMode = () => {
+    setAuthMode(prev => prev === 'login' ? 'signup' : 'login');
   };
 
   // Handle getting upload URL from backend
@@ -1101,6 +1167,15 @@ export default function AddProperty() {
           </form>
         </Form>
       </div>
+
+      {/* Authentication Modal */}
+      <AuthModal
+        isOpen={showAuthModal}
+        onClose={handleAuthModalClose}
+        onSuccess={handleAuthSuccess}
+        mode={authMode}
+        onToggleMode={toggleAuthMode}
+      />
 
       <BottomNavigation />
     </div>

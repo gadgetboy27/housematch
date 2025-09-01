@@ -6,7 +6,7 @@ import { eq, and } from "drizzle-orm";
 export interface IStorage {
   // Users
   getUser(id: string): Promise<User | undefined>;
-  getUserByUsername(username: string): Promise<User | undefined>;
+  getUserByEmail(email: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
 
   // Properties
@@ -587,9 +587,9 @@ export class MemStorage implements IStorage {
     return this.users.get(id);
   }
 
-  async getUserByUsername(username: string): Promise<User | undefined> {
+  async getUserByEmail(email: string): Promise<User | undefined> {
     return Array.from(this.users.values()).find(
-      (user) => user.username === username,
+      (user) => user.email === email,
     );
   }
 
@@ -743,16 +743,17 @@ export class DatabaseStorage implements IStorage {
     // Create demo user first
     let demoUser;
     try {
-      demoUser = await this.getUserByUsername("demo-user");
+      demoUser = await this.getUserByEmail("demo@example.com");
       if (!demoUser) {
         demoUser = await this.createUser({
-          username: "demo-user",
+          email: "demo@example.com",
+          name: "Demo User",
           password: "demo123"
         });
       }
     } catch (error) {
       console.log("Demo user already exists or error creating:", error.message);
-      demoUser = await this.getUserByUsername("demo-user");
+      demoUser = await this.getUserByEmail("demo@example.com");
     }
 
     if (!demoUser) return;
@@ -927,8 +928,8 @@ export class DatabaseStorage implements IStorage {
     return user || undefined;
   }
 
-  async getUserByUsername(username: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.username, username));
+  async getUserByEmail(email: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.email, email));
     return user || undefined;
   }
 
