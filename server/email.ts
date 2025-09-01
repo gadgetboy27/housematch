@@ -4,8 +4,17 @@ if (!process.env.SENDGRID_API_KEY) {
   throw new Error("SENDGRID_API_KEY environment variable must be set");
 }
 
+// Validate SendGrid API key format
+const apiKey = process.env.SENDGRID_API_KEY;
+if (!apiKey.startsWith('SG.')) {
+  console.error(`❌ Invalid SendGrid API key format. Key starts with: "${apiKey.slice(0, 3)}..." but should start with "SG."`);
+  console.log("Please ensure you're using a valid SendGrid API key that starts with 'SG.'");
+} else {
+  console.log("✅ Valid SendGrid API key format detected");
+}
+
 const mailService = new MailService();
-mailService.setApiKey(process.env.SENDGRID_API_KEY);
+mailService.setApiKey(apiKey);
 
 export interface PasswordResetEmailParams {
   email: string;
