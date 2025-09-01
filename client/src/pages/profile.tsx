@@ -15,7 +15,7 @@ export default function Profile() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
   const [isSyncing, setIsSyncing] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
-  const [authMode, setAuthMode] = useState<'login' | 'signup'>('login');
+  const [authMode, setAuthMode] = useState<'login' | 'signup' | 'forgot-password'>('login');
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -422,7 +422,16 @@ export default function Profile() {
           });
         }}
         mode={authMode}
-        onToggleMode={() => setAuthMode(prev => prev === 'login' ? 'signup' : 'login')}
+        onToggleMode={() => {
+          if (authMode === 'login') {
+            setAuthMode('signup');
+          } else if (authMode === 'signup') {
+            setAuthMode('login');
+          } else if (authMode === 'forgot-password') {
+            setAuthMode('login');
+          }
+        }}
+        onForgotPassword={() => setAuthMode('forgot-password')}
       />
 
       <BottomNavigation />

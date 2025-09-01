@@ -57,7 +57,7 @@ export default function AddProperty() {
 
   // Authentication state
   const [showAuthModal, setShowAuthModal] = useState(false);
-  const [authMode, setAuthMode] = useState<'login' | 'signup'>('signup');
+  const [authMode, setAuthMode] = useState<'login' | 'signup' | 'forgot-password'>('signup');
   const [pendingSubmitData, setPendingSubmitData] = useState<any>(null);
   const [currentUser, setCurrentUser] = useState<{ id: string; name: string; email: string } | null>(null);
   
@@ -412,7 +412,13 @@ export default function AddProperty() {
   };
 
   const toggleAuthMode = () => {
-    setAuthMode(prev => prev === 'login' ? 'signup' : 'login');
+    if (authMode === 'login') {
+      setAuthMode('signup');
+    } else if (authMode === 'signup') {
+      setAuthMode('login');
+    } else if (authMode === 'forgot-password') {
+      setAuthMode('login');
+    }
   };
 
   // Handle getting upload URL from backend
@@ -1196,6 +1202,7 @@ export default function AddProperty() {
         onSuccess={handleAuthSuccess}
         mode={authMode}
         onToggleMode={toggleAuthMode}
+        onForgotPassword={() => setAuthMode('forgot-password')}
       />
 
       <BottomNavigation />

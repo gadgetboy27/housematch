@@ -11,6 +11,7 @@ import Reports from "@/pages/reports";
 import ServiceSubmission from "@/pages/service-submission";
 import Profile from "@/pages/profile";
 import NotFound from "@/pages/not-found";
+import { ResetPassword } from "@/pages/reset-password";
 
 function Router() {
   return (
@@ -23,6 +24,7 @@ function Router() {
       <Route path="/reports" component={Reports} />
       <Route path="/service-submission" component={ServiceSubmission} />
       <Route path="/profile" component={Profile} />
+      <Route path="/reset-password" component={ResetPassword} />
       <Route component={NotFound} />
     </Switch>
   );

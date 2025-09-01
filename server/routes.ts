@@ -10,6 +10,9 @@ import {
   ObjectNotFoundError,
 } from "./objectStorage";
 import { LINZValidationService } from "./services/linz-validation";
+import { randomBytes, scrypt, timingSafeEqual } from 'crypto';
+import { promisify } from 'util';
+import { sendPasswordResetEmail } from './email';
 
 export async function registerRoutes(app: Express): Promise<Server> {
   
@@ -647,6 +650,106 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Failed to update profile picture:", error);
       res.status(500).json({ message: "Failed to update profile picture" });
+    }
+  });
+
+  // Password Reset Routes
+  const scryptAsync = promisify(scrypt);
+
+  // Helper function for hashing passwords
+  async function hashPassword(password: string) {
+    const salt = randomBytes(16).toString("hex");
+    const buf = (await scryptAsync(password, salt, 64)) as Buffer;
+    return `${buf.toString("hex")}.${salt}`;
+  }
+
+  // Password reset request (send email with reset link)
+  app.post("/api/auth/forgot-password", async (req, res) => {
+    try {
+      const { email } = req.body;
+      
+      if (!email) {
+        return res.status(400).json({ message: "Email is required" });
+      }
+
+      // Find user by email
+      const user = await storage.getUserByEmail(email);
+      if (!user) {
+        // Don't reveal if email exists or not for security
+        return res.json({ 
+          message: "If an account with this email exists, you will receive a password reset link shortly." 
+        });
+      }
+
+      // Generate secure reset token
+      const resetToken = randomBytes(32).toString('hex');
+      const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour from now
+      
+      // Save token to database
+      await storage.createPasswordResetToken(user.id, resetToken, expiresAt);
+      
+      // Send reset email
+      const resetUrl = `${req.protocol}://${req.get('host')}/reset-password?token=${resetToken}`;
+      const emailSent = await sendPasswordResetEmail({
+        email: user.email,
+        name: user.name,
+        resetToken,
+        resetUrl
+      });
+
+      if (!emailSent) {
+        console.error("Failed to send password reset email to:", email);
+        return res.status(500).json({ message: "Failed to send reset email" });
+      }
+
+      // Clean up old expired tokens
+      await storage.cleanupExpiredTokens();
+
+      res.json({ 
+        message: "If an account with this email exists, you will receive a password reset link shortly." 
+      });
+    } catch (error) {
+      console.error("Password reset request error:", error);
+      res.status(500).json({ message: "Failed to process password reset request" });
+    }
+  });
+
+  // Password reset execution (process the reset with token)
+  app.post("/api/auth/reset-password", async (req, res) => {
+    try {
+      const { token, newPassword } = req.body;
+      
+      if (!token || !newPassword) {
+        return res.status(400).json({ message: "Token and new password are required" });
+      }
+
+      if (newPassword.length < 6) {
+        return res.status(400).json({ message: "Password must be at least 6 characters long" });
+      }
+
+      // Validate token and get userId
+      const tokenData = await storage.validatePasswordResetToken(token);
+      if (!tokenData) {
+        return res.status(400).json({ 
+          message: "Invalid or expired reset token. Please request a new password reset link." 
+        });
+      }
+
+      // Hash the new password
+      const hashedPassword = await hashPassword(newPassword);
+      
+      // Update user's password
+      await storage.updateUserPassword(tokenData.userId, hashedPassword);
+      
+      // Mark token as used
+      await storage.markTokenAsUsed(token);
+
+      console.log(`✅ Password reset completed for user ${tokenData.userId}`);
+
+      res.json({ message: "Password reset successfully! You can now log in with your new password." });
+    } catch (error) {
+      console.error("Password reset execution error:", error);
+      res.status(500).json({ message: "Failed to reset password" });
     }
   });
 

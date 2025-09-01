@@ -1,7 +1,7 @@
 import { type User, type InsertUser, type Property, type InsertProperty, type UserSwipe, type InsertUserSwipe, type UserPreferences, type InsertUserPreferences, type PurchaseOrder, type InsertPurchaseOrder, type ServiceProvider, type InsertServiceProvider, users, properties, userSwipes, userPreferences, purchaseOrders, serviceProviders, passwordResetTokens } from "@shared/schema";
 import { randomUUID } from "crypto";
 import { db } from "./db";
-import { eq, and } from "drizzle-orm";
+import { eq, and, sql } from "drizzle-orm";
 
 export interface IStorage {
   // Users
@@ -1107,6 +1107,53 @@ export class DatabaseStorage implements IStorage {
         updatedAt: new Date() 
       })
       .where(eq(properties.id, id));
+  }
+
+  // Password Reset Methods
+  async createPasswordResetToken(userId: string, token: string, expiresAt: Date): Promise<void> {
+    await db.insert(passwordResetTokens).values({
+      userId,
+      token,
+      expiresAt,
+      used: false,
+    });
+  }
+
+  async validatePasswordResetToken(token: string): Promise<{ userId: string } | null> {
+    const [resetToken] = await db.select()
+      .from(passwordResetTokens)
+      .where(
+        and(
+          eq(passwordResetTokens.token, token),
+          eq(passwordResetTokens.used, false)
+        )
+      );
+
+    if (!resetToken) return null;
+
+    // Check if token has expired
+    if (new Date() > resetToken.expiresAt) {
+      return null;
+    }
+
+    return { userId: resetToken.userId };
+  }
+
+  async markTokenAsUsed(token: string): Promise<void> {
+    await db.update(passwordResetTokens)
+      .set({ used: true })
+      .where(eq(passwordResetTokens.token, token));
+  }
+
+  async updateUserPassword(userId: string, hashedPassword: string): Promise<void> {
+    await db.update(users)
+      .set({ password: hashedPassword })
+      .where(eq(users.id, userId));
+  }
+
+  async cleanupExpiredTokens(): Promise<void> {
+    await db.delete(passwordResetTokens)
+      .where(sql`expires_at < NOW()`);
   }
 }
 
