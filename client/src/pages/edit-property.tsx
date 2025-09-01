@@ -46,11 +46,20 @@ export default function EditProperty() {
     suburb: "",
     price: "",
     description: "",
+    propertyType: "",
+    lotNumber: "",
+    certificateOfTitle: "",
+    zoning: "",
+    yearBuilt: new Date().getFullYear(),
     bedrooms: 0,
     bathrooms: 0,
     floorArea: 0,
     landArea: 0,
     carSpaces: 0,
+    imageUrl: "",
+    hideCertificateOfTitle: false,
+    isLinzValidated: false,
+    selfDeclaration: true,
   });
 
   // Populate form when property loads
@@ -62,11 +71,20 @@ export default function EditProperty() {
         suburb: property.suburb || "",
         price: property.price || "",
         description: property.description || "",
+        propertyType: property.propertyType || "",
+        lotNumber: property.lotNumber || "",
+        certificateOfTitle: property.certificateOfTitle || "",
+        zoning: property.zoning || "",
+        yearBuilt: property.yearBuilt || new Date().getFullYear(),
         bedrooms: property.bedrooms || 0,
         bathrooms: property.bathrooms || 0,
         floorArea: property.floorArea || 0,
         landArea: property.landArea || 0,
         carSpaces: property.carSpaces || 0,
+        imageUrl: property.imageUrl || "",
+        hideCertificateOfTitle: property.hideCertificateOfTitle || false,
+        isLinzValidated: property.isLinzValidated || false,
+        selfDeclaration: true,
       });
     }
   }, [property]);
@@ -201,6 +219,63 @@ export default function EditProperty() {
                   value={formData.price}
                   onChange={(e) => handleInputChange("price", e.target.value)}
                   placeholder="$500,000"
+                />
+              </div>
+
+              <div>
+                <label className="text-sm font-medium">Property Type *</label>
+                <select
+                  value={formData.propertyType}
+                  onChange={(e) => handleInputChange("propertyType", e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  required
+                >
+                  <option value="">Select property type</option>
+                  <option value="residential">Residential</option>
+                  <option value="rental">Rental</option>
+                  <option value="commercial">Commercial</option>
+                  <option value="lease">Lease</option>
+                  <option value="batch">Batch/Section</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="text-sm font-medium">Council Lot Number *</label>
+                <Input
+                  value={formData.lotNumber}
+                  onChange={(e) => handleInputChange("lotNumber", e.target.value)}
+                  placeholder="PT 123 DP 4567"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="text-sm font-medium">Certificate of Title *</label>
+                <Input
+                  value={formData.certificateOfTitle}
+                  onChange={(e) => handleInputChange("certificateOfTitle", e.target.value)}
+                  placeholder="CT 12345/678"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="text-sm font-medium">Zoning</label>
+                <Input
+                  value={formData.zoning}
+                  onChange={(e) => handleInputChange("zoning", e.target.value)}
+                  placeholder="Residential Mixed Use"
+                />
+              </div>
+
+              <div>
+                <label className="text-sm font-medium">Year Built</label>
+                <Input
+                  type="number"
+                  value={formData.yearBuilt}
+                  onChange={(e) => handleInputChange("yearBuilt", parseInt(e.target.value) || new Date().getFullYear())}
+                  min="1800"
+                  max={new Date().getFullYear() + 5}
                 />
               </div>
 
