@@ -938,6 +938,11 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
 
+  async updateUser(id: string, updates: Partial<User>): Promise<User> {
+    const [user] = await db.update(users).set(updates).where(eq(users.id, id)).returning();
+    return user;
+  }
+
   async getProperty(id: string): Promise<Property | undefined> {
     const [property] = await db.select().from(properties).where(eq(properties.id, id));
     return property || undefined;

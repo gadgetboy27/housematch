@@ -622,6 +622,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // User profile picture update endpoint
+  app.put("/api/users/:id/profile-picture", requireAuth, async (req, res) => {
+    try {
+      const userId = req.params.id;
+      const { profilePicture } = req.body;
+
+      // Verify user is updating their own profile
+      if (req.userId !== userId) {
+        return res.status(403).json({ message: "You can only update your own profile picture" });
+      }
+
+      // Validate profile picture is safe (emoji or predefined avatar)
+      const isEmoji = /[\u{1F600}-\u{1F64F}]|[\u{1F300}-\u{1F5FF}]|[\u{1F680}-\u{1F6FF}]|[\u{1F1E0}-\u{1F1FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]/u.test(profilePicture);
+      const validAvatars = ['avatar1', 'avatar2', 'avatar3', 'avatar4', 'avatar5', 'avatar6', 'avatar7', 'avatar8'];
+      const isValidAvatar = validAvatars.includes(profilePicture);
+
+      if (!isEmoji && !isValidAvatar) {
+        return res.status(400).json({ message: "Invalid profile picture. Must be an emoji or standard avatar." });
+      }
+
+      const updatedUser = await storage.updateUser(userId, { profilePicture });
+      res.json({ message: "Profile picture updated successfully", user: updatedUser });
+    } catch (error) {
+      console.error("Failed to update profile picture:", error);
+      res.status(500).json({ message: "Failed to update profile picture" });
+    }
+  });
+
   // Admin routes (you can add authentication later)
   app.put("/api/service-providers/:id/status", async (req, res) => {
     try {

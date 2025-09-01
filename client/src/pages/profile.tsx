@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { LocalStorageService } from "@/lib/local-storage";
 import { apiRequest } from "@/lib/queryClient";
 import { AuthModal } from "@/components/auth-modal";
+import { ProfilePictureSelector } from "@/components/profile-picture-selector";
 import type { Property } from "@shared/schema";
 
 export default function Profile() {
@@ -17,6 +18,48 @@ export default function Profile() {
   const [authMode, setAuthMode] = useState<'login' | 'signup'>('login');
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  // Render profile picture function
+  const renderProfilePicture = (picture: string) => {
+    // Check if it's an emoji (contains Unicode emoji characters)
+    const isEmoji = /[\u{1F600}-\u{1F64F}]|[\u{1F300}-\u{1F5FF}]|[\u{1F680}-\u{1F6FF}]|[\u{1F1E0}-\u{1F1FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]/u.test(picture);
+    
+    if (isEmoji) {
+      return (
+        <div className="w-20 h-20 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
+          <span className="text-4xl">{picture}</span>
+        </div>
+      );
+    }
+
+    // Standard avatar - show colored circle with gradient
+    const STANDARD_PICTURES = [
+      { id: "avatar1", colors: "from-blue-500 to-blue-600", emoji: "🔵" },
+      { id: "avatar2", colors: "from-green-500 to-green-600", emoji: "🟢" },
+      { id: "avatar3", colors: "from-purple-500 to-purple-600", emoji: "🟣" },
+      { id: "avatar4", colors: "from-orange-500 to-orange-600", emoji: "🟠" },
+      { id: "avatar5", colors: "from-red-500 to-red-600", emoji: "🔴" },
+      { id: "avatar6", colors: "from-sky-400 to-blue-500", emoji: "🌅" },
+      { id: "avatar7", colors: "from-blue-400 to-teal-500", emoji: "🌊" },
+      { id: "avatar8", colors: "from-green-400 to-emerald-500", emoji: "🌲" },
+    ];
+
+    const standardAvatar = STANDARD_PICTURES.find(p => p.id === picture);
+    if (standardAvatar) {
+      return (
+        <div className={`w-20 h-20 rounded-full bg-gradient-to-br ${standardAvatar.colors} flex items-center justify-center`}>
+          <span className="text-2xl text-white">{standardAvatar.emoji}</span>
+        </div>
+      );
+    }
+
+    // Default fallback
+    return (
+      <div className="w-20 h-20 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
+        <i className="fas fa-user text-white text-2xl"></i>
+      </div>
+    );
+  };
 
   // Check if user is authenticated using real auth system
   const { data: user, isLoading } = useQuery({
@@ -177,8 +220,14 @@ export default function Profile() {
             {/* Authenticated User */}
             <Card>
               <CardContent className="p-6 text-center">
-                <div className="w-20 h-20 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <i className="fas fa-user text-white text-2xl"></i>
+                <div className="flex items-center justify-center mb-4 relative">
+                  {renderProfilePicture(user.profilePicture || "👤")}
+                  <div className="absolute -bottom-1 -right-1">
+                    <ProfilePictureSelector 
+                      currentProfilePicture={user.profilePicture || "👤"}
+                      userId={user.id}
+                    />
+                  </div>
                 </div>
                 <h2 className="text-xl font-bold text-secondary mb-1" data-testid="text-user-name">
                   {user.name}

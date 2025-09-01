@@ -8,6 +8,7 @@ export const users = pgTable("users", {
   email: text("email").notNull().unique(),
   name: text("name").notNull(),
   password: text("password").notNull(),
+  profilePicture: text("profile_picture").default("👤"), // Emoji or standard picture identifier
   isVerified: boolean("is_verified").default(false),
   createdAt: timestamp("created_at").defaultNow(),
 });
