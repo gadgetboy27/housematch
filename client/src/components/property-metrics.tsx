@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
-import AchievementNotification from "./achievement-notification";
 
 interface PropertyMetricsProps {
   propertyId: string;
@@ -13,22 +12,15 @@ interface PropertyMetricsProps {
 export default function PropertyMetrics({ propertyId, views, likes, saves }: PropertyMetricsProps) {
   const [isLiked, setIsLiked] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
-  const [newAchievement, setNewAchievement] = useState<any>(null);
   const queryClient = useQueryClient();
 
   const likeMutation = useMutation({
     mutationFn: async () => {
       return await apiRequest("POST", `/api/properties/${propertyId}/like`);
     },
-    onSuccess: (data: any) => {
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/properties'] });
       setIsLiked(!isLiked);
-      
-      // Show achievement notification if any unlocked
-      if (data.unlockedAchievements && data.unlockedAchievements.length > 0) {
-        // Show the first unlocked achievement
-        setNewAchievement(data.unlockedAchievements[0]);
-      }
     },
   });
 
@@ -36,15 +28,9 @@ export default function PropertyMetrics({ propertyId, views, likes, saves }: Pro
     mutationFn: async () => {
       return await apiRequest("POST", `/api/properties/${propertyId}/save`);
     },
-    onSuccess: (data: any) => {
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/properties'] });
       setIsSaved(!isSaved);
-      
-      // Show achievement notification if any unlocked
-      if (data.unlockedAchievements && data.unlockedAchievements.length > 0) {
-        // Show the first unlocked achievement
-        setNewAchievement(data.unlockedAchievements[0]);
-      }
     },
   });
 
@@ -89,12 +75,6 @@ export default function PropertyMetrics({ propertyId, views, likes, saves }: Pro
         <i className={`fas fa-bookmark ${isSaved ? 'text-white' : 'text-yellow-400'}`}></i>
         <span data-testid="text-metric-saves">{saves}</span>
       </div>
-      
-      {/* Achievement Notification */}
-      <AchievementNotification 
-        achievement={newAchievement}
-        onClose={() => setNewAchievement(null)}
-      />
     </div>
   );
 }

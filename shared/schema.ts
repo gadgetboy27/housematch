@@ -237,34 +237,6 @@ export const lawyerReviews = pgTable("lawyer_reviews", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
-// Achievements table - Define available achievements
-export const achievements = pgTable("achievements", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  name: varchar("name").notNull().unique(),
-  title: varchar("title").notNull(),
-  description: text("description").notNull(),
-  icon: varchar("icon").notNull(), // Font Awesome icon class
-  badgeColor: varchar("badge_color").notNull().default("blue"), // blue, green, purple, gold, red
-  category: varchar("category").notNull(), // exploration, interaction, offers, milestones
-  target: integer("target").notNull().default(1), // Target number to achieve
-  isHidden: boolean("is_hidden").notNull().default(false), // Hidden until unlocked
-  points: integer("points").notNull().default(10), // Points awarded
-  rarity: varchar("rarity").notNull().default("common"), // common, rare, epic, legendary
-  createdAt: timestamp("created_at").defaultNow(),
-});
-
-// User Achievements table - Track user progress and unlocked achievements
-export const userAchievements = pgTable("user_achievements", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  userId: varchar("user_id").references(() => users.id).notNull(),
-  achievementId: varchar("achievement_id").references(() => achievements.id).notNull(),
-  progress: integer("progress").notNull().default(0), // Current progress towards target
-  isUnlocked: boolean("is_unlocked").notNull().default(false),
-  unlockedAt: timestamp("unlocked_at"),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-});
-
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
   createdAt: true,
@@ -359,9 +331,3 @@ export type InsertDraftDocument = z.infer<typeof insertDraftDocumentSchema>;
 export type DraftDocument = typeof draftDocuments.$inferSelect;
 export type InsertLawyerReview = z.infer<typeof insertLawyerReviewSchema>;
 export type LawyerReview = typeof lawyerReviews.$inferSelect;
-
-// Achievement types
-export type Achievement = typeof achievements.$inferSelect;
-export type InsertAchievement = typeof achievements.$inferInsert;
-export type UserAchievement = typeof userAchievements.$inferSelect;
-export type InsertUserAchievement = typeof userAchievements.$inferInsert;

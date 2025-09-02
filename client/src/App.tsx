@@ -13,7 +13,6 @@ import Profile from "@/pages/profile";
 import NotFound from "@/pages/not-found";
 import { ResetPassword } from "@/pages/reset-password";
 import PricingPage from "@/pages/pricing-page";
-import AchievementsPage from "@/pages/achievements-page";
 
 function Router() {
   return (
@@ -26,7 +25,6 @@ function Router() {
       <Route path="/reports" component={Reports} />
       <Route path="/service-submission" component={ServiceSubmission} />
       <Route path="/profile" component={Profile} />
-      <Route path="/achievements" component={AchievementsPage} />
       <Route path="/pricing" component={PricingPage} />
       <Route path="/reset-password" component={ResetPassword} />
       <Route component={NotFound} />

@@ -26,12 +26,6 @@ const navigationItems = [
     testId: "nav-reports"
   },
   {
-    path: "/achievements",
-    icon: "fa-trophy",
-    label: "Achievements",
-    testId: "nav-achievements"
-  },
-  {
     path: "/profile",
     icon: "fa-user",
     label: "Profile",
