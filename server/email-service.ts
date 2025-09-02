@@ -27,13 +27,12 @@ export async function sendEmail(params: EmailParams): Promise<boolean> {
       to: params.to,
       from: params.from,
       subject: params.subject,
-      text: params.text,
-      html: params.html,
+      text: params.text || undefined,
+      html: params.html || undefined,
       attachments: params.attachments,
     });
     return true;
   } catch (error) {
-    console.error('SendGrid email error:', error);
     return false;
   }
 }

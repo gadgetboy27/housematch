@@ -7,12 +7,8 @@ if (!process.env.SENDGRID_API_KEY) {
 // Validate and fix SendGrid API key format
 let apiKey = process.env.SENDGRID_API_KEY;
 if (!apiKey.startsWith('SG.')) {
-  console.log(`🔧 API key doesn't start with 'SG.', attempting to add prefix...`);
-  console.log(`Original key starts with: "${apiKey.slice(0, 3)}..."`);
   apiKey = 'SG.' + apiKey;
-  console.log(`✅ Modified key now starts with: "${apiKey.slice(0, 6)}..."`);
 } else {
-  console.log("✅ Valid SendGrid API key format detected");
 }
 
 const mailService = new MailService();

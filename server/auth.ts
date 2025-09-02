@@ -76,17 +76,12 @@ export function setupAuth(app: Express) {
   // Register endpoint
   app.post("/api/auth/register", async (req, res, next) => {
     const startTime = Date.now();
-    console.log("📝 REGISTRATION REQUEST:", { 
-      body: { ...req.body, password: "[REDACTED]" }, 
-      timestamp: new Date().toISOString() 
-    });
 
     try {
       const { email, name, password } = req.body;
 
       // Validation
       if (!email || !name || !password) {
-        console.log("❌ VALIDATION FAILED: Missing fields", { email: !!email, name: !!name, password: !!password });
         return res.status(400).json({ 
           success: false,
           message: "All fields are required (email, name, password)" 
@@ -94,7 +89,6 @@ export function setupAuth(app: Express) {
       }
 
       if (password.length < 6) {
-        console.log("❌ VALIDATION FAILED: Password too short", { length: password.length });
         return res.status(400).json({ 
           success: false,
           message: "Password must be at least 6 characters" 
@@ -102,10 +96,8 @@ export function setupAuth(app: Express) {
       }
 
       // Check if user already exists
-      console.log("🔍 Checking if user exists:", email);
       const existingUser = await storage.getUserByEmail(email);
       if (existingUser) {
-        console.log("❌ USER ALREADY EXISTS:", email);
         return res.status(400).json({ 
           success: false,
           message: "Email already registered - try logging in instead" 
@@ -113,23 +105,19 @@ export function setupAuth(app: Express) {
       }
 
       // Create user
-      console.log("🔨 Creating user:", { email, name });
       const hashedPassword = await hashPassword(password);
       const user = await storage.createUser({
         email,
         name,
         password: hashedPassword,
       });
-      console.log("✅ User created successfully:", { id: user.id, email: user.email });
 
       // Log them in
       req.login(user, (err) => {
         if (err) {
-          console.error("❌ AUTO-LOGIN FAILED:", err);
           return next(err);
         }
         const responseTime = Date.now() - startTime;
-        console.log("✅ REGISTRATION COMPLETE:", { userId: user.id, responseTime: `${responseTime}ms` });
         res.json({ 
           success: true, 
           user: { 
@@ -141,22 +129,16 @@ export function setupAuth(app: Express) {
       });
     } catch (error) {
       const responseTime = Date.now() - startTime;
-      console.error("❌ REGISTRATION ERROR:", {
-        error: error.message,
-        stack: error.stack,
-        responseTime: `${responseTime}ms`,
-        timestamp: new Date().toISOString()
-      });
       res.status(500).json({ 
         success: false,
-        message: `Registration failed: ${error.message || "Unknown error"}` 
+        message: `Registration failed: ${(error as Error).message || "Unknown error"}` 
       });
     }
   });
 
   // Login endpoint
   app.post("/api/auth/login", (req, res, next) => {
-    passport.authenticate("local", (err, user, info) => {
+    passport.authenticate("local", (err: any, user: any, info: any) => {
       if (err) {
         return res.status(500).json({ 
           success: false,
@@ -216,7 +198,6 @@ export function setupAuth(app: Express) {
         profilePicture: freshUser.profilePicture 
       });
     } catch (error) {
-      console.error("Failed to fetch user data:", error);
       res.status(500).json({ message: "Failed to fetch user data" });
     }
   });

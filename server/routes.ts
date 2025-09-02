@@ -27,7 +27,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const plans = await storage.getActivePricingPlans();
       res.json(plans);
     } catch (error) {
-      console.error("❌ Failed to fetch pricing plans:", error);
       res.status(500).json({ message: "Failed to fetch pricing plans" });
     }
   });
@@ -103,7 +102,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       res.json({ message: "Pricing plans seeded successfully", plans: seededPlans });
     } catch (error) {
-      console.error("❌ Failed to seed pricing plans:", error);
       res.status(500).json({ message: "Failed to seed pricing plans" });
     }
   });
@@ -111,26 +109,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Property routes with personalization
   app.get("/api/properties", async (req, res) => {
     try {
-      console.log("🚀 Properties API called");
       const { type, suburb, userId = "demo-user" } = req.query;
       let properties;
       
       if (type) {
-        console.log("🔍 Getting properties by type:", type);
         properties = await storage.getPropertiesByType(type as string);
       } else if (suburb) {
-        console.log("🔍 Getting properties by suburb:", suburb);
         properties = await storage.searchProperties({ suburb: suburb as string });
       } else {
-        console.log("🔍 Getting all properties");
         // Simply return all active properties for now
         properties = await storage.getAllProperties();
       }
       
-      console.log("✅ Returning", properties.length, "properties");
       res.json(properties);
     } catch (error) {
-      console.error("❌ Failed to fetch properties:", error);
       res.status(500).json({ message: "Failed to fetch properties" });
     }
   });

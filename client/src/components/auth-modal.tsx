@@ -61,7 +61,6 @@ export function AuthModal({ isOpen, onClose, onSuccess, mode, onToggleMode, onFo
           description: `Logged in as ${result.user.name}`,
         });
       } else {
-        console.error("❌ Login success but result.success is false:", result);
         toast({
           title: "Login failed",
           description: result.message || "Unexpected server response",
@@ -70,11 +69,6 @@ export function AuthModal({ isOpen, onClose, onSuccess, mode, onToggleMode, onFo
       }
     },
     onError: (error: Error) => {
-      console.error("❌ LOGIN ERROR:", {
-        message: error.message,
-        stack: error.stack,
-        timestamp: new Date().toISOString()
-      });
       toast({
         title: "Login failed", 
         description: error.message || "Please check your credentials and try again",
@@ -86,17 +80,10 @@ export function AuthModal({ isOpen, onClose, onSuccess, mode, onToggleMode, onFo
   // Register mutation  
   const registerMutation = useMutation({
     mutationFn: async (data: { email: string; name: string; password: string }) => {
-      console.log("📝 REGISTER ATTEMPT:", { email: data.email, name: data.name, timestamp: new Date().toISOString() });
       
       const response = await apiRequest("POST", "/api/auth/register", data);
       const result = await response.json();
       
-      console.log("📝 REGISTER RESPONSE:", { 
-        status: response.status, 
-        success: result.success, 
-        hasUser: !!result.user,
-        message: result.message 
-      });
       
       if (!response.ok) {
         throw new Error(result.message || `HTTP ${response.status}: Registration failed`);
@@ -104,7 +91,6 @@ export function AuthModal({ isOpen, onClose, onSuccess, mode, onToggleMode, onFo
       return result;
     },
     onSuccess: (result) => {
-      console.log("✅ REGISTRATION SUCCESS:", result);
       if (result.success) {
         // Immediately update auth cache to prevent race conditions
         queryClient.setQueryData(["/api/auth/user"], result.user);
@@ -116,7 +102,6 @@ export function AuthModal({ isOpen, onClose, onSuccess, mode, onToggleMode, onFo
           description: `Account created for ${result.user.name}`,
         });
       } else {
-        console.error("❌ Registration success but result.success is false:", result);
         toast({
           title: "Registration failed",
           description: result.message || "Unexpected server response",
@@ -125,11 +110,6 @@ export function AuthModal({ isOpen, onClose, onSuccess, mode, onToggleMode, onFo
       }
     },
     onError: (error: Error) => {
-      console.error("❌ REGISTRATION ERROR:", {
-        message: error.message,
-        stack: error.stack,
-        timestamp: new Date().toISOString()
-      });
       toast({
         title: "Registration failed", 
         description: error.message || "Please check your details and try again",
@@ -141,15 +121,10 @@ export function AuthModal({ isOpen, onClose, onSuccess, mode, onToggleMode, onFo
   // Forgot password mutation
   const forgotPasswordMutation = useMutation({
     mutationFn: async (email: string) => {
-      console.log("🔐 FORGOT PASSWORD REQUEST:", { email, timestamp: new Date().toISOString() });
       
       const response = await apiRequest("POST", "/api/auth/forgot-password", { email });
       const result = await response.json();
       
-      console.log("🔐 FORGOT PASSWORD RESPONSE:", { 
-        status: response.status, 
-        message: result.message 
-      });
       
       if (!response.ok) {
         throw new Error(result.message || `HTTP ${response.status}: Forgot password request failed`);
@@ -157,14 +132,12 @@ export function AuthModal({ isOpen, onClose, onSuccess, mode, onToggleMode, onFo
       return result;
     },
     onSuccess: (result) => {
-      console.log("✅ FORGOT PASSWORD SUCCESS:", result);
       setForgotPasswordMode('success');
       setSentEmail(formData.email);
       setShowEmailModal(true);
       onClose(); // Close the auth modal
     },
     onError: (error: Error) => {
-      console.error("❌ FORGOT PASSWORD ERROR:", error);
       toast({
         title: "Failed to send reset email", 
         description: error.message || "Please try again",

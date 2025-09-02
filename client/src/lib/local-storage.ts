@@ -29,7 +29,6 @@ export class LocalStorageService {
         likedAt: new Date(item.likedAt)
       }));
     } catch (error) {
-      console.error("Error reading liked properties from localStorage:", error);
       return [];
     }
   }
@@ -61,7 +60,6 @@ export class LocalStorageService {
       
       localStorage.setItem(LIKED_PROPERTIES_KEY, JSON.stringify(likedProperties));
     } catch (error) {
-      console.error("Error saving liked property to localStorage:", error);
     }
   }
 
@@ -73,7 +71,6 @@ export class LocalStorageService {
       );
       localStorage.setItem(LIKED_PROPERTIES_KEY, JSON.stringify(filtered));
     } catch (error) {
-      console.error("Error removing liked property from localStorage:", error);
     }
   }
 
@@ -81,7 +78,6 @@ export class LocalStorageService {
     try {
       localStorage.removeItem(LIKED_PROPERTIES_KEY);
     } catch (error) {
-      console.error("Error clearing liked properties from localStorage:", error);
     }
   }
 
@@ -93,7 +89,6 @@ export class LocalStorageService {
       
       return JSON.parse(stored);
     } catch (error) {
-      console.error("Error reading user session from localStorage:", error);
       return { isLoggedIn: false };
     }
   }
@@ -102,7 +97,6 @@ export class LocalStorageService {
     try {
       localStorage.setItem(USER_SESSION_KEY, JSON.stringify(session));
     } catch (error) {
-      console.error("Error saving user session to localStorage:", error);
     }
   }
 
@@ -110,7 +104,6 @@ export class LocalStorageService {
     try {
       localStorage.removeItem(USER_SESSION_KEY);
     } catch (error) {
-      console.error("Error clearing user session from localStorage:", error);
     }
   }
 
@@ -134,7 +127,6 @@ export class LocalStorageService {
         });
       }
     } catch (error) {
-      console.error("Error syncing liked properties to server:", error);
       throw error;
     }
   }
@@ -164,14 +156,12 @@ export class LocalStorageService {
             });
           }
         } catch (error) {
-          console.error("Error fetching property details:", error);
         }
       }
 
       // Merge with local storage (server data takes precedence)
       localStorage.setItem(LIKED_PROPERTIES_KEY, JSON.stringify(likedProperties));
     } catch (error) {
-      console.error("Error syncing liked properties from server:", error);
       throw error;
     }
   }

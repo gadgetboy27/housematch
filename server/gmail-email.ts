@@ -26,7 +26,6 @@ export async function sendPasswordResetEmailViaGmail(params: PasswordResetEmailP
   try {
     const { email, name, resetToken, resetUrl } = params;
     
-    console.log(`📧 Sending password reset email via Gmail to: ${email}`);
     
     const transporter = createGmailTransporter();
     

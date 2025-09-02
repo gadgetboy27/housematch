@@ -33,7 +33,6 @@ export function ResetPassword() {
 
   const resetPasswordMutation = useMutation({
     mutationFn: async (data: { token: string; newPassword: string }) => {
-      console.log('🔐 RESET PASSWORD ATTEMPT:', { token: data.token.slice(0, 8) + '...' });
       
       const response = await apiRequest('POST', '/api/auth/reset-password', {
         token: data.token,
@@ -41,10 +40,6 @@ export function ResetPassword() {
       });
       const result = await response.json();
       
-      console.log('🔐 RESET PASSWORD RESPONSE:', { 
-        status: response.status, 
-        message: result.message 
-      });
       
       if (!response.ok) {
         throw new Error(result.message || `HTTP ${response.status}: Password reset failed`);
@@ -52,7 +47,6 @@ export function ResetPassword() {
       return result;
     },
     onSuccess: (result) => {
-      console.log('✅ PASSWORD RESET SUCCESS:', result);
       toast({
         title: 'Password reset successful!',
         description: result.message,
@@ -63,7 +57,6 @@ export function ResetPassword() {
       }, 2000);
     },
     onError: (error: Error) => {
-      console.error('❌ PASSWORD RESET ERROR:', error);
       toast({
         title: 'Password reset failed', 
         description: error.message || 'Please try again',
