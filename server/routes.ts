@@ -1085,6 +1085,80 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ===== USER STORAGE MANAGEMENT API =====
+
+  // Get user storage statistics
+  app.get("/api/users/:userId/storage", requireAuth, async (req, res) => {
+    try {
+      const stats = await storage.getUserStorageStats(req.params.userId);
+      res.json(stats);
+    } catch (error: any) {
+      console.error("❌ STORAGE STATS ERROR:", error);
+      res.status(500).json({ message: "Failed to get storage stats", error: error.message });
+    }
+  });
+
+  // Check if user can upload a file
+  app.post("/api/users/:userId/storage/check", requireAuth, async (req, res) => {
+    try {
+      const { fileSize, fileType } = req.body;
+      
+      if (!fileSize || !fileType) {
+        return res.status(400).json({ message: "fileSize and fileType are required" });
+      }
+
+      if (!['video', 'audio'].includes(fileType)) {
+        return res.status(400).json({ message: "fileType must be 'video' or 'audio'" });
+      }
+
+      const result = await storage.checkStorageLimit(req.params.userId, fileSize, fileType);
+      res.json(result);
+    } catch (error: any) {
+      console.error("❌ STORAGE CHECK ERROR:", error);
+      res.status(500).json({ message: "Failed to check storage limit", error: error.message });
+    }
+  });
+
+  // Purchase storage upgrade
+  app.post("/api/users/:userId/storage/upgrade", requireAuth, async (req, res) => {
+    try {
+      const { upgradeType } = req.body;
+      
+      if (!upgradeType || !['video', 'audio'].includes(upgradeType)) {
+        return res.status(400).json({ message: "upgradeType must be 'video' or 'audio'" });
+      }
+
+      await storage.purchaseStorageUpgrade(req.params.userId, upgradeType);
+      
+      // Return updated storage stats
+      const stats = await storage.getUserStorageStats(req.params.userId);
+      res.json({ 
+        success: true, 
+        message: `Successfully purchased ${upgradeType} storage upgrade`,
+        stats 
+      });
+    } catch (error: any) {
+      console.error("❌ STORAGE UPGRADE ERROR:", error);
+      res.status(500).json({ message: "Failed to purchase storage upgrade", error: error.message });
+    }
+  });
+
+  // Update user storage after successful upload
+  app.post("/api/users/:userId/storage/update", requireAuth, async (req, res) => {
+    try {
+      const { videoSize, audioSize } = req.body;
+      
+      await storage.updateUserStorage(req.params.userId, videoSize, audioSize);
+      
+      // Return updated storage stats
+      const stats = await storage.getUserStorageStats(req.params.userId);
+      res.json({ success: true, stats });
+    } catch (error: any) {
+      console.error("❌ STORAGE UPDATE ERROR:", error);
+      res.status(500).json({ message: "Failed to update storage usage", error: error.message });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

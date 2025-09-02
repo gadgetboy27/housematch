@@ -131,6 +131,7 @@ export function ImageManager({
               maxNumberOfFiles={1}
               maxFileSize={10485760} // 10MB
               allowedFileTypes={['image/*']}
+              userId="demo-user"
               onGetUploadParameters={handleMainImageUpload}
               onComplete={handleMainImageComplete}
               buttonClassName="w-full"
@@ -183,6 +184,7 @@ export function ImageManager({
               maxNumberOfFiles={1}
               maxFileSize={10485760} // 10MB
               allowedFileTypes={['image/*']}
+              userId="demo-user"
               onGetUploadParameters={handleAdditionalImageUpload}
               onComplete={handleAdditionalImageComplete}
               buttonClassName="w-full"

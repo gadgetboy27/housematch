@@ -1151,6 +1151,7 @@ export default function AddProperty() {
                     maxFileSize={52428800} // 50MB
                     allowedFileTypes={['video/mp4', 'video/quicktime', 'video/webm', 'video/x-msvideo', 'video/avi']}
                     uploadType="video"
+                    userId="demo-user"
                     onGetUploadParameters={handleGetUploadParameters}
                     onComplete={(files) => {
                       if (files.length > 0) {
@@ -1195,6 +1196,7 @@ export default function AddProperty() {
                     maxFileSize={20971520} // 20MB
                     allowedFileTypes={['audio/mp3', 'audio/mpeg', 'audio/aac', 'audio/wav', 'audio/m4a', 'audio/x-m4a']}
                     uploadType="audio"
+                    userId="demo-user"
                     onGetUploadParameters={handleGetUploadParameters}
                     onComplete={(files) => {
                       if (files.length > 0) {

@@ -1,12 +1,15 @@
 import { useState, useRef } from "react";
 import type { ReactNode } from "react";
 import { Button } from "@/components/ui/button";
+import { StorageLimitModal } from "./storage-limit-modal";
+import { apiRequest } from "@/lib/queryClient";
 
 interface ObjectUploaderProps {
   maxNumberOfFiles?: number;
   maxFileSize?: number;
   allowedFileTypes?: string[];
   uploadType?: 'image' | 'video' | 'audio'; // New prop to specify upload type
+  userId?: string; // User ID for storage tracking
   onGetUploadParameters: () => Promise<{
     method: "PUT";
     url: string;
@@ -51,6 +54,7 @@ export function ObjectUploader({
   maxFileSize = 10485760, // 10MB default
   allowedFileTypes = ['image/*'], // Default to images only
   uploadType = 'image',
+  userId = 'demo-user', // Default to demo user for development
   onGetUploadParameters,
   onComplete,
   onUploadProgress,
@@ -59,7 +63,94 @@ export function ObjectUploader({
 }: ObjectUploaderProps) {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState<string[]>([]);
+  const [showStorageModal, setShowStorageModal] = useState(false);
+  const [storageLimitData, setStorageLimitData] = useState<{
+    fileType: 'video' | 'audio';
+    exceededBy: number;
+    currentUsage: number;
+    limit: number;
+  } | null>(null);
+  const [isPurchasing, setIsPurchasing] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Check storage limit before upload (for video and audio only)
+  const checkStorageLimit = async (file: File): Promise<boolean> => {
+    // Only check storage for video and audio uploads
+    if (uploadType !== 'video' && uploadType !== 'audio') {
+      return true;
+    }
+
+    try {
+      const response = await apiRequest('POST', `/api/users/${userId}/storage/check`, {
+        fileSize: file.size,
+        fileType: uploadType
+      });
+      
+      const result = await response.json();
+      
+      if (!result.canUpload) {
+        setStorageLimitData({
+          fileType: uploadType,
+          exceededBy: result.exceededBy,
+          currentUsage: result.currentUsage,
+          limit: result.limit
+        });
+        setShowStorageModal(true);
+        return false;
+      }
+      
+      return true;
+    } catch (error) {
+      console.error("Error checking storage limit:", error);
+      return true; // Allow upload if check fails
+    }
+  };
+
+  // Handle storage upgrade purchase
+  const handlePurchaseUpgrade = async () => {
+    if (!storageLimitData) return;
+    
+    setIsPurchasing(true);
+    try {
+      const response = await apiRequest('POST', `/api/users/${userId}/storage/upgrade`, {
+        upgradeType: storageLimitData.fileType
+      });
+      
+      const result = await response.json();
+      console.log("Storage upgrade successful:", result);
+      
+      setShowStorageModal(false);
+      setStorageLimitData(null);
+      
+      // Automatically retry the file upload
+      if (fileInputRef.current && fileInputRef.current.files) {
+        handleFileSelect({ target: fileInputRef.current } as any);
+      }
+    } catch (error) {
+      console.error("Storage upgrade failed:", error);
+    } finally {
+      setIsPurchasing(false);
+    }
+  };
+
+  // Update user storage after successful upload
+  const updateUserStorage = async (fileSize: number) => {
+    // Only update storage for video and audio uploads
+    if (uploadType !== 'video' && uploadType !== 'audio') {
+      return;
+    }
+
+    try {
+      const updateData = uploadType === 'video' 
+        ? { videoSize: fileSize } 
+        : { audioSize: fileSize };
+        
+      await apiRequest('POST', `/api/users/${userId}/storage/update`, updateData);
+      console.log(`Updated ${uploadType} storage usage:`, fileSize);
+    } catch (error) {
+      console.error("Failed to update storage usage:", error);
+    }
+  };
 
   const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.target.files || []);
@@ -67,14 +158,12 @@ export function ObjectUploader({
 
     console.log("🔍 Files selected:", files.length);
     
-    // Check if selected files exceed the limit (for single-use uploads, don't count previous uploads)
+    // Check if selected files exceed the limit
     if (files.length > maxNumberOfFiles) {
       console.error("🔍 Too many files selected");
-      // Reset the input
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
-      // Call onComplete with empty array to trigger error handling
       onComplete?.([]);
       return;
     }
@@ -83,19 +172,29 @@ export function ObjectUploader({
     const oversizedFiles = files.filter(file => file.size > maxFileSize);
     if (oversizedFiles.length > 0) {
       console.error("🔍 Files too large:", oversizedFiles.map(f => f.name));
-      // Reset the input
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
-      // Call onComplete with empty array to trigger error handling
       onComplete?.([]);
       return;
+    }
+
+    // Check storage limits for video/audio files
+    for (const file of files) {
+      const canUpload = await checkStorageLimit(file);
+      if (!canUpload) {
+        if (fileInputRef.current) {
+          fileInputRef.current.value = '';
+        }
+        return; // Storage modal will be shown
+      }
     }
 
     setIsUploading(true);
 
     try {
       const uploadedUrls: string[] = [];
+      let totalUploadSize = 0;
 
       for (const file of files) {
         console.log("🔍 Uploading file:", file.name);
@@ -113,7 +212,8 @@ export function ObjectUploader({
         });
 
         if (response.ok) {
-          uploadedUrls.push(url.split('?')[0]); // Remove query params to get clean URL
+          uploadedUrls.push(url.split('?')[0]);
+          totalUploadSize += file.size;
           console.log("🔍 File uploaded successfully:", file.name);
         } else {
           console.error("🔍 Upload failed for:", file.name);
@@ -125,6 +225,11 @@ export function ObjectUploader({
         setUploadedFiles(newFiles);
         onUploadProgress?.(newFiles);
         onComplete?.(uploadedUrls);
+        
+        // Update user storage for video/audio uploads
+        if (totalUploadSize > 0) {
+          await updateUserStorage(totalUploadSize);
+        }
       }
     } catch (error) {
       console.error("🔍 Upload error:", error);
@@ -168,13 +273,27 @@ export function ObjectUploader({
       {/* Show uploaded files count */}
       {uploadedFiles.length > 0 && (
         <div className="mt-2 text-sm text-green-600">
-          ✅ {uploadedFiles.length} photo{uploadedFiles.length > 1 ? 's' : ''} uploaded
-          {uploadedFiles.length >= 4 && (
+          ✅ {uploadedFiles.length} {uploadType}{uploadedFiles.length > 1 ? 's' : ''} uploaded
+          {uploadedFiles.length >= 4 && uploadType === 'image' && (
             <div className="text-xs text-orange-600 mt-1">
               💎 Need more than 4 photos? Upgrade to Premium (Coming Soon)
             </div>
           )}
         </div>
+      )}
+
+      {/* Storage Limit Paywall Modal */}
+      {storageLimitData && (
+        <StorageLimitModal
+          isOpen={showStorageModal}
+          onClose={() => setShowStorageModal(false)}
+          fileType={storageLimitData.fileType}
+          exceededBy={storageLimitData.exceededBy}
+          currentUsage={storageLimitData.currentUsage}
+          limit={storageLimitData.limit}
+          onPurchaseUpgrade={handlePurchaseUpgrade}
+          isPurchasing={isPurchasing}
+        />
       )}
     </div>
   );

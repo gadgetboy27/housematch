@@ -74,6 +74,24 @@ export interface IStorage {
   getLawyerReviewsByDocument(documentId: string): Promise<LawyerReview[]>;
   updateLawyerReviewStatus(id: string, status: string, notes?: string): Promise<void>;
 
+  // User Storage Management
+  getUserStorageStats(userId: string): Promise<{
+    videoUsed: number;
+    audioUsed: number;
+    videoLimit: number;
+    audioLimit: number;
+    hasVideoUpgrade: boolean;
+    hasAudioUpgrade: boolean;
+  }>;
+  checkStorageLimit(userId: string, fileSize: number, fileType: 'video' | 'audio'): Promise<{
+    canUpload: boolean;
+    exceededBy: number;
+    currentUsage: number;
+    limit: number;
+  }>;
+  updateUserStorage(userId: string, videoSize?: number, audioSize?: number): Promise<void>;
+  purchaseStorageUpgrade(userId: string, upgradeType: 'video' | 'audio'): Promise<void>;
+
   // User Profile Methods
   getUserOffers(userId: string): Promise<Offer[]>;
   getUserDraftDocuments(userId: string): Promise<DraftDocument[]>;
@@ -674,6 +692,100 @@ export class DatabaseStorage implements IStorage {
       .where(eq(properties.id, propertyId))
       .returning();
     return property;
+  }
+
+  // ===== USER STORAGE MANAGEMENT =====
+
+  // Get user storage statistics
+  async getUserStorageStats(userId: string): Promise<{
+    videoUsed: number;
+    audioUsed: number;
+    videoLimit: number;
+    audioLimit: number;
+    hasVideoUpgrade: boolean;
+    hasAudioUpgrade: boolean;
+  }> {
+    const [user] = await db.select({
+      videoStorageUsed: users.videoStorageUsed,
+      audioStorageUsed: users.audioStorageUsed,
+      videoStorageLimit: users.videoStorageLimit,
+      audioStorageLimit: users.audioStorageLimit,
+      hasVideoStorageUpgrade: users.hasVideoStorageUpgrade,
+      hasAudioStorageUpgrade: users.hasAudioStorageUpgrade,
+    }).from(users).where(eq(users.id, userId));
+
+    if (!user) {
+      throw new Error(`User not found: ${userId}`);
+    }
+
+    return {
+      videoUsed: user.videoStorageUsed || 0,
+      audioUsed: user.audioStorageUsed || 0,
+      videoLimit: user.videoStorageLimit || 157286400, // 150MB
+      audioLimit: user.audioStorageLimit || 20971520,  // 20MB
+      hasVideoUpgrade: user.hasVideoStorageUpgrade || false,
+      hasAudioUpgrade: user.hasAudioStorageUpgrade || false,
+    };
+  }
+
+  // Check if user can upload a file of given size
+  async checkStorageLimit(userId: string, fileSize: number, fileType: 'video' | 'audio'): Promise<{
+    canUpload: boolean;
+    exceededBy: number;
+    currentUsage: number;
+    limit: number;
+  }> {
+    const stats = await this.getUserStorageStats(userId);
+    
+    const currentUsage = fileType === 'video' ? stats.videoUsed : stats.audioUsed;
+    const limit = fileType === 'video' ? stats.videoLimit : stats.audioLimit;
+    
+    const newUsage = currentUsage + fileSize;
+    const canUpload = newUsage <= limit;
+    const exceededBy = Math.max(0, newUsage - limit);
+
+    return {
+      canUpload,
+      exceededBy,
+      currentUsage,
+      limit
+    };
+  }
+
+  // Update user storage usage
+  async updateUserStorage(userId: string, videoSize?: number, audioSize?: number): Promise<void> {
+    const updateData: any = { updatedAt: new Date() };
+
+    if (videoSize !== undefined) {
+      updateData.videoStorageUsed = sql`${users.videoStorageUsed} + ${videoSize}`;
+    }
+    
+    if (audioSize !== undefined) {
+      updateData.audioStorageUsed = sql`${users.audioStorageUsed} + ${audioSize}`;
+    }
+
+    await db.update(users)
+      .set(updateData)
+      .where(eq(users.id, userId));
+  }
+
+  // Purchase storage upgrade for user
+  async purchaseStorageUpgrade(userId: string, upgradeType: 'video' | 'audio'): Promise<void> {
+    const updateData: any = { updatedAt: new Date() };
+    
+    if (upgradeType === 'video') {
+      // Add 150MB (157286400 bytes) to video limit and mark as upgraded
+      updateData.videoStorageLimit = sql`${users.videoStorageLimit} + 157286400`;
+      updateData.hasVideoStorageUpgrade = true;
+    } else if (upgradeType === 'audio') {
+      // Add 150MB (157286400 bytes) to audio limit and mark as upgraded  
+      updateData.audioStorageLimit = sql`${users.audioStorageLimit} + 157286400`;
+      updateData.hasAudioStorageUpgrade = true;
+    }
+
+    await db.update(users)
+      .set(updateData)
+      .where(eq(users.id, userId));
   }
 }
 
