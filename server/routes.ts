@@ -12,7 +12,7 @@ import {
 import { LINZValidationService } from "./services/linz-validation";
 import { randomBytes, scrypt, timingSafeEqual } from 'crypto';
 import { promisify } from 'util';
-import { sendPasswordResetEmail } from './email';
+import { sendPasswordResetEmailViaGmail } from './gmail-email';
 
 export async function registerRoutes(app: Express): Promise<Server> {
   
@@ -690,7 +690,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Send reset email
       const resetUrl = `${req.protocol}://${req.get('host')}/reset-password?token=${resetToken}`;
-      const emailSent = await sendPasswordResetEmail({
+      const emailSent = await sendPasswordResetEmailViaGmail({
         email: user.email,
         name: user.name,
         resetToken,
