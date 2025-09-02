@@ -17,6 +17,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ObjectUploader } from "@/components/ObjectUploader";
 import { AuthModal } from "@/components/auth-modal";
+import { PricingSelection } from "@/components/pricing-selection";
 import type { UploadResult } from "@uppy/core";
 import { z } from "zod";
 
@@ -60,6 +61,11 @@ export default function AddProperty() {
   const [authMode, setAuthMode] = useState<'login' | 'signup' | 'forgot-password'>('signup');
   const [pendingSubmitData, setPendingSubmitData] = useState<any>(null);
   const [currentUser, setCurrentUser] = useState<{ id: string; name: string; email: string } | null>(null);
+  
+  // Pricing selection state
+  const [showPricingSelection, setShowPricingSelection] = useState(false);
+  const [selectedPricingPlan, setSelectedPricingPlan] = useState<string>("");
+  const [isPricingComplete, setIsPricingComplete] = useState(false);
   
   const [, setLocation] = useLocation();
   const { toast } = useToast();
@@ -377,12 +383,28 @@ export default function AddProperty() {
     
     toast({
       title: "Welcome!",
-      description: `Logged in as ${user.name}. Your property will be submitted now.`,
+      description: `Logged in as ${user.name}. Now choose your selling plan.`,
     });
 
-    // If there's pending submit data, submit it now with authenticated user
+    // Close auth modal and show pricing selection
+    setShowAuthModal(false);
+    setShowPricingSelection(true);
+  };
+
+  // Handle pricing plan selection
+  const handlePricingPlanSelect = (planId: string) => {
+    setSelectedPricingPlan(planId);
+    setShowPricingSelection(false);
+    setIsPricingComplete(true);
+    
+    // For Phase 1, we'll just set the flag. In Phase 2, this will redirect to Stripe
+    toast({
+      title: "Plan Selected!",
+      description: "Your plan is confirmed. You can now submit your property.",
+    });
+
+    // If there was pending submit data, now we can submit it
     if (pendingSubmitData) {
-      // Directly submit the property since we now have the user
       const propertyData = {
         ...pendingSubmitData,
         propertyType: selectedPropertyType || pendingSubmitData.propertyType,
@@ -398,12 +420,20 @@ export default function AddProperty() {
         yearBuilt: parseInt(pendingSubmitData.yearBuilt) || new Date().getFullYear(),
         hideCertificateOfTitle: pendingSubmitData.hideCertificateOfTitle,
         parkingType: undefined,
+        // Add the selected pricing plan
+        selectedPlan: planId,
       };
       
-      console.log("🔍 SUBMITTING AFTER AUTH SUCCESS:", propertyData);
+      console.log("🔍 SUBMITTING AFTER PRICING SELECTION:", propertyData);
       createPropertyMutation.mutate(propertyData);
       setPendingSubmitData(null);
     }
+  };
+
+  // Handle closing pricing selection
+  const handlePricingClose = () => {
+    setShowPricingSelection(false);
+    // Don't allow property submission without pricing selection
   };
 
   const handleAuthModalClose = () => {
@@ -1156,6 +1186,19 @@ export default function AddProperty() {
                 console.log("🔍 Form validation result:", isValid);
                 console.log("🔍 Form errors:", form.formState.errors);
                 
+                // Check if user has completed pricing selection (if authenticated)
+                const authenticatedUser = currentUser || user;
+                if (authenticatedUser && !isPricingComplete) {
+                  toast({
+                    title: "Please select a plan",
+                    description: "Choose your selling plan before submitting your property.",
+                    variant: "destructive",
+                  });
+                  setShowPricingSelection(true);
+                  e.preventDefault();
+                  return;
+                }
+
                 if (!isValid) {
                   // Scroll to first error field
                   const firstErrorField = Object.keys(form.formState.errors)[0];
@@ -1188,7 +1231,7 @@ export default function AddProperty() {
                   Adding Property...
                 </>
               ) : (
-                "Add Property Listing"
+                isPricingComplete ? "Submit Property Listing" : "Add Property Listing"
               )}
             </Button>
           </form>
@@ -1204,6 +1247,15 @@ export default function AddProperty() {
         onToggleMode={toggleAuthMode}
         onForgotPassword={() => setAuthMode('forgot-password')}
       />
+
+      {/* Pricing Selection Modal */}
+      {showPricingSelection && (
+        <PricingSelection
+          onPlanSelect={handlePricingPlanSelect}
+          onClose={handlePricingClose}
+          isLoading={false}
+        />
+      )}
 
       <BottomNavigation />
     </div>
