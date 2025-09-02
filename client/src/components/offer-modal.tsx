@@ -30,6 +30,7 @@ import {
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
+import DraftViewerModal from "./draft-viewer-modal";
 
 const offerFormSchema = z.object({
   // Buyer Information
@@ -61,6 +62,8 @@ interface OfferModalProps {
 
 export default function OfferModal({ isOpen, onClose, property }: OfferModalProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showDraftViewer, setShowDraftViewer] = useState(false);
+  const [draftDocumentId, setDraftDocumentId] = useState<string>("");
   const { toast } = useToast();
 
   // Format number with dollar sign and commas
@@ -109,19 +112,46 @@ export default function OfferModal({ isOpen, onClose, property }: OfferModalProp
       console.log("📄 Generating offer for property:", property.id);
       console.log("📝 Offer details:", data);
 
-      // TODO: Call API to generate draft agreement
-      
-      // Simulate processing
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      // Call backend API to create offer and generate draft
+      const response = await fetch('/api/offers', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          propertyId: property.id,
+          buyerName: data.buyerName,
+          buyerEmail: data.buyerEmail,
+          buyerPhone: data.buyerPhone,
+          offerPrice: data.offerPrice,
+          settlementPeriod: data.settlementPeriod,
+          financeCondition: data.financeCondition,
+          buildingInspectionCondition: data.buildingInspectionCondition,
+          limCondition: data.limCondition,
+          additionalConditions: data.additionalConditions,
+          additionalComments: data.additionalComments,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to submit offer');
+      }
+
+      const result = await response.json();
+      console.log("✅ Offer submitted successfully:", result);
 
       toast({
         title: "Draft Agreement Generated! 📄",
-        description: "Your offer has been prepared. Review and download your draft.",
+        description: `Offer ID: ${result.offer.id}. Opening draft document...`,
         variant: "default",
       });
 
-      // TODO: Open draft preview/download modal
+      // Open draft preview modal
+      setDraftDocumentId(result.draftDocument.id);
       onClose();
+      
+      // Show draft viewer after a brief delay
+      setTimeout(() => setShowDraftViewer(true), 300);
     } catch (error) {
       console.error("Error generating offer:", error);
       toast({
@@ -439,6 +469,13 @@ export default function OfferModal({ isOpen, onClose, property }: OfferModalProp
           </form>
         </Form>
       </DialogContent>
+      
+      {/* Draft Viewer Modal */}
+      <DraftViewerModal 
+        isOpen={showDraftViewer}
+        onClose={() => setShowDraftViewer(false)}
+        draftId={draftDocumentId}
+      />
     </Dialog>
   );
 }
