@@ -865,14 +865,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       console.log("📝 OFFER SUBMISSION:", {
         body: req.body,
+        user: req.user?.id || 'anonymous',
         timestamp: new Date().toISOString()
       });
 
       // Validate the offer data
       const validatedData = insertOfferSchema.parse(req.body);
       
+      // Add user ID if logged in
+      const offerData = {
+        ...validatedData,
+        buyerId: req.user?.id || null, // Connect to user profile if logged in
+      };
+      
       // Store the offer in the database
-      const offer = await storage.createOffer(validatedData);
+      const offer = await storage.createOffer(offerData);
       console.log("✅ Offer created:", offer.id);
 
       // Generate draft document automatically
@@ -946,6 +953,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("❌ GET OFFERS ERROR:", error);
       res.status(500).json({
         message: "Failed to retrieve offers",
+        error: error.message
+      });
+    }
+  });
+
+  // Get user's offers and documents (for profile page)
+  app.get("/api/user/offers", async (req, res) => {
+    try {
+      if (!req.user?.id) {
+        return res.status(401).json({ message: "Please log in to view your offers" });
+      }
+
+      const offers = await storage.getUserOffers(req.user.id);
+      
+      res.json({
+        success: true,
+        offers
+      });
+
+    } catch (error: any) {
+      console.error("❌ GET USER OFFERS ERROR:", error);
+      res.status(500).json({
+        message: "Failed to retrieve your offers",
+        error: error.message
+      });
+    }
+  });
+
+  // Get user's draft documents (for profile page)
+  app.get("/api/user/documents", async (req, res) => {
+    try {
+      if (!req.user?.id) {
+        return res.status(401).json({ message: "Please log in to view your documents" });
+      }
+
+      const documents = await storage.getUserDraftDocuments(req.user.id);
+      
+      res.json({
+        success: true,
+        documents
+      });
+
+    } catch (error: any) {
+      console.error("❌ GET USER DOCUMENTS ERROR:", error);
+      res.status(500).json({
+        message: "Failed to retrieve your documents",
         error: error.message
       });
     }

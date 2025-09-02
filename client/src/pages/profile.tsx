@@ -8,6 +8,7 @@ import { LocalStorageService } from "@/lib/local-storage";
 import { apiRequest } from "@/lib/queryClient";
 import { AuthModal } from "@/components/auth-modal";
 import { ProfilePictureSelector } from "@/components/profile-picture-selector";
+import DraftViewerModal from "@/components/draft-viewer-modal";
 import type { Property } from "@shared/schema";
 
 export default function Profile() {
@@ -16,6 +17,8 @@ export default function Profile() {
   const [isSyncing, setIsSyncing] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [authMode, setAuthMode] = useState<'login' | 'signup' | 'forgot-password'>('login');
+  const [showDraftViewer, setShowDraftViewer] = useState(false);
+  const [selectedDraftId, setSelectedDraftId] = useState<string>("");
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -343,6 +346,21 @@ export default function Profile() {
               </CardContent>
             </Card>
 
+            {/* My Offers & Documents */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">My Offers & Documents</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <MyOffersAndDocuments 
+                  onViewDocument={(draftId) => {
+                    setSelectedDraftId(draftId);
+                    setShowDraftViewer(true);
+                  }}
+                />
+              </CardContent>
+            </Card>
+
             {/* Statistics */}
             <Card>
               <CardHeader>
@@ -434,7 +452,123 @@ export default function Profile() {
         onForgotPassword={() => setAuthMode('forgot-password')}
       />
 
+      {/* Draft Viewer Modal */}
+      <DraftViewerModal 
+        isOpen={showDraftViewer}
+        onClose={() => setShowDraftViewer(false)}
+        draftId={selectedDraftId}
+      />
+
       <BottomNavigation />
+    </div>
+  );
+}
+
+// Component to show user's offers and documents
+function MyOffersAndDocuments({ onViewDocument }: { onViewDocument: (draftId: string) => void }) {
+  const { data: userOffers, isLoading: offersLoading } = useQuery({
+    queryKey: ['/api/user/offers'],
+    retry: false,
+  });
+
+  const { data: userDocuments, isLoading: documentsLoading } = useQuery({
+    queryKey: ['/api/user/documents'], 
+    retry: false,
+  });
+
+  if (offersLoading || documentsLoading) {
+    return (
+      <div className="flex items-center justify-center py-6">
+        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+        <span className="ml-2 text-sm">Loading your offers...</span>
+      </div>
+    );
+  }
+
+  const offers = userOffers?.offers || [];
+  const documents = userDocuments?.documents || [];
+
+  if (offers.length === 0) {
+    return (
+      <div className="text-center py-6 text-muted-foreground">
+        <i className="fas fa-handshake text-3xl mb-3 block opacity-20"></i>
+        <p className="text-sm">You haven't made any offers yet</p>
+        <p className="text-xs mt-1">Browse properties and make an offer to get started!</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      {/* Recent Offers */}
+      <div>
+        <h4 className="font-medium text-sm mb-3 flex items-center gap-2">
+          <i className="fas fa-file-contract text-blue-600"></i>
+          Recent Offers ({offers.length})
+        </h4>
+        <div className="space-y-2">
+          {offers.slice(0, 3).map((offer: any) => (
+            <div key={offer.id} className="border rounded-lg p-3 bg-gray-50">
+              <div className="flex justify-between items-start">
+                <div className="flex-1">
+                  <p className="font-medium text-sm">${parseInt(offer.offerPrice).toLocaleString()}</p>
+                  <p className="text-xs text-gray-600">Property ID: {offer.propertyId}</p>
+                  <p className="text-xs text-gray-500">{new Date(offer.createdAt).toLocaleDateString()}</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                    offer.status === 'draft' ? 'bg-yellow-100 text-yellow-800' :
+                    offer.status === 'submitted' ? 'bg-blue-100 text-blue-800' :
+                    offer.status === 'approved' ? 'bg-green-100 text-green-800' :
+                    'bg-gray-100 text-gray-800'
+                  }`}>
+                    {offer.status.toUpperCase()}
+                  </span>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Draft Documents */}
+      {documents.length > 0 && (
+        <div>
+          <h4 className="font-medium text-sm mb-3 flex items-center gap-2">
+            <i className="fas fa-file-pdf text-red-600"></i>
+            Legal Documents ({documents.length})
+          </h4>
+          <div className="space-y-2">
+            {documents.slice(0, 3).map((doc: any) => (
+              <div key={doc.id} className="border rounded-lg p-3 bg-white">
+                <div className="flex justify-between items-start">
+                  <div className="flex-1">
+                    <p className="font-medium text-sm">Purchase & Sale Agreement</p>
+                    <p className="text-xs text-gray-600">Version {doc.version} • {new Date(doc.createdAt).toLocaleDateString()}</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                      doc.status === 'generated' ? 'bg-blue-100 text-blue-800' :
+                      doc.status === 'reviewed' ? 'bg-green-100 text-green-800' :
+                      'bg-gray-100 text-gray-800'
+                    }`}>
+                      {doc.status.toUpperCase()}
+                    </span>
+                    <Button 
+                      size="sm"
+                      variant="outline"
+                      className="h-6 px-2 text-xs"
+                      onClick={() => onViewDocument(doc.id)}
+                    >
+                      View
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

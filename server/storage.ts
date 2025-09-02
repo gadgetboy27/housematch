@@ -73,6 +73,10 @@ export interface IStorage {
   getLawyerReview(id: string): Promise<LawyerReview | undefined>;
   getLawyerReviewsByDocument(documentId: string): Promise<LawyerReview[]>;
   updateLawyerReviewStatus(id: string, status: string, notes?: string): Promise<void>;
+
+  // User Profile Methods
+  getUserOffers(userId: string): Promise<Offer[]>;
+  getUserDraftDocuments(userId: string): Promise<DraftDocument[]>;
 }
 
 export class MemStorage implements IStorage {
@@ -1371,6 +1375,36 @@ export class DatabaseStorage implements IStorage {
         updatedAt: new Date() 
       })
       .where(eq(lawyerReviews.id, id));
+  }
+
+  // ===== USER PROFILE METHODS =====
+
+  // Get all offers made by a user
+  async getUserOffers(userId: string): Promise<Offer[]> {
+    return await db.select().from(offers)
+      .where(eq(offers.buyerId, userId))
+      .orderBy(offers.createdAt);
+  }
+
+  // Get all draft documents for a user's offers
+  async getUserDraftDocuments(userId: string): Promise<DraftDocument[]> {
+    return await db.select({
+      id: draftDocuments.id,
+      offerId: draftDocuments.offerId,
+      documentType: draftDocuments.documentType,
+      documentContent: draftDocuments.documentContent,
+      pdfUrl: draftDocuments.pdfUrl,
+      docxUrl: draftDocuments.docxUrl,
+      version: draftDocuments.version,
+      isLatestVersion: draftDocuments.isLatestVersion,
+      status: draftDocuments.status,
+      createdAt: draftDocuments.createdAt,
+      updatedAt: draftDocuments.updatedAt,
+    })
+    .from(draftDocuments)
+    .innerJoin(offers, eq(draftDocuments.offerId, offers.id))
+    .where(eq(offers.buyerId, userId))
+    .orderBy(draftDocuments.createdAt);
   }
 }
 
