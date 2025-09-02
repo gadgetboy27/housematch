@@ -1,4 +1,4 @@
-import { type User, type InsertUser, type Property, type InsertProperty, type UserSwipe, type InsertUserSwipe, type UserPreferences, type InsertUserPreferences, type PurchaseOrder, type InsertPurchaseOrder, type ServiceProvider, type InsertServiceProvider, type PricingPlan, type InsertPricingPlan, users, properties, userSwipes, userPreferences, purchaseOrders, serviceProviders, passwordResetTokens, pricingPlans } from "@shared/schema";
+import { type User, type InsertUser, type Property, type InsertProperty, type UserSwipe, type InsertUserSwipe, type UserPreferences, type InsertUserPreferences, type PurchaseOrder, type InsertPurchaseOrder, type ServiceProvider, type InsertServiceProvider, type PricingPlan, type InsertPricingPlan, type Offer, type InsertOffer, type DraftDocument, type InsertDraftDocument, type LawyerReview, type InsertLawyerReview, users, properties, userSwipes, userPreferences, purchaseOrders, serviceProviders, passwordResetTokens, pricingPlans, offers, draftDocuments, lawyerReviews } from "@shared/schema";
 import { randomUUID } from "crypto";
 import { db } from "./db";
 import { eq, and, sql } from "drizzle-orm";
@@ -55,6 +55,24 @@ export interface IStorage {
   // Pricing Plans
   getAllPricingPlans(): Promise<PricingPlan[]>;
   getActivePricingPlans(): Promise<PricingPlan[]>;
+
+  // Offer System
+  createOffer(offer: InsertOffer): Promise<Offer>;
+  getOffer(id: string): Promise<Offer | undefined>;
+  getOffersForProperty(propertyId: string): Promise<Offer[]>;
+  updateOfferStatus(id: string, status: string): Promise<void>;
+
+  // Draft Documents
+  createDraftDocument(document: InsertDraftDocument): Promise<DraftDocument>;
+  getDraftDocument(id: string): Promise<DraftDocument | undefined>;
+  getDraftDocumentsByOffer(offerId: string): Promise<DraftDocument[]>;
+  updateDraftDocumentContent(id: string, content: string): Promise<void>;
+
+  // Lawyer Reviews
+  createLawyerReview(review: InsertLawyerReview): Promise<LawyerReview>;
+  getLawyerReview(id: string): Promise<LawyerReview | undefined>;
+  getLawyerReviewsByDocument(documentId: string): Promise<LawyerReview[]>;
+  updateLawyerReviewStatus(id: string, status: string, notes?: string): Promise<void>;
 }
 
 export class MemStorage implements IStorage {
@@ -66,6 +84,9 @@ export class MemStorage implements IStorage {
   private serviceProviders: Map<string, ServiceProvider>;
   private pricingPlans: Map<string, PricingPlan>;
   private passwordResetTokens: Map<string, any>;
+  private offers: Map<string, Offer>;
+  private draftDocuments: Map<string, DraftDocument>;
+  private lawyerReviews: Map<string, LawyerReview>;
 
   constructor() {
     this.users = new Map();
@@ -76,6 +97,9 @@ export class MemStorage implements IStorage {
     this.serviceProviders = new Map();
     this.pricingPlans = new Map();
     this.passwordResetTokens = new Map();
+    this.offers = new Map();
+    this.draftDocuments = new Map();
+    this.lawyerReviews = new Map();
     this.seedProperties();
     this.seedPricingPlans();
   }
@@ -1247,6 +1271,106 @@ export class DatabaseStorage implements IStorage {
     return await db.select().from(pricingPlans)
       .where(eq(pricingPlans.isActive, true))
       .orderBy(pricingPlans.sortOrder);
+  }
+
+  // ===== OFFER SYSTEM METHODS =====
+
+  // Offer Methods
+  async createOffer(offer: InsertOffer): Promise<Offer> {
+    const [newOffer] = await db.insert(offers)
+      .values({
+        ...offer,
+        id: randomUUID(),
+        createdAt: new Date(),
+        updatedAt: new Date()
+      })
+      .returning();
+    return newOffer;
+  }
+
+  async getOffer(id: string): Promise<Offer | undefined> {
+    const [offer] = await db.select().from(offers)
+      .where(eq(offers.id, id));
+    return offer;
+  }
+
+  async getOffersForProperty(propertyId: string): Promise<Offer[]> {
+    return await db.select().from(offers)
+      .where(eq(offers.propertyId, propertyId))
+      .orderBy(offers.createdAt);
+  }
+
+  async updateOfferStatus(id: string, status: string): Promise<void> {
+    await db.update(offers)
+      .set({ status, updatedAt: new Date() })
+      .where(eq(offers.id, id));
+  }
+
+  // Draft Document Methods
+  async createDraftDocument(document: InsertDraftDocument): Promise<DraftDocument> {
+    const [newDocument] = await db.insert(draftDocuments)
+      .values({
+        ...document,
+        id: randomUUID(),
+        createdAt: new Date(),
+        updatedAt: new Date()
+      })
+      .returning();
+    return newDocument;
+  }
+
+  async getDraftDocument(id: string): Promise<DraftDocument | undefined> {
+    const [document] = await db.select().from(draftDocuments)
+      .where(eq(draftDocuments.id, id));
+    return document;
+  }
+
+  async getDraftDocumentsByOffer(offerId: string): Promise<DraftDocument[]> {
+    return await db.select().from(draftDocuments)
+      .where(eq(draftDocuments.offerId, offerId))
+      .orderBy(draftDocuments.version);
+  }
+
+  async updateDraftDocumentContent(id: string, content: string): Promise<void> {
+    await db.update(draftDocuments)
+      .set({ documentContent: content, updatedAt: new Date() })
+      .where(eq(draftDocuments.id, id));
+  }
+
+  // Lawyer Review Methods
+  async createLawyerReview(review: InsertLawyerReview): Promise<LawyerReview> {
+    const [newReview] = await db.insert(lawyerReviews)
+      .values({
+        ...review,
+        id: randomUUID(),
+        createdAt: new Date(),
+        updatedAt: new Date()
+      })
+      .returning();
+    return newReview;
+  }
+
+  async getLawyerReview(id: string): Promise<LawyerReview | undefined> {
+    const [review] = await db.select().from(lawyerReviews)
+      .where(eq(lawyerReviews.id, id));
+    return review;
+  }
+
+  async getLawyerReviewsByDocument(documentId: string): Promise<LawyerReview[]> {
+    return await db.select().from(lawyerReviews)
+      .where(eq(lawyerReviews.draftDocumentId, documentId))
+      .orderBy(lawyerReviews.createdAt);
+  }
+
+  async updateLawyerReviewStatus(id: string, status: string, notes?: string): Promise<void> {
+    await db.update(lawyerReviews)
+      .set({ 
+        reviewStatus: status, 
+        reviewNotes: notes,
+        reviewCompletedAt: status === 'completed' ? new Date() : undefined,
+        updatedAt: new Date() 
+      })
+      .where(eq(lawyerReviews.id, id));
   }
 }
 

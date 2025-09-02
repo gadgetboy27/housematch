@@ -1,6 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
+import { insertOfferSchema, insertDraftDocumentSchema } from "@shared/schema";
 import { insertPropertySchema, insertUserSwipeSchema, insertPurchaseOrderSchema, insertServiceProviderSchema, pricingPlans } from "@shared/schema";
 import { db } from "./db";
 import { analyzeUserPreferences, generatePropertyRecommendations, generateMarketInsights } from "./services/openai";
@@ -857,6 +858,137 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ===== OFFER SYSTEM ENDPOINTS =====
+
+  // Submit a property offer
+  app.post("/api/offers", async (req, res) => {
+    try {
+      console.log("📝 OFFER SUBMISSION:", {
+        body: req.body,
+        timestamp: new Date().toISOString()
+      });
+
+      // Validate the offer data
+      const validatedData = insertOfferSchema.parse(req.body);
+      
+      // Store the offer in the database
+      const offer = await storage.createOffer(validatedData);
+      console.log("✅ Offer created:", offer.id);
+
+      // Generate draft document automatically
+      const draftDocument = await storage.createDraftDocument({
+        offerId: offer.id,
+        documentType: validatedData.propertyId ? 'purchase_sale_agreement' : 'lease_agreement',
+        documentContent: generateDraftContent(validatedData, offer),
+        pdfUrl: null, // Will be generated later
+        docxUrl: null,
+        version: 1,
+        isLatestVersion: true,
+        status: 'generated'
+      });
+
+      console.log("📄 Draft document generated:", draftDocument.id);
+
+      res.status(201).json({
+        success: true,
+        offer,
+        draftDocument: {
+          id: draftDocument.id,
+          documentType: draftDocument.documentType,
+          status: draftDocument.status
+        }
+      });
+
+    } catch (error: any) {
+      console.error("❌ OFFER SUBMISSION ERROR:", error);
+      res.status(400).json({
+        success: false,
+        message: "Invalid offer data",
+        error: error.message
+      });
+    }
+  });
+
+  // Get draft document content
+  app.get("/api/draft-documents/:id", async (req, res) => {
+    try {
+      const draftDocument = await storage.getDraftDocument(req.params.id);
+      
+      if (!draftDocument) {
+        return res.status(404).json({ message: "Draft document not found" });
+      }
+
+      res.json({
+        success: true,
+        draftDocument
+      });
+
+    } catch (error: any) {
+      console.error("❌ GET DRAFT ERROR:", error);
+      res.status(500).json({
+        message: "Failed to retrieve draft document",
+        error: error.message
+      });
+    }
+  });
+
+  // Get all offers for a property (for seller view)
+  app.get("/api/properties/:propertyId/offers", async (req, res) => {
+    try {
+      const offers = await storage.getOffersForProperty(req.params.propertyId);
+      
+      res.json({
+        success: true,
+        offers
+      });
+
+    } catch (error: any) {
+      console.error("❌ GET OFFERS ERROR:", error);
+      res.status(500).json({
+        message: "Failed to retrieve offers",
+        error: error.message
+      });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
+}
+
+// Helper function to generate draft legal document content
+function generateDraftContent(offerData: any, offer: any): string {
+  const conditions = [];
+  if (offerData.financeCondition) conditions.push("Subject to finance approval");
+  if (offerData.buildingInspectionCondition) conditions.push("Subject to building inspection");
+  if (offerData.limCondition) conditions.push("Subject to LIM report");
+  if (offerData.additionalConditions) conditions.push(offerData.additionalConditions);
+
+  return `
+# DRAFT PURCHASE AND SALE AGREEMENT
+
+**⚠️ DRAFT DOCUMENT - FOR REVIEW ONLY**
+
+## Property Details
+- **Property ID**: ${offerData.propertyId}
+- **Offer Price**: ${offerData.offerPrice}
+- **Settlement Period**: ${offerData.settlementPeriod}
+
+## Buyer Information
+- **Name**: ${offerData.buyerName}
+- **Email**: ${offerData.buyerEmail}
+- **Phone**: ${offerData.buyerPhone}
+
+## Terms and Conditions
+${conditions.length > 0 ? conditions.map(c => `- ${c}`).join('\n') : '- No special conditions'}
+
+## Additional Comments
+${offerData.additionalComments || 'None'}
+
+---
+
+**LEGAL DISCLAIMER**: This is a draft document generated for review purposes only. Please have a qualified lawyer review all terms before signing. This document is not legally binding until properly executed by all parties.
+
+**Generated**: ${new Date().toISOString()}
+**Offer ID**: ${offer.id}
+  `.trim();
 }

@@ -142,6 +142,86 @@ export const serviceProviders = pgTable("service_providers", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Offers table - Track property offers from buyers
+export const offers = pgTable("offers", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  propertyId: varchar("property_id").references(() => properties.id).notNull(),
+  buyerId: varchar("buyer_id").references(() => users.id), // Optional - for logged in users
+  
+  // Buyer Information
+  buyerName: text("buyer_name").notNull(),
+  buyerEmail: text("buyer_email").notNull(),
+  buyerPhone: text("buyer_phone").notNull(),
+  
+  // Offer Details
+  offerPrice: text("offer_price").notNull(),
+  settlementPeriod: text("settlement_period").notNull(),
+  
+  // Conditions
+  financeCondition: boolean("finance_condition").default(false),
+  buildingInspectionCondition: boolean("building_inspection_condition").default(false),
+  limCondition: boolean("lim_condition").default(false),
+  
+  // Additional Details
+  additionalConditions: text("additional_conditions"),
+  additionalComments: text("additional_comments"),
+  
+  // Status tracking
+  status: text("status").default('draft'), // draft, submitted, under_review, approved, rejected, withdrawn
+  
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Draft Legal Documents table - Store generated agreements
+export const draftDocuments = pgTable("draft_documents", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  offerId: varchar("offer_id").references(() => offers.id).notNull(),
+  
+  // Document Details
+  documentType: text("document_type").notNull(), // 'purchase_sale_agreement', 'lease_agreement'
+  documentContent: text("document_content"), // HTML/Markdown content of the document
+  pdfUrl: text("pdf_url"), // URL to generated PDF
+  docxUrl: text("docx_url"), // URL to generated DOCX
+  
+  // Version tracking
+  version: integer("version").default(1),
+  isLatestVersion: boolean("is_latest_version").default(true),
+  
+  // Status tracking
+  status: text("status").default('generated'), // generated, reviewed, approved, signed
+  
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Lawyer Reviews table - Track lawyer feedback and revisions
+export const lawyerReviews = pgTable("lawyer_reviews", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  draftDocumentId: varchar("draft_document_id").references(() => draftDocuments.id).notNull(),
+  
+  // Lawyer Information
+  lawyerName: text("lawyer_name"),
+  lawyerEmail: text("lawyer_email"),
+  lawyerFirm: text("lawyer_firm"),
+  
+  // Review Details
+  reviewType: text("review_type").notNull(), // 'cribsy_partner', 'external_lawyer'
+  reviewStatus: text("review_status").default('pending'), // pending, in_progress, completed
+  reviewNotes: text("review_notes"), // Lawyer's feedback and recommendations
+  
+  // Fee tracking
+  reviewFee: integer("review_fee"), // Fee in cents
+  paymentStatus: text("payment_status").default('pending'), // pending, paid, refunded
+  
+  // Timing
+  reviewRequestedAt: timestamp("review_requested_at").defaultNow(),
+  reviewCompletedAt: timestamp("review_completed_at"),
+  
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
   createdAt: true,
@@ -208,3 +288,31 @@ export type InsertServiceProvider = z.infer<typeof insertServiceProviderSchema>;
 export type ServiceProvider = typeof serviceProviders.$inferSelect;
 export type InsertPricingPlan = z.infer<typeof insertPricingPlanSchema>;
 export type PricingPlan = typeof pricingPlans.$inferSelect;
+
+// Insert schemas for offer system
+export const insertOfferSchema = createInsertSchema(offers).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertDraftDocumentSchema = createInsertSchema(draftDocuments).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertLawyerReviewSchema = createInsertSchema(lawyerReviews).omit({
+  id: true,
+  reviewRequestedAt: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+// Type exports for offer system
+export type InsertOffer = z.infer<typeof insertOfferSchema>;
+export type Offer = typeof offers.$inferSelect;
+export type InsertDraftDocument = z.infer<typeof insertDraftDocumentSchema>;
+export type DraftDocument = typeof draftDocuments.$inferSelect;
+export type InsertLawyerReview = z.infer<typeof insertLawyerReviewSchema>;
+export type LawyerReview = typeof lawyerReviews.$inferSelect;

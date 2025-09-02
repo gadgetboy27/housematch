@@ -1,0 +1,100 @@
+Here's a streamlined, user-friendly in-app flow—from discovery to deal—that incorporates a streamlined legal draft tool for NZ property transactions. It’s broken into three phases: Quick Start (Phase 1), Legal Review (Phase 2), and Streamlined Signing (Phase 3).
+
+Phase 1: Fast Draft Flow — "Draft an Offer"
+
+1. Discover & Decide
+
+User browses properties via the Tinder/TikTok-style swipe deck.
+
+When they see a home they’re serious about, they tap "Make an Offer".
+
+2. Fill Offer Details
+
+A modal/form appears requesting:
+
+Buyer names
+
+Contact info
+
+Offer price
+
+Conditions (e.g., financing, building inspection)
+
+Settlement period
+
+Additional comments
+
+3. Generate Draft Agreement
+
+Upon submission, the app auto-fills a draft Purchase & Sale Agreement (or Lease if applicable) with entered details.
+
+User reviews, then clicks Download as PDF/Docx or Send to lawyer.
+
+A brief disclaimer displays:
+
+"This is a draft. Please review with a lawyer before signing."
+
+Phase 2: Legal Review & Finalization
+
+4. Lawyer Partner Integration
+
+The app introduces two options:
+
+"Review with Cribsy-approved Lawyer"
+
+Flows to a form: user pays a flat-fee (e.g., $199) and submits the draft securely.
+
+"Use My Own Lawyer"
+
+User downloads the draft, sends it directly to their lawyer outside the app.
+
+5. Lawyer Feedback Loop
+
+If using Cribsy’s partner lawyer:
+
+Lawyer reviews draft, updates clauses, and uploads final version in the user’s account.
+
+User receives a notification.
+
+6. Download & Sign
+
+User downloads the lawyer-approved agreement.
+
+They handle signing externally (e.g., in person or via electronic signing like DocuSign).
+
+Phase 3: Digital Signing & Delivery (Advanced)
+
+7. Digital Signing Integration (Future)
+
+Digital Signing Launch: Integrate an NZ-compatible e-signature provider (e.g., RealMe or DocuSign).
+
+User signs in-app.
+
+Copies are stored securely for all parties.
+
+Email confirmations and digital timestamps ensure legal compliance.
+
+8. Closing & Notifications
+
+Once signed, all parties receive a copy.
+
+Cribsy triggers a follow-up, like linking to conveyancing services or reminders for settlement dates.
+
+Flow Summary Table
+Step	In-App Action	User Sees / Does
+1	Tap “Make an Offer”	Opens draft form
+2	Fill in offer details	Name, price, conditions
+3	Generate draft agreement	Review + Download
+4a	Choose review via lawyer	Pay fee + send draft
+4b	Use own lawyer	Download draft
+5	Lawyer uploads final version	User notified
+6	Download final contract	“Signed” ready
+7 (future)	Sign in-app with e-signature	User signs, auto-store
+8	Final copy delivery	Email + dashboard
+Value Proposition at Each Stage
+
+Phase 1: Users get something tangible in minutes—a draft agreement they wouldn’t otherwise have.
+
+Phase 2: Adds legal assurance—“draft done right”—and convenience via partner lawyers.
+
+Phase 3 (optional, future): Truly seamless end-to-end real estate closing from swipe to signed contract.

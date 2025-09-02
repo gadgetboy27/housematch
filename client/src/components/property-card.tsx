@@ -5,6 +5,7 @@ import { Property } from "@shared/schema";
 import PropertyMetrics from "./property-metrics";
 import PropertyTypeDropdown from "./property-type-dropdown";
 import ImageSwipeTutorial from "./image-swipe-tutorial";
+import OfferModal from "./offer-modal";
 import { motion } from "framer-motion";
 
 interface PropertyCardProps {
@@ -25,6 +26,7 @@ export default function PropertyCard({ property, isBackground = false, onPropert
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [showTutorial, setShowTutorial] = useState(false);
   const [isFlipped, setIsFlipped] = useState(false);
+  const [showOfferModal, setShowOfferModal] = useState(false);
   const [, setLocation] = useLocation();
   
   const typeColor =
@@ -258,6 +260,19 @@ export default function PropertyCard({ property, isBackground = false, onPropert
               <span>{property.suburb}</span>
               {property.lotNumber && <span>{property.lotNumber}</span>}
             </div>
+
+            {/* Make an Offer Button */}
+            <button
+              className="w-full mt-4 bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600 text-white font-bold py-3 px-6 rounded-xl shadow-lg transform transition-all duration-200 hover:scale-105 active:scale-95 flex items-center justify-center gap-2"
+              onClick={(e) => {
+                e.stopPropagation();
+                console.log("Make an Offer clicked for property:", property.id);
+                setShowOfferModal(true);
+              }}
+            >
+              <i className="fas fa-handshake text-lg"></i>
+              <span>Make an Offer</span>
+            </button>
           </div>
 
           {/* Image Swipe Tutorial */}
@@ -403,6 +418,13 @@ export default function PropertyCard({ property, isBackground = false, onPropert
           </div>
         </motion.div>
       </motion.div>
+
+      {/* Offer Modal */}
+      <OfferModal
+        isOpen={showOfferModal}
+        onClose={() => setShowOfferModal(false)}
+        property={property}
+      />
     </div>
   );
 }
