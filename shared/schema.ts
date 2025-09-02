@@ -48,6 +48,7 @@ export const properties = pgTable("properties", {
   saves: integer("saves").default(0),
   isLinzValidated: boolean("is_linz_validated").notNull().default(false),
   selfDeclaration: boolean("self_declaration").notNull().default(false),
+  selectedPlan: text("selected_plan"), // Store the selected pricing plan: day-trader, quick-match, serious-seller, committed-closer
   isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
@@ -154,6 +155,8 @@ export const insertPropertySchema = createInsertSchema(properties).omit({
   saves: true,
   createdAt: true,
   updatedAt: true,
+}).extend({
+  selectedPlan: z.string().optional(), // Optional because it might not be selected yet
 });
 
 export const insertUserSwipeSchema = createInsertSchema(userSwipes).omit({

@@ -359,6 +359,8 @@ export default function AddProperty() {
       // Store validation status and self-declaration
       isLinzValidated: validationStatus.isValid,
       selfDeclaration: data.selfDeclaration,
+      // Store selected pricing plan
+      selectedPlan: selectedPricingPlan,
       // Ensure numeric fields are actually numbers
       bedrooms: parseInt(data.bedrooms) || 0,
       bathrooms: parseInt(data.bathrooms) || 0,
