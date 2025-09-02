@@ -778,8 +778,8 @@ export class DatabaseStorage implements IStorage {
       updateData.videoStorageLimit = sql`${users.videoStorageLimit} + 157286400`;
       updateData.hasVideoStorageUpgrade = true;
     } else if (upgradeType === 'audio') {
-      // Add 150MB (157286400 bytes) to audio limit and mark as upgraded  
-      updateData.audioStorageLimit = sql`${users.audioStorageLimit} + 157286400`;
+      // Add 50MB (52428800 bytes) to audio limit and mark as upgraded  
+      updateData.audioStorageLimit = sql`${users.audioStorageLimit} + 52428800`;
       updateData.hasAudioStorageUpgrade = true;
     }
 

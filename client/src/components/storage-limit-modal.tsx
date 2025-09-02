@@ -33,8 +33,8 @@ export function StorageLimitModal({
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
-  const upgradePrice = fileType === 'video' ? 9.99 : 9.90;
-  const upgradeAmount = 150; // MB
+  const upgradePrice = fileType === 'video' ? 9.99 : 6.99;
+  const upgradeAmount = fileType === 'video' ? 150 : 50; // MB
   const icon = fileType === 'video' ? <Video className="w-8 h-8" /> : <Mic className="w-8 h-8" />;
 
   return (
