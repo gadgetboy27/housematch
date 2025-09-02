@@ -1070,6 +1070,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Property Metrics Endpoints
+  // Track property view (called when property is displayed)
+  app.post("/api/properties/:propertyId/view", async (req, res) => {
+    try {
+      await storage.incrementPropertyViews(req.params.propertyId);
+      res.json({ success: true });
+    } catch (error: any) {
+      console.error("❌ VIEW TRACKING ERROR:", error);
+      res.status(500).json({ message: "Failed to track view", error: error.message });
+    }
+  });
+
+  // Like property
+  app.post("/api/properties/:propertyId/like", async (req, res) => {
+    try {
+      const property = await storage.incrementPropertyLikes(req.params.propertyId);
+      console.log(`👍 Property ${req.params.propertyId} liked! New count: ${property.likes}`);
+      res.json({ success: true, likes: property.likes });
+    } catch (error: any) {
+      console.error("❌ LIKE ERROR:", error);
+      res.status(500).json({ message: "Failed to like property", error: error.message });
+    }
+  });
+
+  // Save property
+  app.post("/api/properties/:propertyId/save", async (req, res) => {
+    try {
+      const property = await storage.incrementPropertySaves(req.params.propertyId);
+      console.log(`💾 Property ${req.params.propertyId} saved! New count: ${property.saves}`);
+      res.json({ success: true, saves: property.saves });
+    } catch (error: any) {
+      console.error("❌ SAVE ERROR:", error);
+      res.status(500).json({ message: "Failed to save property", error: error.message });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

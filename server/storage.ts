@@ -78,6 +78,11 @@ export interface IStorage {
   getUserOffers(userId: string): Promise<Offer[]>;
   getUserDraftDocuments(userId: string): Promise<DraftDocument[]>;
   getSellerOffers(sellerId: string): Promise<Offer[]>; // Get offers received by seller
+
+  // Property Metrics Methods
+  incrementPropertyViews(propertyId: string): Promise<void>;
+  incrementPropertyLikes(propertyId: string): Promise<Property>;
+  incrementPropertySaves(propertyId: string): Promise<Property>;
 }
 
 export class MemStorage implements IStorage {
@@ -1413,6 +1418,38 @@ export class DatabaseStorage implements IStorage {
     return await db.select().from(offers)
       .where(eq(offers.sellerId, sellerId))
       .orderBy(offers.createdAt);
+  }
+
+  // Property Metrics Methods
+  async incrementPropertyViews(propertyId: string): Promise<void> {
+    await db.update(properties)
+      .set({ 
+        views: sql`${properties.views} + 1`,
+        updatedAt: new Date()
+      })
+      .where(eq(properties.id, propertyId));
+  }
+
+  async incrementPropertyLikes(propertyId: string): Promise<Property> {
+    const [property] = await db.update(properties)
+      .set({ 
+        likes: sql`${properties.likes} + 1`,
+        updatedAt: new Date()
+      })
+      .where(eq(properties.id, propertyId))
+      .returning();
+    return property;
+  }
+
+  async incrementPropertySaves(propertyId: string): Promise<Property> {
+    const [property] = await db.update(properties)
+      .set({ 
+        saves: sql`${properties.saves} + 1`,
+        updatedAt: new Date()
+      })
+      .where(eq(properties.id, propertyId))
+      .returning();
+    return property;
   }
 }
 

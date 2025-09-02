@@ -1,12 +1,14 @@
 // src/components/property-card.tsx
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
+import { useMutation } from "@tanstack/react-query";
 import { Property } from "@shared/schema";
 import PropertyMetrics from "./property-metrics";
 import PropertyTypeDropdown from "./property-type-dropdown";
 import ImageSwipeTutorial from "./image-swipe-tutorial";
 import OfferModal from "./offer-modal";
 import { motion } from "framer-motion";
+import { apiRequest } from "@/lib/queryClient";
 
 interface PropertyCardProps {
   property: Property;
@@ -28,6 +30,20 @@ export default function PropertyCard({ property, isBackground = false, onPropert
   const [isFlipped, setIsFlipped] = useState(false);
   const [showOfferModal, setShowOfferModal] = useState(false);
   const [, setLocation] = useLocation();
+
+  // Track view when property card becomes visible (only for main cards, not background cards)
+  const viewMutation = useMutation({
+    mutationFn: async (propertyId: string) => {
+      return await apiRequest("POST", `/api/properties/${propertyId}/view`);
+    },
+  });
+
+  // Track view on mount (only once per property card instance)
+  useEffect(() => {
+    if (!isBackground) {
+      viewMutation.mutate(property.id);
+    }
+  }, [property.id, isBackground]);
   
   const typeColor =
     propertyTypeColors[property.propertyType as keyof typeof propertyTypeColors] || propertyTypeColors.residential;
@@ -190,7 +206,7 @@ export default function PropertyCard({ property, isBackground = false, onPropert
             <>
               {/* metrics only */}
               <div className="absolute top-4 right-4 flex items-center gap-2">
-                <PropertyMetrics views={property.views || 0} likes={property.likes || 0} saves={property.saves || 0} />
+                <PropertyMetrics propertyId={property.id} views={property.views || 0} likes={property.likes || 0} saves={property.saves || 0} />
               </div>
 
             {/* type filter */}
