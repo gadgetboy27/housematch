@@ -6,6 +6,7 @@ interface ObjectUploaderProps {
   maxNumberOfFiles?: number;
   maxFileSize?: number;
   allowedFileTypes?: string[];
+  uploadType?: 'image' | 'video' | 'audio'; // New prop to specify upload type
   onGetUploadParameters: () => Promise<{
     method: "PUT";
     url: string;
@@ -49,6 +50,7 @@ export function ObjectUploader({
   maxNumberOfFiles = 4,
   maxFileSize = 10485760, // 10MB default
   allowedFileTypes = ['image/*'], // Default to images only
+  uploadType = 'image',
   onGetUploadParameters,
   onComplete,
   onUploadProgress,
@@ -137,7 +139,7 @@ export function ObjectUploader({
       <input
         ref={fileInputRef}
         type="file"
-        accept="image/*"
+        accept={allowedFileTypes.join(',')}
         multiple={maxNumberOfFiles > 1}
         onChange={handleFileSelect}
         className="hidden"

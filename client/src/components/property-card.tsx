@@ -54,13 +54,23 @@ export default function PropertyCard({ property, isBackground = false, onPropert
     ...(property.additionalImages || [])
   ];
 
+  // Create media array combining images, video, and audio
+  const allMedia = [
+    ...allImages.map(url => ({ type: 'image', url })),
+    ...(property.videoUrl ? [{ type: 'video', url: property.videoUrl }] : []),
+    ...(property.audioUrl ? [{ type: 'audio', url: property.audioUrl }] : []),
+  ];
 
+  const hasMultipleMedia = allMedia.length > 1;
+  const currentMedia = allMedia[currentImageIndex] || { type: 'image', url: allImages[0] };
+  
+  // Legacy support
   const hasMultipleImages = allImages.length > 1;
   const currentImage = allImages[currentImageIndex];
 
-  // Tutorial logic - show once when user first encounters multiple images
+  // Tutorial logic - show once when user first encounters multiple media
   useEffect(() => {
-    if (!hasMultipleImages || isBackground) return;
+    if (!hasMultipleMedia || isBackground) return;
     
     const hasSeenTutorial = localStorage.getItem('image-swipe-tutorial-seen');
     if (!hasSeenTutorial) {
@@ -70,7 +80,7 @@ export default function PropertyCard({ property, isBackground = false, onPropert
       
       return () => clearTimeout(timer);
     }
-  }, [hasMultipleImages, isBackground]);
+  }, [hasMultipleMedia, isBackground]);
 
   const handleTutorialComplete = () => {
     setShowTutorial(false);
@@ -80,10 +90,10 @@ export default function PropertyCard({ property, isBackground = false, onPropert
   const handlePreviousImage = (e: React.MouseEvent | React.TouchEvent | React.PointerEvent) => {
     e.stopPropagation();
     e.preventDefault();
-    if (hasMultipleImages) {
+    if (hasMultipleMedia) {
       // Add small delay to prevent accidental rapid triggers
       setTimeout(() => {
-        setCurrentImageIndex((prev) => (prev === 0 ? allImages.length - 1 : prev - 1));
+        setCurrentImageIndex((prev) => (prev === 0 ? allMedia.length - 1 : prev - 1));
       }, 50);
     }
   };
@@ -91,10 +101,10 @@ export default function PropertyCard({ property, isBackground = false, onPropert
   const handleNextImage = (e: React.MouseEvent | React.TouchEvent | React.PointerEvent) => {
     e.stopPropagation();
     e.preventDefault();
-    if (hasMultipleImages) {
+    if (hasMultipleMedia) {
       // Add small delay to prevent accidental rapid triggers
       setTimeout(() => {
-        setCurrentImageIndex((prev) => (prev === allImages.length - 1 ? 0 : prev + 1));
+        setCurrentImageIndex((prev) => (prev === allMedia.length - 1 ? 0 : prev + 1));
       }, 50);
     }
   };
@@ -145,15 +155,62 @@ export default function PropertyCard({ property, isBackground = false, onPropert
           className="absolute inset-0 w-full h-full"
           style={{ backfaceVisibility: "hidden" }}
         >
-          <img
-            src={currentImage}
-            alt={`${property.title} - Image ${currentImageIndex + 1}`}
-            className="w-full h-full object-cover"
-            draggable={false}
-          />
+          {/* Render based on media type */}
+          {currentMedia.type === 'image' && (
+            <img
+              src={currentMedia.url}
+              alt={`${property.title} - Image ${currentImageIndex + 1}`}
+              className="w-full h-full object-cover"
+              draggable={false}
+            />
+          )}
+          
+          {currentMedia.type === 'video' && (
+            <div className="relative w-full h-full">
+              <video
+                src={currentMedia.url}
+                className="w-full h-full object-cover"
+                controls
+                poster={property.imageUrl || "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=600"}
+                preload="metadata"
+              />
+              <div className="absolute top-4 left-4 bg-black/80 text-white px-2 py-1 rounded-md text-xs font-medium">
+                <i className="fas fa-video mr-1"></i>
+                Video Tour
+              </div>
+            </div>
+          )}
+          
+          {currentMedia.type === 'audio' && (
+            <div className="relative w-full h-full bg-gradient-to-br from-orange-100 to-orange-200">
+              {/* Background image for audio */}
+              <img
+                src={property.imageUrl || "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=600"}
+                alt={property.title}
+                className="w-full h-full object-cover opacity-60"
+                draggable={false}
+              />
+              
+              {/* Audio player overlay */}
+              <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/30">
+                <div className="bg-white rounded-full p-4 mb-4">
+                  <i className="fas fa-microphone text-orange-600 text-2xl"></i>
+                </div>
+                <audio
+                  src={currentMedia.url}
+                  controls
+                  className="w-[90%] max-w-xs"
+                  preload="metadata"
+                />
+                <div className="text-white text-sm font-medium mt-2">
+                  Audio Description
+                </div>
+              </div>
+            </div>
+          )}
 
-          {/* Image Navigation Tap Zones - Only show if multiple images */}
-          {hasMultipleImages && (
+          {/* Media Navigation Tap Zones - Only show if multiple media */}
+          {hasMultipleMedia && (
         <>
           {/* Left tap zone */}
           <div 
@@ -183,18 +240,30 @@ export default function PropertyCard({ property, isBackground = false, onPropert
             data-testid="tap-zone-next-image"
           />
           
-          {/* Image indicator dots */}
+          {/* Media indicator dots */}
           <div className="absolute bottom-40 left-1/2 transform -translate-x-1/2 flex space-x-2 z-30">
-            {allImages.map((_, index) => (
+            {allMedia.map((media, index) => (
               <div
                 key={index}
-                className={`w-2 h-2 rounded-full transition-all duration-200 ${
+                className={`w-2 h-2 rounded-full transition-all duration-200 relative ${
                   index === currentImageIndex 
                     ? 'bg-white shadow-lg scale-110' 
                     : 'bg-white/50 hover:bg-white/70'
                 }`}
-                data-testid={`image-dot-${index}`}
-              />
+                data-testid={`media-dot-${index}`}
+              >
+                {/* Add small indicator for media type */}
+                {media.type === 'video' && (
+                  <div className="absolute -top-1 -right-1 w-3 h-3 bg-purple-500 rounded-full flex items-center justify-center">
+                    <i className="fas fa-play text-[6px] text-white"></i>
+                  </div>
+                )}
+                {media.type === 'audio' && (
+                  <div className="absolute -top-1 -right-1 w-3 h-3 bg-orange-500 rounded-full flex items-center justify-center">
+                    <i className="fas fa-volume-up text-[6px] text-white"></i>
+                  </div>
+                )}
+              </div>
             ))}
           </div>
             </>

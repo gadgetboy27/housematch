@@ -43,6 +43,8 @@ const zoningOptions = [
 export default function AddProperty() {
   const [selectedPropertyType, setSelectedPropertyType] = useState<string>("");
   const [uploadedImages, setUploadedImages] = useState<string[]>([]);
+  const [uploadedVideo, setUploadedVideo] = useState<string>("");
+  const [uploadedAudio, setUploadedAudio] = useState<string>("");
   const [validationStatus, setValidationStatus] = useState<{
     isValidating: boolean;
     isValid: boolean;
@@ -111,6 +113,8 @@ export default function AddProperty() {
     zoning: z.string().optional(),
     yearBuilt: z.string().transform(val => parseInt(val) || new Date().getFullYear()).optional(),
     imageUrl: z.string().min(1, "At least one image is required"), // Images now required
+    videoUrl: z.string().optional(), // MP4 video tour
+    audioUrl: z.string().optional(), // MP3 audio description
     description: z.string().optional(),
     isLinzValidated: z.boolean().default(false),
     selfDeclaration: z.boolean().refine((val) => val === true, {
@@ -138,6 +142,8 @@ export default function AddProperty() {
       zoning: "Residential",
       yearBuilt: new Date().getFullYear().toString(),
       imageUrl: "",
+      videoUrl: "",
+      audioUrl: "",
       description: "",
       isLinzValidated: false,
       selfDeclaration: false,
@@ -157,6 +163,20 @@ export default function AddProperty() {
       form.setValue("imageUrl", uploadedImages[0]);
     }
   }, [uploadedImages, form]);
+
+  // Sync uploadedVideo with form
+  useEffect(() => {
+    if (uploadedVideo) {
+      form.setValue("videoUrl", uploadedVideo);
+    }
+  }, [uploadedVideo, form]);
+
+  // Sync uploadedAudio with form
+  useEffect(() => {
+    if (uploadedAudio) {
+      form.setValue("audioUrl", uploadedAudio);
+    }
+  }, [uploadedAudio, form]);
 
   // Check if all required fields are filled
   const watchedFields = form.watch();
@@ -1116,6 +1136,94 @@ export default function AddProperty() {
                           💎 Want more than 4 photos? Premium coming soon!
                         </div>
                       )}
+                    </div>
+                  )}
+                </div>
+
+                {/* Video Upload Section */}
+                <div>
+                  <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 mb-2 block">
+                    Property Video Tour
+                    <span className="text-xs text-muted-foreground block font-normal">Optional - TikTok-style video showcase (MP4, up to 50MB)</span>
+                  </label>
+                  <ObjectUploader
+                    maxNumberOfFiles={1}
+                    maxFileSize={52428800} // 50MB
+                    allowedFileTypes={['video/mp4']}
+                    uploadType="video"
+                    onGetUploadParameters={handleGetUploadParameters}
+                    onComplete={(files) => {
+                      if (files.length > 0) {
+                        const videoUrl = files[0];
+                        setUploadedVideo(videoUrl);
+                        toast({
+                          title: "Success",
+                          description: "Video uploaded successfully!",
+                        });
+                      }
+                    }}
+                    buttonClassName="w-full bg-purple-50 border-2 border-dashed border-purple-300 text-purple-700 hover:bg-purple-100 h-20 flex flex-col items-center justify-center space-y-2"
+                  >
+                    <div className="flex flex-col items-center space-y-1">
+                      <i className="fas fa-video text-lg"></i>
+                      <span className="font-medium">Upload Video Tour</span>
+                      <span className="text-xs text-muted-foreground">MP4 format, up to 50MB</span>
+                    </div>
+                  </ObjectUploader>
+                  
+                  {/* Show uploaded video preview */}
+                  {uploadedVideo && (
+                    <div className="mt-3 space-y-2">
+                      <div className="text-sm font-medium text-green-700">
+                        ✅ Video tour uploaded successfully
+                      </div>
+                      <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center text-purple-600 text-xs font-medium">
+                        <i className="fas fa-play"></i>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Audio Upload Section */}
+                <div>
+                  <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 mb-2 block">
+                    Audio Description
+                    <span className="text-xs text-muted-foreground block font-normal">Optional - Voice narration or description (MP3, up to 20MB)</span>
+                  </label>
+                  <ObjectUploader
+                    maxNumberOfFiles={1}
+                    maxFileSize={20971520} // 20MB
+                    allowedFileTypes={['audio/mp3', 'audio/mpeg']}
+                    uploadType="audio"
+                    onGetUploadParameters={handleGetUploadParameters}
+                    onComplete={(files) => {
+                      if (files.length > 0) {
+                        const audioUrl = files[0];
+                        setUploadedAudio(audioUrl);
+                        toast({
+                          title: "Success",
+                          description: "Audio uploaded successfully!",
+                        });
+                      }
+                    }}
+                    buttonClassName="w-full bg-orange-50 border-2 border-dashed border-orange-300 text-orange-700 hover:bg-orange-100 h-20 flex flex-col items-center justify-center space-y-2"
+                  >
+                    <div className="flex flex-col items-center space-y-1">
+                      <i className="fas fa-microphone text-lg"></i>
+                      <span className="font-medium">Upload Audio Description</span>
+                      <span className="text-xs text-muted-foreground">MP3 format, up to 20MB</span>
+                    </div>
+                  </ObjectUploader>
+                  
+                  {/* Show uploaded audio preview */}
+                  {uploadedAudio && (
+                    <div className="mt-3 space-y-2">
+                      <div className="text-sm font-medium text-green-700">
+                        ✅ Audio description uploaded successfully
+                      </div>
+                      <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center text-orange-600 text-xs font-medium">
+                        <i className="fas fa-volume-up"></i>
+                      </div>
                     </div>
                   )}
                 </div>

@@ -42,6 +42,10 @@ export const properties = pgTable("properties", {
   yearBuilt: integer("year_built"),
   imageUrl: text("image_url"),
   additionalImages: json("additional_images").$type<string[]>().default([]),
+  videoUrl: text("video_url"), // MP4 video tour
+  videoThumbnail: text("video_thumbnail"), // Thumbnail for video preview
+  audioUrl: text("audio_url"), // MP3 audio description 
+  audioDuration: integer("audio_duration"), // Duration in seconds
   description: text("description"),
   views: integer("views").default(0),
   likes: integer("likes").default(0),
