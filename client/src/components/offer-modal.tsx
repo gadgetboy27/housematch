@@ -63,6 +63,30 @@ export default function OfferModal({ isOpen, onClose, property }: OfferModalProp
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
 
+  // Format number with dollar sign and commas
+  const formatPrice = (value: string): string => {
+    // Remove all non-digit characters except decimal point
+    const numericValue = value.replace(/[^0-9.]/g, '');
+    
+    // Handle empty string
+    if (!numericValue) return '';
+    
+    // Parse as number and format with commas
+    const number = parseFloat(numericValue);
+    if (isNaN(number)) return '';
+    
+    // Format with commas and add dollar sign
+    return '$' + number.toLocaleString('en-NZ', { 
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0 
+    });
+  };
+
+  // Extract numeric value for form submission
+  const extractNumericValue = (formattedValue: string): string => {
+    return formattedValue.replace(/[^0-9.]/g, '');
+  };
+
   const form = useForm<OfferFormData>({
     resolver: zodResolver(offerFormSchema),
     defaultValues: {
@@ -204,7 +228,15 @@ export default function OfferModal({ isOpen, onClose, property }: OfferModalProp
                     <FormItem>
                       <FormLabel>Your Offer Price *</FormLabel>
                       <FormControl>
-                        <Input placeholder="$750,000" {...field} />
+                        <Input 
+                          placeholder="Enter amount (e.g. 750000)"
+                          value={formatPrice(field.value)}
+                          onChange={(e) => {
+                            const numericValue = extractNumericValue(e.target.value);
+                            field.onChange(numericValue);
+                          }}
+                          data-testid="input-offer-price"
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
