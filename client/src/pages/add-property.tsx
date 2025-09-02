@@ -1144,7 +1144,7 @@ export default function AddProperty() {
                 <div>
                   <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 mb-2 block">
                     Property Video Tour
-                    <span className="text-xs text-muted-foreground block font-normal">Optional - TikTok-style video showcase (MP4, up to 50MB)</span>
+                    <span className="text-xs text-muted-foreground block font-normal">Optional - TikTok-style video showcase (MP4, up to 50MB ≈ 1-2 minutes HD)</span>
                   </label>
                   <ObjectUploader
                     maxNumberOfFiles={1}
@@ -1167,7 +1167,7 @@ export default function AddProperty() {
                     <div className="flex flex-col items-center space-y-1">
                       <i className="fas fa-video text-lg"></i>
                       <span className="font-medium">Upload Video Tour</span>
-                      <span className="text-xs text-muted-foreground">MP4 format, up to 50MB</span>
+                      <span className="text-xs text-muted-foreground">MP4, 50MB (≈1-2 min HD)</span>
                     </div>
                   </ObjectUploader>
                   
@@ -1188,7 +1188,7 @@ export default function AddProperty() {
                 <div>
                   <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 mb-2 block">
                     Audio Description
-                    <span className="text-xs text-muted-foreground block font-normal">Optional - Voice narration or description (MP3, up to 20MB)</span>
+                    <span className="text-xs text-muted-foreground block font-normal">Optional - Voice narration or description (MP3, up to 20MB ≈ 8-20 minutes)</span>
                   </label>
                   <ObjectUploader
                     maxNumberOfFiles={1}
@@ -1211,7 +1211,7 @@ export default function AddProperty() {
                     <div className="flex flex-col items-center space-y-1">
                       <i className="fas fa-microphone text-lg"></i>
                       <span className="font-medium">Upload Audio Description</span>
-                      <span className="text-xs text-muted-foreground">MP3 format, up to 20MB</span>
+                      <span className="text-xs text-muted-foreground">MP3, 20MB (≈8-20 min)</span>
                     </div>
                   </ObjectUploader>
                   
