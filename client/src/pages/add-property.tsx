@@ -1149,7 +1149,7 @@ export default function AddProperty() {
                   <ObjectUploader
                     maxNumberOfFiles={1}
                     maxFileSize={52428800} // 50MB
-                    allowedFileTypes={['video/mp4']}
+                    allowedFileTypes={['video/mp4', 'video/quicktime', 'video/webm', 'video/x-msvideo', 'video/avi']}
                     uploadType="video"
                     onGetUploadParameters={handleGetUploadParameters}
                     onComplete={(files) => {
@@ -1167,7 +1167,7 @@ export default function AddProperty() {
                     <div className="flex flex-col items-center space-y-1">
                       <i className="fas fa-video text-lg"></i>
                       <span className="font-medium">Upload Video Tour</span>
-                      <span className="text-xs text-muted-foreground">MP4, 50MB (≈1-2 min HD)</span>
+                      <span className="text-xs text-muted-foreground">MP4/MOV/WebM, 50MB (≈1-2 min HD)</span>
                     </div>
                   </ObjectUploader>
                   
@@ -1193,7 +1193,7 @@ export default function AddProperty() {
                   <ObjectUploader
                     maxNumberOfFiles={1}
                     maxFileSize={20971520} // 20MB
-                    allowedFileTypes={['audio/mp3', 'audio/mpeg']}
+                    allowedFileTypes={['audio/mp3', 'audio/mpeg', 'audio/aac', 'audio/wav', 'audio/m4a', 'audio/x-m4a']}
                     uploadType="audio"
                     onGetUploadParameters={handleGetUploadParameters}
                     onComplete={(files) => {
@@ -1211,7 +1211,7 @@ export default function AddProperty() {
                     <div className="flex flex-col items-center space-y-1">
                       <i className="fas fa-microphone text-lg"></i>
                       <span className="font-medium">Upload Audio Description</span>
-                      <span className="text-xs text-muted-foreground">MP3, 20MB (≈8-20 min)</span>
+                      <span className="text-xs text-muted-foreground">MP3/AAC/WAV, 20MB (≈8-20 min)</span>
                     </div>
                   </ObjectUploader>
                   

@@ -95,6 +95,40 @@ export function PricingSelection({ onPlanSelect, onClose, isLoading = false }: P
     }
   ];
 
+  // Premium Storage Upgrades - separate from main plans
+  const storageUpgrades = [
+    {
+      id: "extra-video-storage",
+      name: "Extra Video Storage",
+      price: 999, // $9.99 in cents
+      description: "Add 150MB more video storage to your account",
+      features: [
+        "150MB additional video storage",
+        "Supports all native formats (MP4, MOV, WebM, AVI)", 
+        "Lifetime access to uploaded videos",
+        "No monthly fees - one-time purchase"
+      ],
+      icon: <i className="fas fa-video w-6 h-6"></i>,
+      color: "from-purple-500 to-indigo-500",
+      type: "video"
+    },
+    {
+      id: "extra-audio-storage",
+      name: "Extra Audio Storage", 
+      price: 990, // $9.90 in cents
+      description: "Add 150MB more audio storage to your account",
+      features: [
+        "150MB additional audio storage",
+        "Supports all native formats (MP3, AAC, WAV, M4A)",
+        "Lifetime access to uploaded audio",
+        "No monthly fees - one-time purchase"
+      ],
+      icon: <i className="fas fa-microphone w-6 h-6"></i>,
+      color: "from-orange-500 to-red-500",
+      type: "audio"
+    }
+  ];
+
   const formatPrice = (cents: number) => `$${(cents / 100).toFixed(0)}`;
 
   return (
@@ -117,98 +151,135 @@ export function PricingSelection({ onPlanSelect, onClose, isLoading = false }: P
         </div>
 
         <div className="p-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {pricingOptions.map((plan) => (
-              <motion.div
-                key={plan.id}
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                className={`relative border-2 rounded-xl p-6 cursor-pointer transition-all duration-200 ${
-                  selectedPlan === plan.id
-                    ? "border-blue-500 bg-blue-50" 
-                    : "border-gray-200 hover:border-gray-300"
-                } ${plan.isPopular ? "ring-2 ring-green-500" : ""}`}
-                onClick={() => setSelectedPlan(plan.id)}
-                data-testid={`card-plan-${plan.id}`}
-              >
-                {plan.isPopular && (
-                  <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                    <span className="bg-green-500 text-white px-3 py-1 rounded-full text-sm font-medium">
-                      Most Popular
+          {/* Main Selling Plans */}
+          <div className="mb-8">
+            <h3 className="text-xl font-bold text-gray-900 mb-4">Property Listing Plans</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {pricingOptions.map((plan) => (
+                <motion.div
+                  key={plan.id}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  className={`relative border-2 rounded-xl p-6 cursor-pointer transition-all duration-200 ${
+                    selectedPlan === plan.id
+                      ? "border-blue-500 bg-blue-50" 
+                      : "border-gray-200 hover:border-gray-300"
+                  } ${plan.isPopular ? "ring-2 ring-green-500" : ""}`}
+                  onClick={() => setSelectedPlan(plan.id)}
+                  data-testid={`card-plan-${plan.id}`}
+                >
+                  {plan.isPopular && (
+                    <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                      <span className="bg-green-500 text-white px-3 py-1 rounded-full text-sm font-medium">
+                        Most Popular
+                      </span>
+                    </div>
+                  )}
+
+                  {/* Plan Header */}
+                  <div className="flex items-start justify-between mb-4">
+                    <div className={`p-3 rounded-lg bg-gradient-to-r ${plan.color}`}>
+                      <div className="text-white">{plan.icon}</div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-2xl font-bold text-gray-900">
+                        ${plan.dailyRate}/day
+                      </div>
+                      {plan.duration > 1 && (
+                        <div className="text-lg text-gray-600">
+                          {formatPrice(plan.price)} total
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Plan Details */}
+                  <div className="mb-4">
+                    <h3 className="text-lg font-semibold text-gray-900">{plan.name}</h3>
+                    <p className="text-sm text-gray-600 mb-2">{plan.subtitle}</p>
+                    <p className="text-sm text-gray-700">{plan.description}</p>
+                  </div>
+
+                  {/* Features */}
+                  <ul className="space-y-2 text-sm">
+                    {plan.features.map((feature, index) => (
+                      <li key={index} className="flex items-center gap-2">
+                        <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0" />
+                        <span className="text-gray-700">{feature}</span>
+                      </li>
+                    ))}
+                  </ul>
+
+                  {/* Duration Badge */}
+                  <div className="mt-4 pt-4 border-t border-gray-200">
+                    <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium bg-gradient-to-r ${plan.color} text-white`}>
+                      {plan.duration === 1 ? "Daily Billing" : `${plan.duration} Days`}
                     </span>
                   </div>
-                )}
-
-                {/* Plan Header */}
-                <div className="flex items-start justify-between mb-4">
-                  <div className={`p-3 rounded-lg bg-gradient-to-r ${plan.color}`}>
-                    <div className="text-white">{plan.icon}</div>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-2xl font-bold text-gray-900">
-                      ${plan.dailyRate}/day
-                    </div>
-                    {plan.duration > 1 && (
-                      <div className="text-lg text-gray-600">
-                        {formatPrice(plan.price)} total
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Plan Details */}
-                <div className="mb-4">
-                  <h3 className="text-lg font-semibold text-gray-900">{plan.name}</h3>
-                  <p className="text-sm text-gray-600 mb-2">{plan.subtitle}</p>
-                  <p className="text-sm text-gray-700">{plan.description}</p>
-                </div>
-
-                {/* Features */}
-                <ul className="space-y-2 text-sm">
-                  {plan.features.map((feature, index) => (
-                    <li key={index} className="flex items-center gap-2">
-                      <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0" />
-                      <span className="text-gray-700">{feature}</span>
-                    </li>
-                  ))}
-                </ul>
-
-                {/* Duration Badge */}
-                <div className="mt-4 pt-4 border-t border-gray-200">
-                  <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium bg-gradient-to-r ${plan.color} text-white`}>
-                    {plan.duration === 1 ? "Daily Billing" : `${plan.duration} Days`}
-                  </span>
-                </div>
-              </motion.div>
-            ))}
+                </motion.div>
+              ))}
+            </div>
           </div>
 
-          {/* Action Buttons */}
-          <div className="mt-8 flex items-center justify-between">
-            <div className="text-sm text-gray-600">
-              💡 <strong>Save thousands</strong> vs traditional agent fees
+          {/* Premium Storage Upgrades */}
+          <div className="mb-8">
+            <h3 className="text-xl font-bold text-gray-900 mb-2">Premium Storage Add-ons</h3>
+            <p className="text-gray-600 mb-4">One-time purchases to expand your media storage</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {storageUpgrades.map((upgrade) => (
+                <motion.div
+                  key={upgrade.id}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  className={`border-2 rounded-xl p-4 cursor-pointer transition-all duration-200 ${
+                    selectedPlan === upgrade.id
+                      ? "border-blue-500 bg-blue-50" 
+                      : "border-gray-200 hover:border-gray-300"
+                  }`}
+                  onClick={() => setSelectedPlan(upgrade.id)}
+                  data-testid={`card-upgrade-${upgrade.id}`}
+                >
+                  {/* Upgrade Header */}
+                  <div className="flex items-start justify-between mb-3">
+                    <div className={`p-2 rounded-lg bg-gradient-to-r ${upgrade.color}`}>
+                      <div className="text-white text-sm">{upgrade.icon}</div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-lg font-bold text-gray-900">
+                        {formatPrice(upgrade.price)}
+                      </div>
+                      <div className="text-xs text-gray-500">one-time</div>
+                    </div>
+                  </div>
+
+                  <h3 className="text-lg font-bold text-gray-900 mb-1">{upgrade.name}</h3>
+                  <p className="text-sm text-gray-600 mb-3">{upgrade.description}</p>
+
+                  {/* Features */}
+                  <ul className="space-y-1">
+                    {upgrade.features.map((feature, idx) => (
+                      <li key={idx} className="flex items-start text-xs text-gray-700">
+                        <span className="text-green-500 mr-2 mt-0.5">✓</span>
+                        <span>{feature}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </motion.div>
+              ))}
             </div>
-            
-            <div className="flex gap-4">
-              <Button variant="outline" onClick={onClose} data-testid="button-cancel">
-                Cancel
-              </Button>
-              <Button 
-                onClick={() => selectedPlan && onPlanSelect(selectedPlan)}
-                disabled={!selectedPlan || isLoading}
-                className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800"
-                data-testid="button-continue"
-              >
-                {isLoading ? (
-                  <>
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
-                    Processing...
-                  </>
-                ) : (
-                  "Continue to Payment"
-                )}
-              </Button>
-            </div>
+          </div>
+
+          <div className="flex justify-end space-x-4 pt-6 border-t">
+            <Button variant="outline" onClick={onClose} data-testid="button-cancel-pricing">
+              Cancel
+            </Button>
+            <Button
+              onClick={() => onPlanSelect(selectedPlan)}
+              disabled={!selectedPlan || isLoading}
+              data-testid="button-select-plan"
+            >
+              {isLoading ? "Processing..." : selectedPlan.includes('storage') ? "Purchase Add-on" : "Get Started"}
+            </Button>
           </div>
         </div>
 

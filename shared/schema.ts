@@ -10,6 +10,13 @@ export const users = pgTable("users", {
   password: text("password").notNull(),
   profilePicture: text("profile_picture").default("👤"), // Emoji or standard picture identifier
   isVerified: boolean("is_verified").default(false),
+  // Premium Storage Tracking
+  videoStorageUsed: integer("video_storage_used").default(0), // in bytes
+  audioStorageUsed: integer("audio_storage_used").default(0), // in bytes
+  videoStorageLimit: integer("video_storage_limit").default(157286400), // 150MB in bytes
+  audioStorageLimit: integer("audio_storage_limit").default(20971520), // 20MB in bytes
+  hasVideoStorageUpgrade: boolean("has_video_storage_upgrade").default(false),
+  hasAudioStorageUpgrade: boolean("has_audio_storage_upgrade").default(false),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -42,10 +49,12 @@ export const properties = pgTable("properties", {
   yearBuilt: integer("year_built"),
   imageUrl: text("image_url"),
   additionalImages: json("additional_images").$type<string[]>().default([]),
-  videoUrl: text("video_url"), // MP4 video tour
+  videoUrl: text("video_url"), // Video tour (MP4, MOV, WebM, AVI)
   videoThumbnail: text("video_thumbnail"), // Thumbnail for video preview
-  audioUrl: text("audio_url"), // MP3 audio description 
+  videoFileSize: integer("video_file_size"), // Video file size in bytes
+  audioUrl: text("audio_url"), // Audio description (MP3, AAC, WAV, M4A)
   audioDuration: integer("audio_duration"), // Duration in seconds
+  audioFileSize: integer("audio_file_size"), // Audio file size in bytes
   description: text("description"),
   views: integer("views").default(0),
   likes: integer("likes").default(0),
