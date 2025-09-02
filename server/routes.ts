@@ -912,22 +912,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Generate PDF for email attachment
       const { generateSimplePDF } = await import('./pdf-generator');
       const pdfBase64 = generateSimplePDF(offer, property);
-      console.log("✅ PDF generated for email attachment");
 
       // Send email notification to seller
-      const { sendOfferNotificationToSeller } = await import('./email-service');
-      const emailSent = await sendOfferNotificationToSeller(
+      const { sendOfferNotificationViaGmail } = await import('./gmail-email');
+      const emailSent = await sendOfferNotificationViaGmail(
         seller.email,
         offer,
         property,
         pdfBase64
       );
 
-      if (emailSent) {
-        console.log(`✅ Email sent to seller: ${seller.email}`);
-      } else {
-        console.error(`❌ Failed to send email to seller: ${seller.email}`);
-      }
 
       res.status(201).json({
         success: true,
@@ -942,7 +936,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
     } catch (error: any) {
-      console.error("❌ OFFER SUBMISSION ERROR:", error);
       res.status(400).json({
         success: false,
         message: "Invalid offer data",
@@ -966,7 +959,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
     } catch (error: any) {
-      console.error("❌ GET DRAFT ERROR:", error);
       res.status(500).json({
         message: "Failed to retrieve draft document",
         error: error.message
@@ -985,7 +977,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
     } catch (error: any) {
-      console.error("❌ GET OFFERS ERROR:", error);
       res.status(500).json({
         message: "Failed to retrieve offers",
         error: error.message
@@ -1008,7 +999,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
     } catch (error: any) {
-      console.error("❌ GET USER OFFERS ERROR:", error);
       res.status(500).json({
         message: "Failed to retrieve your offers",
         error: error.message
@@ -1031,7 +1021,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
     } catch (error: any) {
-      console.error("❌ GET USER DOCUMENTS ERROR:", error);
       res.status(500).json({
         message: "Failed to retrieve your documents",
         error: error.message
@@ -1054,7 +1043,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
     } catch (error: any) {
-      console.error("❌ GET SELLER OFFERS ERROR:", error);
       res.status(500).json({
         message: "Failed to retrieve received offers",
         error: error.message
@@ -1069,7 +1057,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       await storage.incrementPropertyViews(req.params.propertyId);
       res.json({ success: true });
     } catch (error: any) {
-      console.error("❌ VIEW TRACKING ERROR:", error);
       res.status(500).json({ message: "Failed to track view", error: error.message });
     }
   });
