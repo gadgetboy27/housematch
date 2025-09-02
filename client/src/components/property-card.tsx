@@ -256,7 +256,7 @@ export default function PropertyCard({ property, isBackground = false, onPropert
               </div>
             </div>
 
-            <div className="flex items-center justify-between text-xs text-white/70 mt-2">
+            <div className="flex items-center justify-between text-xs text-white/70 mt-2 mb-1">
               <span>{property.suburb}</span>
               {property.lotNumber && <span>{property.lotNumber}</span>}
             </div>
