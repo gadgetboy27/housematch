@@ -128,20 +128,28 @@ const SwipeContainer = forwardRef<
         });
       }
 
-      // Record swipe for property
+      // Record swipe for property only
       const session = LocalStorageService.getUserSession();
       const uid = session.isLoggedIn && session.userId ? session.userId : userId;
       swipeMutation.mutate({ userId: uid, propertyId: property.id, action });
     } else {
-      // Handle pricing card swipe
+      // Handle pricing card swipe - no database record needed
       const plan = currentCard.data as PricingPlan;
       if (action === "like") {
+        setHeartTrigger(true); // Show heart animation for pricing cards too
         toast({
-          title: "Interested in selling?",
-          description: `${plan.name} plan looks great! Check out our pricing page.`,
-          duration: 2000,
+          title: "💰 Interested in selling?",
+          description: `${plan.name} could save you thousands in commission fees!`,
+          duration: 2500,
+        });
+      } else if (action === "super_like") {
+        toast({
+          title: "🚀 Ready to sell smart?",
+          description: `${plan.name} - Skip the $20k+ agent fees!`,
+          duration: 2500,
         });
       }
+      // Don't call swipeMutation for pricing cards - no property ID to save
     }
 
     // Animate off-screen using framer motion
@@ -282,7 +290,6 @@ const SwipeContainer = forwardRef<
         ) : currentCard?.type === 'pricing' ? (
           <PricingCard 
             plan={currentCard.data as PricingPlan}
-            isCompact={true}
           />
         ) : null}
 
