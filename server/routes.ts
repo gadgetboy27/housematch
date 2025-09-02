@@ -1,7 +1,8 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertPropertySchema, insertUserSwipeSchema, insertPurchaseOrderSchema, insertServiceProviderSchema } from "@shared/schema";
+import { insertPropertySchema, insertUserSwipeSchema, insertPurchaseOrderSchema, insertServiceProviderSchema, pricingPlans } from "@shared/schema";
+import { db } from "./db";
 import { analyzeUserPreferences, generatePropertyRecommendations, generateMarketInsights } from "./services/openai";
 import { setupAuth, requireAuth } from "./auth";
 import { requirePropertyOwnership } from "./middleware/auth";
@@ -18,6 +19,93 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Setup authentication
   setupAuth(app);
+
+  // Pricing Plans routes
+  app.get("/api/pricing-plans", async (req, res) => {
+    try {
+      const plans = await storage.getActivePricingPlans();
+      res.json(plans);
+    } catch (error) {
+      console.error("❌ Failed to fetch pricing plans:", error);
+      res.status(500).json({ message: "Failed to fetch pricing plans" });
+    }
+  });
+
+  // Seed pricing plans (development only)
+  app.post("/api/seed-pricing-plans", async (req, res) => {
+    try {
+      const plans = [
+        {
+          name: "Quick Match",
+          duration: 30,
+          price: 48800,
+          dailyRate: 1600,
+          savings: 1300,
+          description: "Perfect for motivated sellers who want quick results",
+          features: [
+            "Unlimited swipe-style exposure",
+            "Professional photo hosting", 
+            "TikTok-style video showcase",
+            "Basic analytics dashboard",
+            "Email support"
+          ],
+          isPopular: false,
+          sortOrder: 1,
+          isActive: true
+        },
+        {
+          name: "Serious Seller",
+          duration: 60,
+          price: 68800,
+          dailyRate: 1100,
+          savings: 1800,
+          description: "Most popular choice for sellers wanting maximum exposure",
+          features: [
+            "Everything in Quick Match",
+            "Priority listing placement",
+            "Advanced buyer insights", 
+            "Social media promotion",
+            "Dedicated seller support",
+            "Market trend analysis"
+          ],
+          isPopular: true,
+          sortOrder: 2,
+          isActive: true
+        },
+        {
+          name: "Committed Closer",
+          duration: 90,
+          price: 87800,
+          dailyRate: 900,
+          savings: 2000,
+          description: "Ultimate package for sellers who want every advantage",
+          features: [
+            "Everything in Serious Seller",
+            "Premium featured listings",
+            "AI-powered buyer matching",
+            "Professional video tours", 
+            "Priority customer success",
+            "Extended market analysis",
+            "Negotiation support"
+          ],
+          isPopular: false,
+          sortOrder: 3,
+          isActive: true
+        }
+      ];
+
+      const seededPlans = [];
+      for (const plan of plans) {
+        const seeded = await db.insert(pricingPlans).values(plan).returning();
+        seededPlans.push(seeded[0]);
+      }
+
+      res.json({ message: "Pricing plans seeded successfully", plans: seededPlans });
+    } catch (error) {
+      console.error("❌ Failed to seed pricing plans:", error);
+      res.status(500).json({ message: "Failed to seed pricing plans" });
+    }
+  });
 
   // Property routes with personalization
   app.get("/api/properties", async (req, res) => {

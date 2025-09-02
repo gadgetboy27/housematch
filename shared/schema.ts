@@ -66,6 +66,22 @@ export const userSwipes = pgTable("user_swipes", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// Pricing plans for seller subscriptions
+export const pricingPlans = pgTable("pricing_plans", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: text("name").notNull(), // "Quick Match", "Serious Seller", "Committed Closer"
+  duration: integer("duration").notNull(), // days: 30, 60, 90
+  price: integer("price").notNull(), // cents: 48800, 68800, 87800
+  dailyRate: integer("daily_rate").notNull(), // cents: 1600, 1100, 900
+  savings: integer("savings").notNull(), // cents per day saved vs casual
+  description: text("description").notNull(),
+  features: json("features").$type<string[]>().notNull(),
+  isPopular: boolean("is_popular").default(false),
+  sortOrder: integer("sort_order").default(0),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 export const userPreferences = pgTable("user_preferences", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   userId: varchar("user_id").references(() => users.id),
@@ -170,6 +186,11 @@ export const insertServiceProviderSchema = createInsertSchema(serviceProviders).
   updatedAt: true,
 });
 
+export const insertPricingPlanSchema = createInsertSchema(pricingPlans).omit({
+  id: true,
+  createdAt: true,
+});
+
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 export type InsertProperty = z.infer<typeof insertPropertySchema>;
@@ -182,3 +203,5 @@ export type InsertPurchaseOrder = z.infer<typeof insertPurchaseOrderSchema>;
 export type PurchaseOrder = typeof purchaseOrders.$inferSelect;
 export type InsertServiceProvider = z.infer<typeof insertServiceProviderSchema>;
 export type ServiceProvider = typeof serviceProviders.$inferSelect;
+export type InsertPricingPlan = z.infer<typeof insertPricingPlanSchema>;
+export type PricingPlan = typeof pricingPlans.$inferSelect;

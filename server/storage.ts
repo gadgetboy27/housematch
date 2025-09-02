@@ -1,4 +1,4 @@
-import { type User, type InsertUser, type Property, type InsertProperty, type UserSwipe, type InsertUserSwipe, type UserPreferences, type InsertUserPreferences, type PurchaseOrder, type InsertPurchaseOrder, type ServiceProvider, type InsertServiceProvider, users, properties, userSwipes, userPreferences, purchaseOrders, serviceProviders, passwordResetTokens } from "@shared/schema";
+import { type User, type InsertUser, type Property, type InsertProperty, type UserSwipe, type InsertUserSwipe, type UserPreferences, type InsertUserPreferences, type PurchaseOrder, type InsertPurchaseOrder, type ServiceProvider, type InsertServiceProvider, type PricingPlan, type InsertPricingPlan, users, properties, userSwipes, userPreferences, purchaseOrders, serviceProviders, passwordResetTokens, pricingPlans } from "@shared/schema";
 import { randomUUID } from "crypto";
 import { db } from "./db";
 import { eq, and, sql } from "drizzle-orm";
@@ -51,6 +51,10 @@ export interface IStorage {
   markTokenAsUsed(token: string): Promise<void>;
   updateUserPassword(userId: string, hashedPassword: string): Promise<void>;
   cleanupExpiredTokens(): Promise<void>;
+
+  // Pricing Plans
+  getAllPricingPlans(): Promise<PricingPlan[]>;
+  getActivePricingPlans(): Promise<PricingPlan[]>;
 }
 
 export class MemStorage implements IStorage {
@@ -59,6 +63,9 @@ export class MemStorage implements IStorage {
   private userSwipes: Map<string, UserSwipe>;
   private userPreferences: Map<string, UserPreferences>;
   private purchaseOrders: Map<string, PurchaseOrder>;
+  private serviceProviders: Map<string, ServiceProvider>;
+  private pricingPlans: Map<string, PricingPlan>;
+  private passwordResetTokens: Map<string, any>;
 
   constructor() {
     this.users = new Map();
@@ -66,7 +73,11 @@ export class MemStorage implements IStorage {
     this.userSwipes = new Map();
     this.userPreferences = new Map();
     this.purchaseOrders = new Map();
+    this.serviceProviders = new Map();
+    this.pricingPlans = new Map();
+    this.passwordResetTokens = new Map();
     this.seedProperties();
+    this.seedPricingPlans();
   }
 
   private seedProperties() {
@@ -587,6 +598,77 @@ export class MemStorage implements IStorage {
 
     mockProperties.forEach(property => {
       this.createProperty(property);
+    });
+  }
+
+  private seedPricingPlans() {
+    const plans = [
+      {
+        name: "Quick Match",
+        duration: 30,
+        price: 48800, // $488 in cents
+        dailyRate: 1600, // $16 in cents
+        savings: 1300, // $13 saved per day vs casual
+        description: "Perfect for motivated sellers who want quick results",
+        features: [
+          "Unlimited swipe-style exposure",
+          "Professional photo hosting", 
+          "TikTok-style video showcase",
+          "Basic analytics dashboard",
+          "Email support"
+        ],
+        isPopular: false,
+        sortOrder: 1,
+        isActive: true
+      },
+      {
+        name: "Serious Seller",
+        duration: 60,
+        price: 68800, // $688 in cents  
+        dailyRate: 1100, // $11 in cents
+        savings: 1800, // $18 saved per day vs casual
+        description: "Most popular choice for sellers wanting maximum exposure",
+        features: [
+          "Everything in Quick Match",
+          "Priority listing placement",
+          "Advanced buyer insights", 
+          "Social media promotion",
+          "Dedicated seller support",
+          "Market trend analysis"
+        ],
+        isPopular: true,
+        sortOrder: 2,
+        isActive: true
+      },
+      {
+        name: "Committed Closer",
+        duration: 90,
+        price: 87800, // $878 in cents
+        dailyRate: 900, // $9 in cents  
+        savings: 2000, // $20 saved per day vs casual
+        description: "Ultimate package for sellers who want every advantage",
+        features: [
+          "Everything in Serious Seller",
+          "Premium featured listings",
+          "AI-powered buyer matching",
+          "Professional video tours", 
+          "Priority customer success",
+          "Extended market analysis",
+          "Negotiation support"
+        ],
+        isPopular: false,
+        sortOrder: 3,
+        isActive: true
+      }
+    ];
+
+    plans.forEach(plan => {
+      const id = randomUUID();
+      this.pricingPlans.set(id, {
+        id,
+        ...plan,
+        createdAt: new Date()
+      });
     });
   }
 
@@ -1154,6 +1236,17 @@ export class DatabaseStorage implements IStorage {
   async cleanupExpiredTokens(): Promise<void> {
     await db.delete(passwordResetTokens)
       .where(sql`expires_at < NOW()`);
+  }
+
+  // Pricing Plans
+  async getAllPricingPlans(): Promise<PricingPlan[]> {
+    return await db.select().from(pricingPlans);
+  }
+
+  async getActivePricingPlans(): Promise<PricingPlan[]> {
+    return await db.select().from(pricingPlans)
+      .where(eq(pricingPlans.isActive, true))
+      .orderBy(pricingPlans.sortOrder);
   }
 }
 

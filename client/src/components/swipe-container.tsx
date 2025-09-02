@@ -1,12 +1,18 @@
 import { useState, useRef, forwardRef, useImperativeHandle, useEffect } from "react";
 import { motion, useMotionValue, useTransform, PanInfo, AnimatePresence, animate } from "framer-motion";
 import PropertyCard from "./property-card";
-import { Property } from "@shared/schema";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { Property, PricingPlan } from "@shared/schema";
+import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { LocalStorageService } from "@/lib/local-storage";
 import HeartBubbles from "./heart-bubbles";
+import { PricingCard } from "./pricing-card";
+
+interface SwipeCard {
+  type: 'property' | 'pricing';
+  data: Property | PricingPlan;
+}
 
 interface SwipeContainerProps {
   properties: Property[];
@@ -30,6 +36,32 @@ const SwipeContainer = forwardRef<
   const [isSwipingDisabled, setIsSwipingDisabled] = useState(false);
   const [heartTrigger, setHeartTrigger] = useState(false);
   const [propertyHistory, setPropertyHistory] = useState<number[]>([]);
+
+  // Fetch pricing plans
+  const { data: pricingPlans = [] } = useQuery<PricingPlan[]>({
+    queryKey: ["/api/pricing-plans"],
+  });
+
+  // Mix properties with pricing cards every 5-7 properties
+  const mixedCards = () => {
+    const cards: SwipeCard[] = [];
+    let pricingIndex = 0;
+    
+    properties.forEach((property, index) => {
+      cards.push({ type: 'property', data: property });
+      
+      // Add pricing card every 6 properties (range of 5-7)
+      if ((index + 1) % 6 === 0 && pricingPlans.length > 0) {
+        const planIndex = pricingIndex % pricingPlans.length;
+        cards.push({ type: 'pricing', data: pricingPlans[planIndex] });
+        pricingIndex++;
+      }
+    });
+    
+    return cards;
+  };
+
+  const cards = mixedCards();
 
   // Create storage key based on property type filter
   const getStorageKey = () => `property-position-${selectedPropertyType || 'all'}`;
@@ -75,28 +107,42 @@ const SwipeContainer = forwardRef<
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["/api/swipes", userId] }),
   });
 
-  const currentProperty = properties[currentIndex];
+  const currentCard = cards[currentIndex];
+  const currentProperty = currentCard?.type === 'property' ? currentCard.data as Property : null;
 
   const handleSwipe = async (direction: "left" | "right" | "up", action: string) => {
-    if (isSwipingDisabled || !currentProperty) return;
+    if (isSwipingDisabled || !currentCard) return;
     setIsSwipingDisabled(true);
 
-    // Heart bubble for likes
-    if (action === "like" || action === "super_like") {
-      if (action === "like") setHeartTrigger(true);
-      LocalStorageService.addLikedProperty(currentProperty, action as "like" | "super_like");
-      toast({
-        title: action === "super_like" ? "Super Liked!" : "Liked!",
-        description: `${currentProperty.title} saved`,
-        duration: 800,
-        variant: (action === "super_like" ? "superlike" : "subtle") as any,
-      });
-    }
+    if (currentCard.type === 'property') {
+      const property = currentCard.data as Property;
+      // Heart bubble for likes
+      if (action === "like" || action === "super_like") {
+        if (action === "like") setHeartTrigger(true);
+        LocalStorageService.addLikedProperty(property, action as "like" | "super_like");
+        toast({
+          title: action === "super_like" ? "Super Liked!" : "Liked!",
+          description: `${property.title} saved`,
+          duration: 800,
+          variant: (action === "super_like" ? "superlike" : "subtle") as any,
+        });
+      }
 
-    // Record swipe
-    const session = LocalStorageService.getUserSession();
-    const uid = session.isLoggedIn && session.userId ? session.userId : userId;
-    swipeMutation.mutate({ userId: uid, propertyId: currentProperty.id, action });
+      // Record swipe for property
+      const session = LocalStorageService.getUserSession();
+      const uid = session.isLoggedIn && session.userId ? session.userId : userId;
+      swipeMutation.mutate({ userId: uid, propertyId: property.id, action });
+    } else {
+      // Handle pricing card swipe
+      const plan = currentCard.data as PricingPlan;
+      if (action === "like") {
+        toast({
+          title: "Interested in selling?",
+          description: `${plan.name} plan looks great! Check out our pricing page.`,
+          duration: 2000,
+        });
+      }
+    }
 
     // Animate off-screen using framer motion
     const targetX = direction === "left" ? -window.innerWidth * 1.5 : direction === "right" ? window.innerWidth * 1.5 : 0;
@@ -112,7 +158,7 @@ const SwipeContainer = forwardRef<
     setPropertyHistory(prev => [...prev, currentIndex]);
     
     // Advance to next card first
-    const nextIndex = (currentIndex + 1) % properties.length;
+    const nextIndex = (currentIndex + 1) % cards.length;
     setCurrentIndex(nextIndex);
     
     // For superlike (up swipe), animate new card in from above
@@ -227,7 +273,18 @@ const SwipeContainer = forwardRef<
           mass: 0.8       // Lighter feel
         }}
       >
-        <PropertyCard property={currentProperty} onPropertyTypeFilter={onPropertyTypeFilter} selectedPropertyType={selectedPropertyType} />
+        {currentCard?.type === 'property' ? (
+          <PropertyCard 
+            property={currentCard.data as Property} 
+            onPropertyTypeFilter={onPropertyTypeFilter} 
+            selectedPropertyType={selectedPropertyType} 
+          />
+        ) : currentCard?.type === 'pricing' ? (
+          <PricingCard 
+            plan={currentCard.data as PricingPlan}
+            isCompact={true}
+          />
+        ) : null}
 
         <motion.div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none z-30" style={{ opacity: likeOpacity }}>
           <div className="text-green-500 text-6xl font-bold transform -rotate-12 drop-shadow-lg">LIKE</div>
