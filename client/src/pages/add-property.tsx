@@ -1205,11 +1205,11 @@ export default function AddProperty() {
                   // Scroll to first error field
                   const firstErrorField = Object.keys(form.formState.errors)[0];
                   if (firstErrorField) {
-                    const errorElement = document.querySelector(`[name="${firstErrorField}"]`);
+                    const errorElement = document.querySelector(`[name="${firstErrorField}"]`) as HTMLElement;
                     if (errorElement) {
                       errorElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
                       // Add visual flash to highlight the field
-                      errorElement.focus();
+                      if (errorElement.focus) errorElement.focus();
                     }
                   }
                   
