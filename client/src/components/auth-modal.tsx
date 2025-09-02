@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
+import { EmailVerificationModal } from "./email-verification-modal";
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -22,6 +23,8 @@ export function AuthModal({ isOpen, onClose, onSuccess, mode, onToggleMode, onFo
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [forgotPasswordMode, setForgotPasswordMode] = useState<'request' | 'success'>('request');
+  const [showEmailModal, setShowEmailModal] = useState(false);
+  const [sentEmail, setSentEmail] = useState("");
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -156,10 +159,9 @@ export function AuthModal({ isOpen, onClose, onSuccess, mode, onToggleMode, onFo
     onSuccess: (result) => {
       console.log("✅ FORGOT PASSWORD SUCCESS:", result);
       setForgotPasswordMode('success');
-      toast({
-        title: "Email sent!",
-        description: result.message,
-      });
+      setSentEmail(formData.email);
+      setShowEmailModal(true);
+      onClose(); // Close the auth modal
     },
     onError: (error: Error) => {
       console.error("❌ FORGOT PASSWORD ERROR:", error);
@@ -396,6 +398,13 @@ export function AuthModal({ isOpen, onClose, onSuccess, mode, onToggleMode, onFo
           )}
         </div>
       </div>
+
+      {/* Email verification celebration modal */}
+      <EmailVerificationModal
+        isOpen={showEmailModal}
+        onClose={() => setShowEmailModal(false)}
+        email={sentEmail}
+      />
     </div>
   );
 }

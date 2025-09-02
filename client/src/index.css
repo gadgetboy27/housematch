@@ -109,6 +109,22 @@
   }
 }
 
+/* Custom animations for email verification modal */
+@keyframes confetti {
+  0% {
+    transform: translateY(-100vh) rotate(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(100vh) rotate(720deg);
+    opacity: 0;
+  }
+}
+
+.animate-confetti {
+  animation: confetti linear infinite;
+}
+
 /* Custom PropertySwipe styles matching the design reference */
 .property-card {
   transform-origin: center center;
