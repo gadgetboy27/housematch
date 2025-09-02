@@ -15,11 +15,15 @@ import { LINZValidationService } from "./services/linz-validation";
 import { randomBytes, scrypt, timingSafeEqual } from 'crypto';
 import { promisify } from 'util';
 import { sendPasswordResetEmailViaGmail } from './gmail-email';
+import { AchievementService } from "./achievement-service";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   
   // Setup authentication
   setupAuth(app);
+
+  // Initialize achievements system
+  await AchievementService.initializeAchievements();
 
   // Pricing Plans routes
   app.get("/api/pricing-plans", async (req, res) => {
@@ -1075,6 +1079,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/properties/:propertyId/view", async (req, res) => {
     try {
       await storage.incrementPropertyViews(req.params.propertyId);
+      
+      // Track achievement for viewing properties
+      if (req.session?.user?.id) {
+        await AchievementService.trackAction(req.session.user.id, 'view');
+      }
+      
       res.json({ success: true });
     } catch (error: any) {
       console.error("❌ VIEW TRACKING ERROR:", error);
@@ -1087,7 +1097,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const property = await storage.incrementPropertyLikes(req.params.propertyId);
       console.log(`👍 Property ${req.params.propertyId} liked! New count: ${property.likes}`);
-      res.json({ success: true, likes: property.likes });
+      
+      // Track achievement for liking properties
+      if (req.session?.user?.id) {
+        const unlockedAchievements = await AchievementService.trackAction(req.session.user.id, 'like');
+        res.json({ success: true, likes: property.likes, unlockedAchievements });
+      } else {
+        res.json({ success: true, likes: property.likes });
+      }
     } catch (error: any) {
       console.error("❌ LIKE ERROR:", error);
       res.status(500).json({ message: "Failed to like property", error: error.message });
@@ -1099,10 +1116,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const property = await storage.incrementPropertySaves(req.params.propertyId);
       console.log(`💾 Property ${req.params.propertyId} saved! New count: ${property.saves}`);
-      res.json({ success: true, saves: property.saves });
+      
+      // Track achievement for saving properties
+      if (req.session?.user?.id) {
+        const unlockedAchievements = await AchievementService.trackAction(req.session.user.id, 'save');
+        res.json({ success: true, saves: property.saves, unlockedAchievements });
+      } else {
+        res.json({ success: true, saves: property.saves });
+      }
     } catch (error: any) {
       console.error("❌ SAVE ERROR:", error);
       res.status(500).json({ message: "Failed to save property", error: error.message });
+    }
+  });
+
+  // Achievement Endpoints
+  app.get("/api/achievements", requireAuth, async (req, res) => {
+    try {
+      const achievements = await AchievementService.getUserAchievements(req.session.user.id);
+      const stats = await AchievementService.getUserAchievementStats(req.session.user.id);
+      res.json({ achievements, stats });
+    } catch (error: any) {
+      console.error("❌ ACHIEVEMENTS ERROR:", error);
+      res.status(500).json({ message: "Failed to fetch achievements", error: error.message });
     }
   });
 

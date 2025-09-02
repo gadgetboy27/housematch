@@ -83,6 +83,10 @@ export interface IStorage {
   incrementPropertyViews(propertyId: string): Promise<void>;
   incrementPropertyLikes(propertyId: string): Promise<Property>;
   incrementPropertySaves(propertyId: string): Promise<Property>;
+
+  // Achievement Methods
+  getUserAchievements(userId: string): Promise<UserAchievement[]>;
+  createUserAchievement(userAchievement: InsertUserAchievement): Promise<UserAchievement>;
 }
 
 export class MemStorage implements IStorage {
@@ -1450,6 +1454,19 @@ export class DatabaseStorage implements IStorage {
       .where(eq(properties.id, propertyId))
       .returning();
     return property;
+  }
+
+  // Achievement Methods
+  async getUserAchievements(userId: string): Promise<UserAchievement[]> {
+    return await db.select().from(userAchievements)
+      .where(eq(userAchievements.userId, userId));
+  }
+
+  async createUserAchievement(userAchievement: InsertUserAchievement): Promise<UserAchievement> {
+    const [newAchievement] = await db.insert(userAchievements)
+      .values(userAchievement)
+      .returning();
+    return newAchievement;
   }
 }
 
