@@ -147,6 +147,15 @@ export const offers = pgTable("offers", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   propertyId: varchar("property_id").references(() => properties.id).notNull(),
   buyerId: varchar("buyer_id").references(() => users.id), // Optional - for logged in users
+  sellerId: varchar("seller_id").references(() => users.id), // Track seller for notifications
+  
+  // Property Reference Info (copied at time of offer for legal security)
+  propertyAddress: text("property_address").notNull(),
+  propertyLotNumber: text("property_lot_number").notNull(),
+  propertyCertificateOfTitle: text("property_certificate_of_title").notNull(),
+  propertyZoning: text("property_zoning"),
+  propertyLandArea: integer("property_land_area"),
+  propertyFloorArea: integer("property_floor_area"),
   
   // Buyer Information
   buyerName: text("buyer_name").notNull(),
@@ -165,6 +174,12 @@ export const offers = pgTable("offers", {
   // Additional Details
   additionalConditions: text("additional_conditions"),
   additionalComments: text("additional_comments"),
+  
+  // Email Tracking
+  emailSent: boolean("email_sent").default(false),
+  emailSentAt: timestamp("email_sent_at"),
+  pdfGenerated: boolean("pdf_generated").default(false),
+  pdfUrl: text("pdf_url"), // URL to generated PDF
   
   // Status tracking
   status: text("status").default('draft'), // draft, submitted, under_review, approved, rejected, withdrawn

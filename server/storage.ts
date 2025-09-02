@@ -77,6 +77,7 @@ export interface IStorage {
   // User Profile Methods
   getUserOffers(userId: string): Promise<Offer[]>;
   getUserDraftDocuments(userId: string): Promise<DraftDocument[]>;
+  getSellerOffers(sellerId: string): Promise<Offer[]>; // Get offers received by seller
 }
 
 export class MemStorage implements IStorage {
@@ -1405,6 +1406,13 @@ export class DatabaseStorage implements IStorage {
     .innerJoin(offers, eq(draftDocuments.offerId, offers.id))
     .where(eq(offers.buyerId, userId))
     .orderBy(draftDocuments.createdAt);
+  }
+
+  // Get all offers received by a seller
+  async getSellerOffers(sellerId: string): Promise<Offer[]> {
+    return await db.select().from(offers)
+      .where(eq(offers.sellerId, sellerId))
+      .orderBy(offers.createdAt);
   }
 }
 

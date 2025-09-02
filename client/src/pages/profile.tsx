@@ -361,6 +361,16 @@ export default function Profile() {
               </CardContent>
             </Card>
 
+            {/* Received Offers (for sellers) */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Offers Received</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ReceivedOffers />
+              </CardContent>
+            </Card>
+
             {/* Statistics */}
             <Card>
               <CardHeader>
@@ -569,6 +579,112 @@ function MyOffersAndDocuments({ onViewDocument }: { onViewDocument: (draftId: st
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+// Component to show offers received by seller
+function ReceivedOffers() {
+  const { data: sellerOffers, isLoading } = useQuery({
+    queryKey: ['/api/seller/offers'],
+    retry: false,
+  });
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-6">
+        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+        <span className="ml-2 text-sm">Loading received offers...</span>
+      </div>
+    );
+  }
+
+  const offers = sellerOffers?.offers || [];
+
+  if (offers.length === 0) {
+    return (
+      <div className="text-center py-6 text-muted-foreground">
+        <i className="fas fa-inbox text-3xl mb-3 block opacity-20"></i>
+        <p className="text-sm">No offers received yet</p>
+        <p className="text-xs mt-1">Offers on your properties will appear here</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-3">
+      <h4 className="font-medium text-sm mb-3 flex items-center gap-2">
+        <i className="fas fa-envelope text-green-600"></i>
+        Received Offers ({offers.length})
+      </h4>
+      
+      <div className="space-y-2">
+        {offers.slice(0, 5).map((offer: any) => (
+          <div key={offer.id} className="border rounded-lg p-3 bg-white">
+            <div className="flex justify-between items-start">
+              <div className="flex-1">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="font-medium text-sm">${parseInt(offer.offerPrice).toLocaleString()}</span>
+                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                    offer.status === 'draft' ? 'bg-yellow-100 text-yellow-800' :
+                    offer.status === 'submitted' ? 'bg-blue-100 text-blue-800' :
+                    offer.status === 'approved' ? 'bg-green-100 text-green-800' :
+                    'bg-gray-100 text-gray-800'
+                  }`}>
+                    {offer.status.toUpperCase()}
+                  </span>
+                </div>
+                <p className="text-xs text-gray-600 mb-1">
+                  <strong>Property:</strong> {offer.propertyAddress}
+                </p>
+                <p className="text-xs text-gray-600 mb-1">
+                  <strong>Buyer:</strong> {offer.buyerName} • {offer.buyerEmail}
+                </p>
+                <p className="text-xs text-gray-500">
+                  Settlement: {offer.settlementPeriod} • {new Date(offer.createdAt).toLocaleDateString()}
+                </p>
+                <div className="flex items-center gap-3 mt-2 text-xs">
+                  <span className={offer.financeCondition ? 'text-orange-600' : 'text-green-600'}>
+                    {offer.financeCondition ? '⚠️ Finance' : '✅ Cash'}
+                  </span>
+                  <span className={offer.buildingInspectionCondition ? 'text-orange-600' : 'text-green-600'}>
+                    {offer.buildingInspectionCondition ? '🔍 Inspection' : '✅ As-is'}
+                  </span>
+                  <span className={offer.limCondition ? 'text-orange-600' : 'text-green-600'}>
+                    {offer.limCondition ? '📋 LIM' : '✅ No LIM'}
+                  </span>
+                </div>
+              </div>
+              <div className="flex flex-col gap-1 ml-3">
+                <Button 
+                  size="sm"
+                  variant="outline"
+                  className="h-6 px-2 text-xs"
+                  onClick={() => window.open(`mailto:${offer.buyerEmail}?subject=Re: Property Offer ${offer.id}`)}
+                >
+                  Reply
+                </Button>
+                <Button 
+                  size="sm"
+                  variant="outline"
+                  className="h-6 px-2 text-xs"
+                  onClick={() => window.open(`tel:${offer.buyerPhone}`)}
+                >
+                  Call
+                </Button>
+              </div>
+            </div>
+            
+            {offer.additionalComments && (
+              <div className="mt-2 pt-2 border-t">
+                <p className="text-xs text-gray-600">
+                  <strong>Comments:</strong> {offer.additionalComments}
+                </p>
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

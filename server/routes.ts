@@ -872,10 +872,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Validate the offer data
       const validatedData = insertOfferSchema.parse(req.body);
       
-      // Add user ID if logged in
+      // Get property details and seller information
+      const property = await storage.getProperty(validatedData.propertyId);
+      if (!property) {
+        return res.status(404).json({ message: "Property not found" });
+      }
+
+      // Get seller information
+      const seller = await storage.getUser(property.userId);
+      if (!seller) {
+        return res.status(404).json({ message: "Property owner not found" });
+      }
+
+      // Create comprehensive offer data with property security info
       const offerData = {
         ...validatedData,
         buyerId: req.user?.id || null, // Connect to user profile if logged in
+        sellerId: property.userId, // Connect to seller profile
+        
+        // Copy property details for legal security (prevents tampering)
+        propertyAddress: property.address,
+        propertyLotNumber: property.lotNumber,
+        propertyCertificateOfTitle: property.certificateOfTitle,
+        propertyZoning: property.zoning,
+        propertyLandArea: property.landArea,
+        propertyFloorArea: property.floorArea,
       };
       
       // Store the offer in the database
@@ -896,14 +917,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       console.log("📄 Draft document generated:", draftDocument.id);
 
+      // Generate PDF for email attachment
+      const { generateSimplePDF } = await import('./pdf-generator');
+      const pdfBase64 = generateSimplePDF(offer, property);
+      console.log("✅ PDF generated for email attachment");
+
+      // Send email notification to seller
+      const { sendOfferNotificationToSeller } = await import('./email-service');
+      const emailSent = await sendOfferNotificationToSeller(
+        seller.email,
+        offer,
+        property,
+        pdfBase64
+      );
+
+      if (emailSent) {
+        console.log(`✅ Email sent to seller: ${seller.email}`);
+      } else {
+        console.error(`❌ Failed to send email to seller: ${seller.email}`);
+      }
+
       res.status(201).json({
         success: true,
+        message: emailSent ? "Offer submitted, document generated, and seller notified!" : "Offer submitted and document generated (email failed)",
         offer,
         draftDocument: {
           id: draftDocument.id,
           documentType: draftDocument.documentType,
           status: draftDocument.status
-        }
+        },
+        emailSent
       });
 
     } catch (error: any) {
@@ -999,6 +1042,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("❌ GET USER DOCUMENTS ERROR:", error);
       res.status(500).json({
         message: "Failed to retrieve your documents",
+        error: error.message
+      });
+    }
+  });
+
+  // Get offers received by seller (for seller dashboard)
+  app.get("/api/seller/offers", async (req, res) => {
+    try {
+      if (!req.user?.id) {
+        return res.status(401).json({ message: "Please log in to view received offers" });
+      }
+
+      const offers = await storage.getSellerOffers(req.user.id);
+      
+      res.json({
+        success: true,
+        offers
+      });
+
+    } catch (error: any) {
+      console.error("❌ GET SELLER OFFERS ERROR:", error);
+      res.status(500).json({
+        message: "Failed to retrieve received offers",
         error: error.message
       });
     }
