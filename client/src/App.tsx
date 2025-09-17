@@ -13,6 +13,7 @@ import Profile from "@/pages/profile";
 import NotFound from "@/pages/not-found";
 import { ResetPassword } from "@/pages/reset-password";
 import PricingPage from "@/pages/pricing-page";
+import AllData from "@/pages/all-data";
 
 function Router() {
   return (
@@ -27,6 +28,7 @@ function Router() {
       <Route path="/profile" component={Profile} />
       <Route path="/pricing" component={PricingPage} />
       <Route path="/reset-password" component={ResetPassword} />
+      <Route path="/all-data" component={AllData} />
       <Route component={NotFound} />
     </Switch>
   );
