@@ -251,6 +251,161 @@ export const lawyerReviews = pgTable("lawyer_reviews", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Analytics Tables for Admin Dashboard and Business Intelligence
+
+// Universal transaction ledger for all financial activities
+export const transactions = pgTable("transactions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").references(() => users.id),
+  propertyId: varchar("property_id").references(() => properties.id),
+  providerId: varchar("provider_id").references(() => serviceProviders.id),
+  orderId: varchar("order_id").references(() => purchaseOrders.id),
+  serviceOrderId: varchar("service_order_id").references(() => serviceOrders.id), // Link to service provider transactions
+  
+  // Financial details (all amounts in cents for precision)
+  amountCents: integer("amount_cents").notNull(),
+  feeCents: integer("fee_cents").default(0), // Platform or payment processor fees
+  netCents: integer("net_cents").notNull(), // Amount after fees
+  taxCents: integer("tax_cents").default(0),
+  currency: text("currency").default('NZD'), // New Zealand focused platform
+  
+  // Transaction details
+  type: text("type").notNull(), // 'revenue', 'expense', 'refund', 'payout', 'commission'
+  source: text("source").notNull(), // 'stripe', 'manual', 'commission', 'subscription'
+  category: text("category").notNull(), // 'property_listing', 'service_fee', 'marketing', 'refund'
+  description: text("description").notNull(),
+  
+  // External references
+  stripeTransactionId: text("stripe_transaction_id"),
+  
+  occurredAt: timestamp("occurred_at").defaultNow(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Stripe event audit trail for payment processing
+export const stripeEvents = pgTable("stripe_events", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  stripeEventId: text("stripe_event_id").notNull().unique(),
+  eventType: text("event_type").notNull(), // 'payment_intent.succeeded', 'charge.refunded', etc.
+  payload: json("payload").notNull(), // Full Stripe event payload
+  
+  // Essential Stripe audit fields
+  stripeCreated: timestamp("stripe_created").notNull(), // When Stripe created the event
+  livemode: boolean("livemode").notNull(), // Production vs test mode
+  account: text("account"), // For Stripe Connect multi-account
+  
+  processed: boolean("processed").default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Service orders connecting buyers, providers, and properties
+export const serviceOrders = pgTable("service_orders", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  buyerId: varchar("buyer_id").references(() => users.id).notNull(),
+  providerId: varchar("provider_id").references(() => serviceProviders.id).notNull(),
+  propertyId: varchar("property_id").references(() => properties.id),
+  
+  // Order details
+  serviceName: text("service_name").notNull(),
+  status: text("status").default('pending'), // 'pending', 'confirmed', 'in_progress', 'completed', 'cancelled'
+  
+  // Financial details (in cents)
+  priceCents: integer("price_cents").notNull(),
+  platformFeeCents: integer("platform_fee_cents").notNull(),
+  providerEarningsCents: integer("provider_earnings_cents").notNull(),
+  
+  paidAt: timestamp("paid_at"),
+  completedAt: timestamp("completed_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Property status transitions for sales funnel analytics
+export const propertyEvents = pgTable("property_events", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  propertyId: varchar("property_id").references(() => properties.id).notNull(),
+  
+  // Event details
+  eventType: text("event_type").notNull(), // 'created', 'listed', 'viewed', 'liked', 'offer_received', 'under_offer', 'sold', 'archived'
+  fromStatus: text("from_status"),
+  toStatus: text("to_status"),
+  
+  // Actor (user who triggered the event)
+  actorId: varchar("actor_id").references(() => users.id),
+  actorType: text("actor_type"), // 'user', 'admin', 'system'
+  
+  metadata: json("metadata"), // Additional event data
+  occurredAt: timestamp("occurred_at").defaultNow(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// User engagement tracking for retention and behavior analysis
+export const engagementEvents = pgTable("engagement_events", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").references(() => users.id).notNull(),
+  propertyId: varchar("property_id").references(() => properties.id),
+  
+  // Event details
+  eventType: text("event_type").notNull(), // 'page_view', 'property_view', 'swipe_like', 'swipe_dislike', 'save', 'contact', 'offer_sent'
+  sessionId: text("session_id"),
+  metadata: json("metadata"), // Device info, referrer, etc.
+  
+  occurredAt: timestamp("occurred_at").defaultNow(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Operating costs for P&L calculations
+export const operatingCosts = pgTable("operating_costs", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  
+  // Cost details
+  category: text("category").notNull(), // 'marketing', 'infrastructure', 'support', 'salaries', 'legal'
+  description: text("description").notNull(),
+  costCents: integer("cost_cents").notNull(),
+  currency: text("currency").default('NZD'), // New Zealand focused platform
+  
+  // Period this cost applies to
+  periodStart: timestamp("period_start").notNull(),
+  periodEnd: timestamp("period_end").notNull(),
+  
+  notes: text("notes"),
+  addedBy: varchar("added_by").references(() => users.id).notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Pre-aggregated metrics for fast dashboard queries
+export const dailyMetrics = pgTable("daily_metrics", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  date: text("date").notNull().unique(), // Format: YYYY-MM-DD for proper uniqueness per calendar day
+  
+  // Revenue metrics (in cents)
+  totalRevenueCents: integer("total_revenue_cents").default(0),
+  totalExpensesCents: integer("total_expenses_cents").default(0),
+  netProfitCents: integer("net_profit_cents").default(0),
+  platformFeesCents: integer("platform_fees_cents").default(0),
+  
+  // User metrics
+  dailyActiveUsers: integer("daily_active_users").default(0),
+  newSignups: integer("new_signups").default(0),
+  
+  // Property metrics
+  newProperties: integer("new_properties").default(0),
+  propertiesSold: integer("properties_sold").default(0),
+  totalViews: integer("total_views").default(0),
+  totalLikes: integer("total_likes").default(0),
+  
+  // Service provider metrics
+  newProviders: integer("new_providers").default(0),
+  approvedProviders: integer("approved_providers").default(0),
+  serviceOrdersCompleted: integer("service_orders_completed").default(0),
+  
+  // Calculated metrics
+  averagePropertyPrice: integer("average_property_price").default(0),
+  conversionRate: decimal("conversion_rate", { precision: 5, scale: 4 }).default('0.0000'),
+  
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
   createdAt: true,
@@ -345,3 +500,63 @@ export type InsertDraftDocument = z.infer<typeof insertDraftDocumentSchema>;
 export type DraftDocument = typeof draftDocuments.$inferSelect;
 export type InsertLawyerReview = z.infer<typeof insertLawyerReviewSchema>;
 export type LawyerReview = typeof lawyerReviews.$inferSelect;
+
+// Insert schemas for analytics tables
+export const insertTransactionSchema = createInsertSchema(transactions).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertStripeEventSchema = createInsertSchema(stripeEvents).omit({
+  id: true,
+  processed: true,
+  createdAt: true,
+});
+
+export const insertServiceOrderSchema = createInsertSchema(serviceOrders).omit({
+  id: true,
+  status: true,
+  paidAt: true,
+  completedAt: true,
+  createdAt: true,
+});
+
+export const insertPropertyEventSchema = createInsertSchema(propertyEvents).omit({
+  id: true,
+  occurredAt: true,
+  createdAt: true,
+});
+
+export const insertEngagementEventSchema = createInsertSchema(engagementEvents).omit({
+  id: true,
+  occurredAt: true,
+  createdAt: true,
+});
+
+export const insertOperatingCostSchema = createInsertSchema(operatingCosts).omit({
+  id: true,
+  addedBy: true, // Server adds this after auth
+  createdAt: true,
+});
+
+export const insertDailyMetricsSchema = createInsertSchema(dailyMetrics).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+// Type exports for analytics tables
+export type InsertTransaction = z.infer<typeof insertTransactionSchema>;
+export type Transaction = typeof transactions.$inferSelect;
+export type InsertStripeEvent = z.infer<typeof insertStripeEventSchema>;
+export type StripeEvent = typeof stripeEvents.$inferSelect;
+export type InsertServiceOrder = z.infer<typeof insertServiceOrderSchema>;
+export type ServiceOrder = typeof serviceOrders.$inferSelect;
+export type InsertPropertyEvent = z.infer<typeof insertPropertyEventSchema>;
+export type PropertyEvent = typeof propertyEvents.$inferSelect;
+export type InsertEngagementEvent = z.infer<typeof insertEngagementEventSchema>;
+export type EngagementEvent = typeof engagementEvents.$inferSelect;
+export type InsertOperatingCost = z.infer<typeof insertOperatingCostSchema>;
+export type OperatingCost = typeof operatingCosts.$inferSelect;
+export type InsertDailyMetrics = z.infer<typeof insertDailyMetricsSchema>;
+export type DailyMetrics = typeof dailyMetrics.$inferSelect;
