@@ -276,6 +276,20 @@ export function requireAuth(req: any, res: any, next: any) {
   next();
 }
 
+// Admin middleware - requires admin role for dashboard access
+export function requireAdmin(req: any, res: any, next: any) {
+  if (!req.isAuthenticated() || !req.user) {
+    return res.status(401).json({ message: "Authentication required" });
+  }
+  
+  if (!req.user.isAdmin) {
+    return res.status(403).json({ message: "Admin access required" });
+  }
+  
+  req.userId = req.user.id;
+  next();
+}
+
 // Secure property ownership middleware using session auth
 export async function requirePropertyOwnership(req: any, res: any, next: any) {
   try {
