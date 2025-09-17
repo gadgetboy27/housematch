@@ -2,6 +2,7 @@ import passport from "passport";
 import { Strategy as LocalStrategy } from "passport-local";
 import { Express } from "express";
 import session from "express-session";
+import pgSession from "connect-pg-simple";
 import { scrypt, randomBytes, timingSafeEqual } from "crypto";
 import { promisify } from "util";
 import rateLimit from "express-rate-limit";
@@ -49,7 +50,19 @@ export function setupAuth(app: Express) {
   }
 
   const isProduction = process.env.NODE_ENV === 'production';
+  
+  // Production-grade session store (PostgreSQL-backed)
+  const PgSession = pgSession(session);
+  const sessionStore = isProduction 
+    ? new PgSession({
+        conString: process.env.DATABASE_URL,
+        tableName: 'user_sessions',
+        createTableIfMissing: true,
+      })
+    : undefined; // Use default MemoryStore in development
+
   const sessionSettings: session.SessionOptions = {
+    store: sessionStore, // Use PostgreSQL store in production, MemoryStore in dev
     secret: sessionSecret || "dev-secret-change-in-production",
     resave: false,
     saveUninitialized: false,

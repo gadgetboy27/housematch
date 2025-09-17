@@ -19,15 +19,34 @@ import { sendPasswordResetEmailViaGmail } from './gmail-email';
 
 export async function registerRoutes(app: Express): Promise<Server> {
   
-  // Security middleware
+  // Generate CSP nonce for each request
+  app.use((req: any, res: any, next: any) => {
+    res.locals.nonce = randomBytes(16).toString('base64');
+    next();
+  });
+  
+  // Security middleware with production-grade CSP
   app.use(helmet({
     contentSecurityPolicy: {
       directives: {
         defaultSrc: ["'self'"],
-        styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+        styleSrc: [
+          "'self'", 
+          "https://fonts.googleapis.com",
+          // Allow nonce-based inline styles in production, unsafe-inline only in dev
+          ...(process.env.NODE_ENV === 'production' 
+            ? [(req: any, res: any) => `'nonce-${res.locals.nonce}'`] 
+            : ["'unsafe-inline'"])
+        ],
         fontSrc: ["'self'", "https://fonts.gstatic.com"],
         imgSrc: ["'self'", "data:", "https:", "blob:"],
-        scriptSrc: ["'self'", "'unsafe-inline'"],
+        scriptSrc: [
+          "'self'",
+          // Allow nonce-based inline scripts in production, unsafe-inline only in dev  
+          ...(process.env.NODE_ENV === 'production'
+            ? [(req: any, res: any) => `'nonce-${res.locals.nonce}'`]
+            : ["'unsafe-inline'"])
+        ],
         connectSrc: ["'self'", "wss:", "ws:"],
       },
     },
