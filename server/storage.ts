@@ -1,4 +1,4 @@
-import { type User, type InsertUser, type Property, type InsertProperty, type UserSwipe, type InsertUserSwipe, type UserPreferences, type InsertUserPreferences, type PurchaseOrder, type InsertPurchaseOrder, type ServiceProvider, type InsertServiceProvider, type PricingPlan, type InsertPricingPlan, type Offer, type InsertOffer, type DraftDocument, type InsertDraftDocument, type LawyerReview, type InsertLawyerReview, users, properties, userSwipes, userPreferences, purchaseOrders, serviceProviders, passwordResetTokens, pricingPlans, offers, draftDocuments, lawyerReviews } from "@shared/schema";
+import { type User, type InsertUser, type Property, type InsertProperty, type UserSwipe, type InsertUserSwipe, type UserPreferences, type InsertUserPreferences, type PurchaseOrder, type InsertPurchaseOrder, type ServiceProvider, type InsertServiceProvider, type PricingPlan, type InsertPricingPlan, type Offer, type InsertOffer, type DraftDocument, type InsertDraftDocument, type LawyerReview, type InsertLawyerReview, type Transaction, type InsertTransaction, type StripeEvent, type InsertStripeEvent, type ServiceOrder, type InsertServiceOrder, type PropertyEvent, type InsertPropertyEvent, type EngagementEvent, type InsertEngagementEvent, type OperatingCost, type InsertOperatingCost, type DailyMetrics, type InsertDailyMetrics, users, properties, userSwipes, userPreferences, purchaseOrders, serviceProviders, passwordResetTokens, pricingPlans, offers, draftDocuments, lawyerReviews, transactions, stripeEvents, serviceOrders, propertyEvents, engagementEvents, operatingCosts, dailyMetrics } from "@shared/schema";
 import { randomUUID } from "crypto";
 import { db } from "./db";
 import { eq, and, sql } from "drizzle-orm";
@@ -101,6 +101,101 @@ export interface IStorage {
   incrementPropertyViews(propertyId: string): Promise<void>;
   incrementPropertyLikes(propertyId: string): Promise<Property>;
   incrementPropertySaves(propertyId: string): Promise<Property>;
+
+  // Analytics Methods for Admin Dashboard
+  // Overview Analytics
+  getOverviewMetrics(fromDate?: string, toDate?: string): Promise<{
+    totalUsers: number;
+    totalProperties: number;
+    totalTransactions: number;
+    totalRevenueCents: number;
+    activeServiceProviders: number;
+    recentTransactions: any[];
+    userGrowthData: any[];
+    revenueGrowthData: any[];
+  }>;
+
+  // P&L Analytics
+  getProfitLossData(fromDate?: string, toDate?: string): Promise<{
+    totalRevenueCents: number;
+    totalExpensesCents: number;
+    netProfitCents: number;
+    platformFeesCents: number;
+    revenueByCategory: any[];
+    expensesByCategory: any[];
+    monthlyTrends: any[];
+  }>;
+
+  // Property Funnel Analytics
+  getPropertyFunnelData(fromDate?: string, toDate?: string): Promise<{
+    totalProperties: number;
+    totalViews: number;
+    totalLikes: number;
+    totalOffers: number;
+    totalSold: number;
+    conversionRates: any[];
+    funnelBySuburb: any[];
+    averagePriceByStage: any[];
+  }>;
+
+  // Service Provider Performance
+  getServiceProviderPerformance(fromDate?: string, toDate?: string): Promise<{
+    totalProviders: number;
+    activeProviders: number;
+    pendingApplications: number;
+    totalServiceOrders: number;
+    totalServiceRevenueCents: number;
+    providersByCategory: any[];
+    topPerformers: any[];
+    approvalMetrics: any[];
+  }>;
+
+  // User Engagement Analytics
+  getUserEngagementData(fromDate?: string, toDate?: string): Promise<{
+    totalUsers: number;
+    activeUsers: number;
+    newSignups: number;
+    retentionRate: number;
+    averageSessionsPerUser: number;
+    engagementByEventType: any[];
+    cohortAnalysis: any[];
+    userAcquisitionChannels: any[];
+  }>;
+
+  // Transaction History with Filtering
+  getTransactionHistory(
+    page?: number,
+    limit?: number,
+    filters?: {
+      type?: string;
+      category?: string;
+      fromDate?: string;
+      toDate?: string;
+      userId?: string;
+      providerId?: string;
+    }
+  ): Promise<{
+    transactions: any[];
+    totalCount: number;
+    totalPages: number;
+    currentPage: number;
+  }>;
+
+  // Operating Costs Management
+  createOperatingCost(cost: {
+    category: string;
+    description: string;
+    costCents: number;
+    periodStart: string;
+    periodEnd: string;
+    notes?: string;
+  }, addedBy: string): Promise<any>;
+
+  getOperatingCosts(fromDate?: string, toDate?: string): Promise<any[]>;
+
+  // Daily Metrics Management
+  getDailyMetrics(fromDate?: string, toDate?: string): Promise<any[]>;
+  createOrUpdateDailyMetrics(date: string, metrics: any): Promise<any>;
 }
 
 
@@ -838,6 +933,388 @@ export class DatabaseStorage implements IStorage {
     await db.update(users)
       .set(updateData)
       .where(eq(users.id, userId));
+  }
+
+  // ===== ANALYTICS METHODS FOR ADMIN DASHBOARD =====
+
+  async getOverviewMetrics(fromDate?: string, toDate?: string): Promise<{
+    totalUsers: number;
+    totalProperties: number;
+    totalTransactions: number;
+    totalRevenueCents: number;
+    activeServiceProviders: number;
+    recentTransactions: any[];
+    userGrowthData: any[];
+    revenueGrowthData: any[];
+  }> {
+    // Build date filter conditions
+    const dateConditions = [];
+    if (fromDate) dateConditions.push(sql`${users.createdAt} >= ${fromDate}`);
+    if (toDate) dateConditions.push(sql`${users.createdAt} <= ${toDate}`);
+
+    // Get basic counts
+    const [usersCount] = await db.select({ count: sql`COUNT(*)::int` }).from(users);
+    const [propertiesCount] = await db.select({ count: sql`COUNT(*)::int` }).from(properties);
+    const [providersCount] = await db.select({ count: sql`COUNT(*)::int` }).from(serviceProviders).where(eq(serviceProviders.status, 'approved'));
+
+    // Get transaction metrics
+    const transactionMetrics = await db
+      .select({
+        totalTransactions: sql`COUNT(*)::int`,
+        totalRevenue: sql`COALESCE(SUM(${transactions.amountCents}), 0)::int`
+      })
+      .from(transactions)
+      .where(and(
+        eq(transactions.type, 'revenue'),
+        fromDate ? sql`${transactions.occurredAt} >= ${fromDate}` : sql`1=1`,
+        toDate ? sql`${transactions.occurredAt} <= ${toDate}` : sql`1=1`
+      ));
+
+    // Get recent transactions
+    const recentTransactions = await db
+      .select({
+        id: transactions.id,
+        type: transactions.type,
+        amountCents: transactions.amountCents,
+        description: transactions.description,
+        occurredAt: transactions.occurredAt,
+      })
+      .from(transactions)
+      .orderBy(sql`${transactions.occurredAt} DESC`)
+      .limit(10);
+
+    return {
+      totalUsers: usersCount.count || 0,
+      totalProperties: propertiesCount.count || 0,
+      totalTransactions: transactionMetrics[0]?.totalTransactions || 0,
+      totalRevenueCents: transactionMetrics[0]?.totalRevenue || 0,
+      activeServiceProviders: providersCount.count || 0,
+      recentTransactions: recentTransactions || [],
+      userGrowthData: [], // TODO: Implement time series data
+      revenueGrowthData: [], // TODO: Implement time series data
+    };
+  }
+
+  async getProfitLossData(fromDate?: string, toDate?: string): Promise<{
+    totalRevenueCents: number;
+    totalExpensesCents: number;
+    netProfitCents: number;
+    platformFeesCents: number;
+    revenueByCategory: any[];
+    expensesByCategory: any[];
+    monthlyTrends: any[];
+  }> {
+    // Build date conditions
+    const dateFilter = and(
+      fromDate ? sql`${transactions.occurredAt} >= ${fromDate}` : sql`1=1`,
+      toDate ? sql`${transactions.occurredAt} <= ${toDate}` : sql`1=1`
+    );
+
+    // Get revenue data
+    const revenueData = await db
+      .select({
+        category: transactions.category,
+        total: sql`COALESCE(SUM(${transactions.amountCents}), 0)::int`,
+        totalFees: sql`COALESCE(SUM(${transactions.feeCents}), 0)::int`
+      })
+      .from(transactions)
+      .where(and(eq(transactions.type, 'revenue'), dateFilter))
+      .groupBy(transactions.category);
+
+    // Get expenses data
+    const expensesData = await db
+      .select({
+        category: transactions.category,
+        total: sql`COALESCE(SUM(${transactions.amountCents}), 0)::int`
+      })
+      .from(transactions)
+      .where(and(eq(transactions.type, 'expense'), dateFilter))
+      .groupBy(transactions.category);
+
+    // Get operating costs
+    const operatingCostsData = await db
+      .select({
+        category: operatingCosts.category,
+        total: sql`COALESCE(SUM(${operatingCosts.costCents}), 0)::int`
+      })
+      .from(operatingCosts)
+      .where(and(
+        fromDate ? sql`${operatingCosts.periodStart} >= ${fromDate}` : sql`1=1`,
+        toDate ? sql`${operatingCosts.periodEnd} <= ${toDate}` : sql`1=1`
+      ))
+      .groupBy(operatingCosts.category);
+
+    const totalRevenueCents = revenueData.reduce((sum, item) => sum + (item.total || 0), 0);
+    const totalExpensesCents = expensesData.reduce((sum, item) => sum + (item.total || 0), 0) +
+                               operatingCostsData.reduce((sum, item) => sum + (item.total || 0), 0);
+    const platformFeesCents = revenueData.reduce((sum, item) => sum + (item.totalFees || 0), 0);
+    const netProfitCents = totalRevenueCents - totalExpensesCents;
+
+    return {
+      totalRevenueCents,
+      totalExpensesCents,
+      netProfitCents,
+      platformFeesCents,
+      revenueByCategory: revenueData,
+      expensesByCategory: [...expensesData, ...operatingCostsData],
+      monthlyTrends: [], // TODO: Implement monthly trend analysis
+    };
+  }
+
+  async getPropertyFunnelData(fromDate?: string, toDate?: string): Promise<{
+    totalProperties: number;
+    totalViews: number;
+    totalLikes: number;
+    totalOffers: number;
+    totalSold: number;
+    conversionRates: any[];
+    funnelBySuburb: any[];
+    averagePriceByStage: any[];
+  }> {
+    // Property metrics
+    const propertyMetrics = await db
+      .select({
+        totalProperties: sql`COUNT(*)::int`,
+        totalViews: sql`COALESCE(SUM(${properties.views}), 0)::int`,
+        totalLikes: sql`COALESCE(SUM(${properties.likes}), 0)::int`,
+      })
+      .from(properties)
+      .where(eq(properties.isActive, true));
+
+    // Offers count
+    const [offersCount] = await db
+      .select({ count: sql`COUNT(*)::int` })
+      .from(offers)
+      .where(fromDate ? sql`${offers.createdAt} >= ${fromDate}` : sql`1=1`);
+
+    // Properties by suburb
+    const suburbMetrics = await db
+      .select({
+        suburb: properties.suburb,
+        count: sql`COUNT(*)::int`,
+        avgViews: sql`AVG(${properties.views})::int`,
+        avgLikes: sql`AVG(${properties.likes})::int`,
+      })
+      .from(properties)
+      .where(eq(properties.isActive, true))
+      .groupBy(properties.suburb)
+      .orderBy(sql`COUNT(*) DESC`)
+      .limit(10);
+
+    const metrics = propertyMetrics[0] || { totalProperties: 0, totalViews: 0, totalLikes: 0 };
+
+    return {
+      totalProperties: metrics.totalProperties,
+      totalViews: metrics.totalViews,
+      totalLikes: metrics.totalLikes,
+      totalOffers: offersCount?.count || 0,
+      totalSold: 0, // TODO: Implement sold properties tracking
+      conversionRates: [
+        { stage: 'Views to Likes', rate: metrics.totalViews > 0 ? (metrics.totalLikes / metrics.totalViews * 100).toFixed(2) : '0' },
+        { stage: 'Likes to Offers', rate: metrics.totalLikes > 0 ? ((offersCount?.count || 0) / metrics.totalLikes * 100).toFixed(2) : '0' },
+      ],
+      funnelBySuburb: suburbMetrics,
+      averagePriceByStage: [], // TODO: Implement price analysis by stage
+    };
+  }
+
+  async getServiceProviderPerformance(fromDate?: string, toDate?: string): Promise<{
+    totalProviders: number;
+    activeProviders: number;
+    pendingApplications: number;
+    totalServiceOrders: number;
+    totalServiceRevenueCents: number;
+    providersByCategory: any[];
+    topPerformers: any[];
+    approvalMetrics: any[];
+  }> {
+    // Provider counts by status
+    const providerStats = await db
+      .select({
+        status: serviceProviders.status,
+        count: sql`COUNT(*)::int`
+      })
+      .from(serviceProviders)
+      .groupBy(serviceProviders.status);
+
+    // Providers by category
+    const categoryStats = await db
+      .select({
+        category: serviceProviders.category,
+        count: sql`COUNT(*)::int`
+      })
+      .from(serviceProviders)
+      .where(eq(serviceProviders.status, 'approved'))
+      .groupBy(serviceProviders.category);
+
+    const totalProviders = providerStats.reduce((sum, item) => sum + item.count, 0);
+    const activeProviders = providerStats.find(p => p.status === 'approved')?.count || 0;
+    const pendingApplications = providerStats.find(p => p.status === 'pending')?.count || 0;
+
+    return {
+      totalProviders,
+      activeProviders,
+      pendingApplications,
+      totalServiceOrders: 0, // TODO: Implement when service orders are being created
+      totalServiceRevenueCents: 0, // TODO: Implement service revenue tracking
+      providersByCategory: categoryStats,
+      topPerformers: [], // TODO: Implement performance metrics
+      approvalMetrics: providerStats,
+    };
+  }
+
+  async getUserEngagementData(fromDate?: string, toDate?: string): Promise<{
+    totalUsers: number;
+    activeUsers: number;
+    newSignups: number;
+    retentionRate: number;
+    averageSessionsPerUser: number;
+    engagementByEventType: any[];
+    cohortAnalysis: any[];
+    userAcquisitionChannels: any[];
+  }> {
+    // User counts
+    const [totalUsers] = await db.select({ count: sql`COUNT(*)::int` }).from(users);
+    
+    // New signups in date range
+    const newSignups = await db
+      .select({ count: sql`COUNT(*)::int` })
+      .from(users)
+      .where(and(
+        fromDate ? sql`${users.createdAt} >= ${fromDate}` : sql`1=1`,
+        toDate ? sql`${users.createdAt} <= ${toDate}` : sql`1=1`
+      ));
+
+    return {
+      totalUsers: totalUsers.count || 0,
+      activeUsers: 0, // TODO: Implement based on engagement events
+      newSignups: newSignups[0]?.count || 0,
+      retentionRate: 0, // TODO: Implement retention calculation
+      averageSessionsPerUser: 0, // TODO: Implement session tracking
+      engagementByEventType: [], // TODO: Implement based on engagement events
+      cohortAnalysis: [], // TODO: Implement cohort analysis
+      userAcquisitionChannels: [], // TODO: Implement acquisition tracking
+    };
+  }
+
+  async getTransactionHistory(
+    page: number = 1,
+    limit: number = 50,
+    filters?: {
+      type?: string;
+      category?: string;
+      fromDate?: string;
+      toDate?: string;
+      userId?: string;
+      providerId?: string;
+    }
+  ): Promise<{
+    transactions: any[];
+    totalCount: number;
+    totalPages: number;
+    currentPage: number;
+  }> {
+    // Build filter conditions
+    const conditions = [];
+    if (filters?.type) conditions.push(eq(transactions.type, filters.type));
+    if (filters?.category) conditions.push(eq(transactions.category, filters.category));
+    if (filters?.fromDate) conditions.push(sql`${transactions.occurredAt} >= ${filters.fromDate}`);
+    if (filters?.toDate) conditions.push(sql`${transactions.occurredAt} <= ${filters.toDate}`);
+    if (filters?.userId) conditions.push(eq(transactions.userId, filters.userId));
+    if (filters?.providerId) conditions.push(eq(transactions.providerId, filters.providerId));
+
+    const whereClause = conditions.length > 0 ? and(...conditions) : sql`1=1`;
+
+    // Get total count
+    const [totalCount] = await db
+      .select({ count: sql`COUNT(*)::int` })
+      .from(transactions)
+      .where(whereClause);
+
+    // Get paginated transactions
+    const offset = (page - 1) * limit;
+    const transactionsList = await db
+      .select()
+      .from(transactions)
+      .where(whereClause)
+      .orderBy(sql`${transactions.occurredAt} DESC`)
+      .limit(limit)
+      .offset(offset);
+
+    const totalPages = Math.ceil((totalCount.count || 0) / limit);
+
+    return {
+      transactions: transactionsList,
+      totalCount: totalCount.count || 0,
+      totalPages,
+      currentPage: page,
+    };
+  }
+
+  async createOperatingCost(cost: {
+    category: string;
+    description: string;
+    costCents: number;
+    periodStart: string;
+    periodEnd: string;
+    notes?: string;
+  }, addedBy: string): Promise<any> {
+    const [operatingCost] = await db.insert(operatingCosts).values({
+      ...cost,
+      addedBy,
+      periodStart: new Date(cost.periodStart),
+      periodEnd: new Date(cost.periodEnd),
+    }).returning();
+
+    return operatingCost;
+  }
+
+  async getOperatingCosts(fromDate?: string, toDate?: string): Promise<any[]> {
+    return await db
+      .select()
+      .from(operatingCosts)
+      .where(and(
+        fromDate ? sql`${operatingCosts.periodStart} >= ${fromDate}` : sql`1=1`,
+        toDate ? sql`${operatingCosts.periodEnd} <= ${toDate}` : sql`1=1`
+      ))
+      .orderBy(sql`${operatingCosts.createdAt} DESC`);
+  }
+
+  async getDailyMetrics(fromDate?: string, toDate?: string): Promise<any[]> {
+    return await db
+      .select()
+      .from(dailyMetrics)
+      .where(and(
+        fromDate ? sql`${dailyMetrics.date} >= ${fromDate}` : sql`1=1`,
+        toDate ? sql`${dailyMetrics.date} <= ${toDate}` : sql`1=1`
+      ))
+      .orderBy(sql`${dailyMetrics.date} DESC`);
+  }
+
+  async createOrUpdateDailyMetrics(date: string, metrics: any): Promise<any> {
+    // Try to update first, then insert if not exists
+    const existing = await db
+      .select({ id: dailyMetrics.id })
+      .from(dailyMetrics)
+      .where(eq(dailyMetrics.date, date))
+      .limit(1);
+
+    if (existing.length > 0) {
+      // Update existing
+      const [updated] = await db
+        .update(dailyMetrics)
+        .set({ ...metrics, updatedAt: new Date() })
+        .where(eq(dailyMetrics.date, date))
+        .returning();
+      return updated;
+    } else {
+      // Insert new
+      const [created] = await db
+        .insert(dailyMetrics)
+        .values({ date, ...metrics })
+        .returning();
+      return created;
+    }
   }
 }
 

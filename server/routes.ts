@@ -5,7 +5,7 @@ import { insertOfferSchema, insertDraftDocumentSchema } from "@shared/schema";
 import { insertPropertySchema, insertUserSwipeSchema, insertPurchaseOrderSchema, insertServiceProviderSchema, pricingPlans } from "@shared/schema";
 import { db } from "./db";
 import { analyzeUserPreferences, generatePropertyRecommendations, generateMarketInsights } from "./services/openai";
-import { setupAuth, requireAuth, requirePropertyOwnership } from "./auth";
+import { setupAuth, requireAuth, requirePropertyOwnership, requireAdmin } from "./auth";
 import helmet from "helmet";
 import rateLimit from "express-rate-limit";
 import {
@@ -1193,6 +1193,315 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: any) {
       console.error("❌ STORAGE UPDATE ERROR:", error);
       res.status(500).json({ message: "Failed to update storage usage", error: error.message });
+    }
+  });
+
+  // ===== ADMIN ANALYTICS API ENDPOINTS =====
+
+  // Admin validation schemas
+  const adminDateRangeSchema = z.object({
+    fromDate: z.string().optional(),
+    toDate: z.string().optional()
+  });
+
+  const adminPaginationSchema = z.object({
+    page: z.string().optional().default("1").transform(val => parseInt(val, 10)),
+    limit: z.string().optional().default("50").transform(val => parseInt(val, 10))
+  });
+
+  const adminTransactionFiltersSchema = z.object({
+    type: z.string().optional(),
+    category: z.string().optional(),
+    fromDate: z.string().optional(),
+    toDate: z.string().optional(),
+    userId: z.string().optional(),
+    providerId: z.string().optional()
+  });
+
+  const adminOperatingCostSchema = z.object({
+    category: z.string().min(1, "Category is required"),
+    description: z.string().min(1, "Description is required"),
+    costCents: z.number().int().min(0, "Cost must be non-negative"),
+    periodStart: z.string().min(1, "Period start is required"),
+    periodEnd: z.string().min(1, "Period end is required"),
+    notes: z.string().optional()
+  });
+
+  // Admin Overview Dashboard
+  app.get("/api/admin/overview", requireAdmin, async (req, res) => {
+    try {
+      const validatedQuery = adminDateRangeSchema.parse(req.query);
+      const metrics = await storage.getOverviewMetrics(
+        validatedQuery.fromDate,
+        validatedQuery.toDate
+      );
+      res.json({ success: true, data: metrics });
+    } catch (error) {
+      console.error("Admin overview error:", error);
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ 
+          success: false, 
+          message: "Invalid query parameters",
+          errors: error.errors 
+        });
+      } else {
+        res.status(500).json({ 
+          success: false, 
+          message: "Failed to fetch overview metrics"
+        });
+      }
+    }
+  });
+
+  // Admin Profit & Loss Analytics
+  app.get("/api/admin/pnl", requireAdmin, async (req, res) => {
+    try {
+      const validatedQuery = adminDateRangeSchema.parse(req.query);
+      const pnlData = await storage.getProfitLossData(
+        validatedQuery.fromDate,
+        validatedQuery.toDate
+      );
+      res.json({ success: true, data: pnlData });
+    } catch (error) {
+      console.error("Admin P&L error:", error);
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ 
+          success: false, 
+          message: "Invalid query parameters",
+          errors: error.errors 
+        });
+      } else {
+        res.status(500).json({ 
+          success: false, 
+          message: "Failed to fetch P&L data"
+        });
+      }
+    }
+  });
+
+  // Admin Property Funnel Analytics
+  app.get("/api/admin/properties/funnel", requireAdmin, async (req, res) => {
+    try {
+      const validatedQuery = adminDateRangeSchema.parse(req.query);
+      const funnelData = await storage.getPropertyFunnelData(
+        validatedQuery.fromDate,
+        validatedQuery.toDate
+      );
+      res.json({ success: true, data: funnelData });
+    } catch (error) {
+      console.error("Admin property funnel error:", error);
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ 
+          success: false, 
+          message: "Invalid query parameters",
+          errors: error.errors 
+        });
+      } else {
+        res.status(500).json({ 
+          success: false, 
+          message: "Failed to fetch property funnel data"
+        });
+      }
+    }
+  });
+
+  // Admin Service Provider Performance
+  app.get("/api/admin/providers/performance", requireAdmin, async (req, res) => {
+    try {
+      const validatedQuery = adminDateRangeSchema.parse(req.query);
+      const performanceData = await storage.getServiceProviderPerformance(
+        validatedQuery.fromDate,
+        validatedQuery.toDate
+      );
+      res.json({ success: true, data: performanceData });
+    } catch (error) {
+      console.error("Admin provider performance error:", error);
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ 
+          success: false, 
+          message: "Invalid query parameters",
+          errors: error.errors 
+        });
+      } else {
+        res.status(500).json({ 
+          success: false, 
+          message: "Failed to fetch provider performance data"
+        });
+      }
+    }
+  });
+
+  // Admin User Engagement Analytics
+  app.get("/api/admin/users/engagement", requireAdmin, async (req, res) => {
+    try {
+      const validatedQuery = adminDateRangeSchema.parse(req.query);
+      const engagementData = await storage.getUserEngagementData(
+        validatedQuery.fromDate,
+        validatedQuery.toDate
+      );
+      res.json({ success: true, data: engagementData });
+    } catch (error) {
+      console.error("Admin user engagement error:", error);
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ 
+          success: false, 
+          message: "Invalid query parameters",
+          errors: error.errors 
+        });
+      } else {
+        res.status(500).json({ 
+          success: false, 
+          message: "Failed to fetch user engagement data"
+        });
+      }
+    }
+  });
+
+  // Admin Transaction History with Filtering and Pagination
+  app.get("/api/admin/transactions", requireAdmin, async (req, res) => {
+    try {
+      const paginationData = adminPaginationSchema.parse(req.query);
+      const filterData = adminTransactionFiltersSchema.parse(req.query);
+
+      const transactionData = await storage.getTransactionHistory(
+        paginationData.page,
+        paginationData.limit,
+        {
+          type: filterData.type,
+          category: filterData.category,
+          fromDate: filterData.fromDate,
+          toDate: filterData.toDate,
+          userId: filterData.userId,
+          providerId: filterData.providerId,
+        }
+      );
+      res.json({ success: true, data: transactionData });
+    } catch (error) {
+      console.error("Admin transaction history error:", error);
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ 
+          success: false, 
+          message: "Invalid query parameters",
+          errors: error.errors 
+        });
+      } else {
+        res.status(500).json({ 
+          success: false, 
+          message: "Failed to fetch transaction history"
+        });
+      }
+    }
+  });
+
+  // Admin Create Operating Cost
+  app.post("/api/admin/costs", csrfProtection, requireAdmin, async (req, res) => {
+    try {
+      const validatedData = adminOperatingCostSchema.parse(req.body);
+      
+      const operatingCost = await storage.createOperatingCost(
+        validatedData,
+        req.user.id // Admin user ID
+      );
+
+      res.status(201).json({ success: true, data: operatingCost });
+    } catch (error) {
+      console.error("Admin create operating cost error:", error);
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ 
+          success: false, 
+          message: "Invalid request body",
+          errors: error.errors 
+        });
+      } else {
+        res.status(500).json({ 
+          success: false, 
+          message: "Failed to create operating cost"
+        });
+      }
+    }
+  });
+
+  // Admin Get Operating Costs
+  app.get("/api/admin/costs", requireAdmin, async (req, res) => {
+    try {
+      const validatedQuery = adminDateRangeSchema.parse(req.query);
+      const costs = await storage.getOperatingCosts(
+        validatedQuery.fromDate,
+        validatedQuery.toDate
+      );
+      res.json({ success: true, data: costs });
+    } catch (error) {
+      console.error("Admin operating costs error:", error);
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ 
+          success: false, 
+          message: "Invalid query parameters",
+          errors: error.errors 
+        });
+      } else {
+        res.status(500).json({ 
+          success: false, 
+          message: "Failed to fetch operating costs"
+        });
+      }
+    }
+  });
+
+  // Admin Daily Metrics
+  app.get("/api/admin/metrics", requireAdmin, async (req, res) => {
+    try {
+      const validatedQuery = adminDateRangeSchema.parse(req.query);
+      const metrics = await storage.getDailyMetrics(
+        validatedQuery.fromDate,
+        validatedQuery.toDate
+      );
+      res.json({ success: true, data: metrics });
+    } catch (error) {
+      console.error("Admin daily metrics error:", error);
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ 
+          success: false, 
+          message: "Invalid query parameters",
+          errors: error.errors 
+        });
+      } else {
+        res.status(500).json({ 
+          success: false, 
+          message: "Failed to fetch daily metrics"
+        });
+      }
+    }
+  });
+
+  // Admin Create/Update Daily Metrics (for system use)
+  app.post("/api/admin/metrics/:date", csrfProtection, requireAdmin, async (req, res) => {
+    try {
+      const { date } = req.params;
+      
+      // Validate date format (YYYY-MM-DD)
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid date format. Expected YYYY-MM-DD"
+        });
+      }
+
+      // Basic validation that metrics object exists
+      if (!req.body || typeof req.body !== 'object') {
+        return res.status(400).json({
+          success: false,
+          message: "Metrics data is required"
+        });
+      }
+      
+      const dailyMetrics = await storage.createOrUpdateDailyMetrics(date, req.body);
+      res.json({ success: true, data: dailyMetrics });
+    } catch (error) {
+      console.error("Admin create/update metrics error:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: "Failed to create/update daily metrics"
+      });
     }
   });
 
