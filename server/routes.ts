@@ -60,6 +60,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
     legacyHeaders: false,
   });
 
+  // Email rate limiting to prevent spam/DDoS
+  const emailLimiter = rateLimit({
+    windowMs: 60 * 60 * 1000, // 1 hour
+    max: 3, // Limit each IP to 3 email requests per hour
+    message: { message: 'Too many email requests, please try again later.' },
+    standardHeaders: true,
+    legacyHeaders: false,
+  });
+
+  // File upload rate limiting
+  const uploadLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes  
+    max: 20, // Limit each IP to 20 uploads per 15 minutes
+    message: { message: 'Too many upload requests, please slow down.' },
+    standardHeaders: true,
+    legacyHeaders: false,
+  });
+
   // Setup authentication
   setupAuth(app);
 
@@ -593,7 +611,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // This endpoint is used to get the upload URL for an object entity.
-  app.post("/api/objects/upload", async (req, res) => {
+  app.post("/api/objects/upload", uploadLimiter, async (req, res) => {
     const objectStorageService = new ObjectStorageService();
     try {
       const uploadURL = await objectStorageService.getObjectEntityUploadURL();
@@ -714,7 +732,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   }
 
   // Password reset request (send email with reset link)
-  app.post("/api/auth/forgot-password", async (req, res) => {
+  app.post("/api/auth/forgot-password", authLimiter, emailLimiter, async (req, res) => {
     try {
       const { email } = req.body;
       
@@ -765,7 +783,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Password reset execution (process the reset with token)
-  app.post("/api/auth/reset-password", async (req, res) => {
+  app.post("/api/auth/reset-password", authLimiter, async (req, res) => {
     try {
       const { token, newPassword } = req.body;
       
