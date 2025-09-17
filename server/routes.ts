@@ -5,8 +5,7 @@ import { insertOfferSchema, insertDraftDocumentSchema } from "@shared/schema";
 import { insertPropertySchema, insertUserSwipeSchema, insertPurchaseOrderSchema, insertServiceProviderSchema, pricingPlans } from "@shared/schema";
 import { db } from "./db";
 import { analyzeUserPreferences, generatePropertyRecommendations, generateMarketInsights } from "./services/openai";
-import { setupAuth, requireAuth } from "./auth";
-import { requirePropertyOwnership } from "./middleware/auth";
+import { setupAuth, requireAuth, requirePropertyOwnership } from "./auth";
 import {
   ObjectStorageService,
   ObjectNotFoundError,

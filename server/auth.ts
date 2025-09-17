@@ -212,3 +212,29 @@ export function requireAuth(req: any, res: any, next: any) {
   req.userId = req.user.id;
   next();
 }
+
+// Secure property ownership middleware using session auth
+export async function requirePropertyOwnership(req: any, res: any, next: any) {
+  try {
+    const propertyId = req.params.id;
+    const userId = req.userId; // Set by requireAuth middleware
+    
+    if (!userId) {
+      return res.status(401).json({ message: 'Authentication required' });
+    }
+    
+    const property = await storage.getProperty(propertyId);
+    if (!property) {
+      return res.status(404).json({ message: 'Property not found' });
+    }
+    
+    if (property.userId !== userId) {
+      return res.status(403).json({ message: 'Access denied: You can only modify your own properties' });
+    }
+    
+    next();
+  } catch (error) {
+    console.error('Property ownership check failed:', error);
+    res.status(500).json({ message: 'Authorization check failed' });
+  }
+}
