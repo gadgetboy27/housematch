@@ -4,6 +4,7 @@ import { Express } from "express";
 import session from "express-session";
 import { scrypt, randomBytes, timingSafeEqual } from "crypto";
 import { promisify } from "util";
+import rateLimit from "express-rate-limit";
 import { storage } from "./storage";
 import { User as SelectUser } from "@shared/schema";
 
@@ -29,6 +30,15 @@ async function comparePasswords(supplied: string, stored: string) {
 }
 
 export function setupAuth(app: Express) {
+  // Auth rate limiter to prevent brute force attacks
+  const authLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 5, // Limit each IP to 5 auth requests per windowMs
+    message: { message: 'Too many authentication attempts, please try again later.' },
+    standardHeaders: true,
+    legacyHeaders: false,
+  });
+
   // Generate secure session secret if not provided
   const sessionSecret = process.env.SESSION_SECRET;
   if (!sessionSecret || sessionSecret === "dev-secret-change-in-production") {
@@ -84,7 +94,7 @@ export function setupAuth(app: Express) {
   });
 
   // Register endpoint
-  app.post("/api/auth/register", async (req, res, next) => {
+  app.post("/api/auth/register", authLimiter, async (req, res, next) => {
     const startTime = Date.now();
 
     try {
@@ -147,7 +157,7 @@ export function setupAuth(app: Express) {
   });
 
   // Login endpoint
-  app.post("/api/auth/login", (req, res, next) => {
+  app.post("/api/auth/login", authLimiter, (req, res, next) => {
     passport.authenticate("local", (err: any, user: any, info: any) => {
       if (err) {
         return res.status(500).json({ 
