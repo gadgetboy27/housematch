@@ -132,19 +132,31 @@ export function setupAuth(app: Express) {
         password: hashedPassword,
       });
 
-      // Log them in
+      // Log them in with session regeneration for security
       req.login(user, (err) => {
         if (err) {
           return next(err);
         }
-        const responseTime = Date.now() - startTime;
-        res.json({ 
-          success: true, 
-          user: { 
-            id: user.id, 
-            email: user.email, 
-            name: user.name 
-          } 
+        // Regenerate session ID to prevent session fixation attacks
+        req.session.regenerate((err) => {
+          if (err) {
+            return next(err);
+          }
+          // Re-establish user session after regeneration
+          req.login(user, (err) => {
+            if (err) {
+              return next(err);
+            }
+            const responseTime = Date.now() - startTime;
+            res.json({ 
+              success: true, 
+              user: { 
+                id: user.id, 
+                email: user.email, 
+                name: user.name 
+              } 
+            });
+          });
         });
       });
     } catch (error) {
@@ -178,13 +190,31 @@ export function setupAuth(app: Express) {
             message: "Login failed" 
           });
         }
-        res.json({ 
-          success: true, 
-          user: { 
-            id: user.id, 
-            email: user.email, 
-            name: user.name 
-          } 
+        // Regenerate session ID to prevent session fixation attacks
+        req.session.regenerate((err) => {
+          if (err) {
+            return res.status(500).json({ 
+              success: false,
+              message: "Login failed" 
+            });
+          }
+          // Re-establish user session after regeneration
+          req.login(user, (err) => {
+            if (err) {
+              return res.status(500).json({ 
+                success: false,
+                message: "Login failed" 
+              });
+            }
+            res.json({ 
+              success: true, 
+              user: { 
+                id: user.id, 
+                email: user.email, 
+                name: user.name 
+              } 
+            });
+          });
         });
       });
     })(req, res, next);
