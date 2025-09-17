@@ -1,7 +1,7 @@
 // src/components/property-card.tsx
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { Property } from "@shared/schema";
 import PropertyMetrics from "./property-metrics";
 import PropertyTypeDropdown from "./property-type-dropdown";
@@ -9,6 +9,7 @@ import ImageSwipeTutorial from "./image-swipe-tutorial";
 import OfferModal from "./offer-modal";
 import { motion } from "framer-motion";
 import { apiRequest } from "@/lib/queryClient";
+import { TrendingUp, TrendingDown, Minus } from "lucide-react";
 
 interface PropertyCardProps {
   property: Property;
@@ -47,6 +48,52 @@ export default function PropertyCard({ property, isBackground = false, onPropert
   
   const typeColor =
     propertyTypeColors[property.propertyType as keyof typeof propertyTypeColors] || propertyTypeColors.residential;
+
+  // Fetch area properties for price comparison (only for main cards, not background)
+  const { data: areaProperties } = useQuery({
+    queryKey: ["/api/properties", property.suburb],
+    enabled: !isBackground, // Only fetch for main cards to improve performance
+    queryFn: async () => {
+      const response = await fetch(`/api/properties?suburb=${encodeURIComponent(property.suburb)}`, {
+        credentials: "include"
+      });
+      if (!response.ok) return [];
+      return response.json();
+    }
+  });
+
+  // Calculate price comparison
+  const getPriceComparison = () => {
+    if (isBackground || !areaProperties || areaProperties.length < 3) return null;
+
+    // Parse current property price (remove $ and , characters)
+    const currentPrice = parseFloat(property.price.replace(/[\$,]/g, ''));
+    if (isNaN(currentPrice)) return null;
+
+    // Filter properties with valid prices and similar type
+    const validProperties = areaProperties.filter((p: Property) => {
+      const price = parseFloat(p.price.replace(/[\$,]/g, ''));
+      return !isNaN(price) && p.propertyType === property.propertyType && p.id !== property.id;
+    });
+
+    if (validProperties.length < 2) return null;
+
+    // Calculate average price
+    const averagePrice = validProperties.reduce((sum: number, p: Property) => {
+      return sum + parseFloat(p.price.replace(/[\$,]/g, ''));
+    }, 0) / validProperties.length;
+
+    const percentageDiff = ((currentPrice - averagePrice) / averagePrice) * 100;
+    
+    return {
+      averagePrice,
+      currentPrice,
+      percentageDiff,
+      sampleSize: validProperties.length
+    };
+  };
+
+  const priceComparison = getPriceComparison();
 
   // Combine main image and additional images into one array
   const allImages = [
@@ -312,7 +359,34 @@ export default function PropertyCard({ property, isBackground = false, onPropert
             <p className="text-white/80 text-sm">{property.address}</p>
 
             <div className="flex items-center justify-between mt-2">
-              <span className="text-xl font-bold">{property.price}</span>
+              <div className="flex flex-col">
+                <span className="text-xl font-bold">{property.price}</span>
+                {/* Price Comparison Indicator */}
+                {priceComparison && (
+                  <div className="flex items-center gap-1 mt-1">
+                    {Math.abs(priceComparison.percentageDiff) < 5 ? (
+                      <div className="flex items-center gap-1 text-white/70">
+                        <Minus className="h-3 w-3" />
+                        <span className="text-xs">Market rate</span>
+                      </div>
+                    ) : priceComparison.percentageDiff > 0 ? (
+                      <div className="flex items-center gap-1 text-red-300">
+                        <TrendingUp className="h-3 w-3" />
+                        <span className="text-xs font-medium">
+                          {Math.round(priceComparison.percentageDiff)}% above avg
+                        </span>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-1 text-green-300">
+                        <TrendingDown className="h-3 w-3" />
+                        <span className="text-xs font-medium">
+                          {Math.round(Math.abs(priceComparison.percentageDiff))}% below avg
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
               <div className="flex items-center space-x-4 text-sm">
                 {property.bedrooms ? (
                   <span className="flex items-center space-x-1">

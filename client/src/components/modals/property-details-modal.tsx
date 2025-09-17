@@ -1,7 +1,10 @@
+import { useState, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Property } from "@shared/schema";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Bed, Bath, Car, Home, MapPin, TrendingUp, TrendingDown, Minus } from "lucide-react";
 
 interface PropertyDetailsModalProps {
   property: Property;
@@ -18,6 +21,51 @@ export default function PropertyDetailsModal({ property, isOpen, onClose }: Prop
   };
 
   const typeColor = propertyTypeColors[property.propertyType as keyof typeof propertyTypeColors] || propertyTypeColors.residential;
+
+  // Fetch area properties for price comparison
+  const { data: areaProperties } = useQuery({
+    queryKey: ["/api/properties", property.suburb],
+    queryFn: async () => {
+      const response = await fetch(`/api/properties?suburb=${encodeURIComponent(property.suburb)}`, {
+        credentials: "include"
+      });
+      if (!response.ok) return [];
+      return response.json();
+    }
+  });
+
+  // Calculate price comparison
+  const getPriceComparison = () => {
+    if (!areaProperties || areaProperties.length < 3) return null;
+
+    // Parse current property price (remove $ and , characters)
+    const currentPrice = parseFloat(property.price.replace(/[\$,]/g, ''));
+    if (isNaN(currentPrice)) return null;
+
+    // Filter properties with valid prices and similar type
+    const validProperties = areaProperties.filter((p: Property) => {
+      const price = parseFloat(p.price.replace(/[\$,]/g, ''));
+      return !isNaN(price) && p.propertyType === property.propertyType && p.id !== property.id;
+    });
+
+    if (validProperties.length < 2) return null;
+
+    // Calculate average price
+    const averagePrice = validProperties.reduce((sum: number, p: Property) => {
+      return sum + parseFloat(p.price.replace(/[\$,]/g, ''));
+    }, 0) / validProperties.length;
+
+    const percentageDiff = ((currentPrice - averagePrice) / averagePrice) * 100;
+    
+    return {
+      averagePrice,
+      currentPrice,
+      percentageDiff,
+      sampleSize: validProperties.length
+    };
+  };
+
+  const priceComparison = getPriceComparison();
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -73,43 +121,100 @@ export default function PropertyDetailsModal({ property, isOpen, onClose }: Prop
               <p className="text-muted-foreground" data-testid="text-detail-address">
                 {property.address}
               </p>
-              <p className="text-2xl font-bold text-primary mt-2" data-testid="text-detail-price">
-                {property.price}
-              </p>
+              <div className="mt-2">
+                <p className="text-2xl font-bold text-primary" data-testid="text-detail-price">
+                  {property.price}
+                </p>
+                {/* Price Comparison */}
+                {priceComparison && (
+                  <div className="mt-2 flex items-center gap-2" data-testid="price-comparison">
+                    {Math.abs(priceComparison.percentageDiff) < 5 ? (
+                      <div className="flex items-center gap-1 text-gray-500">
+                        <Minus className="h-4 w-4" />
+                        <span className="text-sm">
+                          In line with area average ({priceComparison.sampleSize} properties)
+                        </span>
+                      </div>
+                    ) : priceComparison.percentageDiff > 0 ? (
+                      <div className="flex items-center gap-1 text-red-600">
+                        <TrendingUp className="h-4 w-4" />
+                        <span className="text-sm font-medium">
+                          {Math.round(priceComparison.percentageDiff)}% above area average
+                        </span>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-1 text-green-600">
+                        <TrendingDown className="h-4 w-4" />
+                        <span className="text-sm font-medium">
+                          {Math.round(Math.abs(priceComparison.percentageDiff))}% below area average
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                )}
+                {priceComparison && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Area average: ${priceComparison.averagePrice.toLocaleString()} (based on {priceComparison.sampleSize} {property.propertyType} properties in {property.suburb})
+                  </p>
+                )}
+              </div>
             </div>
 
-            {/* Basic Details */}
+            {/* Basic Details with Icons */}
             <div className="grid grid-cols-2 gap-4 py-4 border-t border-border">
               {property.bedrooms && property.bedrooms > 0 && (
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-secondary" data-testid="text-detail-bedrooms">
-                    {property.bedrooms}
+                  <div className="flex flex-col items-center space-y-1">
+                    <Bed className="h-5 w-5 text-blue-500" />
+                    <div className="text-2xl font-bold text-secondary" data-testid="text-detail-bedrooms">
+                      {property.bedrooms}
+                    </div>
+                    <div className="text-sm text-muted-foreground">Bedrooms</div>
                   </div>
-                  <div className="text-sm text-muted-foreground">Bedrooms</div>
                 </div>
               )}
               {property.bathrooms && property.bathrooms > 0 && (
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-secondary" data-testid="text-detail-bathrooms">
-                    {property.bathrooms}
+                  <div className="flex flex-col items-center space-y-1">
+                    <Bath className="h-5 w-5 text-cyan-500" />
+                    <div className="text-2xl font-bold text-secondary" data-testid="text-detail-bathrooms">
+                      {property.bathrooms}
+                    </div>
+                    <div className="text-sm text-muted-foreground">Bathrooms</div>
                   </div>
-                  <div className="text-sm text-muted-foreground">Bathrooms</div>
+                </div>
+              )}
+              {property.carSpaces && property.carSpaces > 0 && (
+                <div className="text-center">
+                  <div className="flex flex-col items-center space-y-1">
+                    <Car className="h-5 w-5 text-green-500" />
+                    <div className="text-2xl font-bold text-secondary" data-testid="text-detail-car-spaces">
+                      {property.carSpaces}
+                    </div>
+                    <div className="text-sm text-muted-foreground">Parking</div>
+                  </div>
                 </div>
               )}
               {property.floorArea && property.floorArea > 0 && (
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-secondary" data-testid="text-detail-floor-area">
-                    {property.floorArea}m²
+                  <div className="flex flex-col items-center space-y-1">
+                    <Home className="h-5 w-5 text-orange-500" />
+                    <div className="text-2xl font-bold text-secondary" data-testid="text-detail-floor-area">
+                      {property.floorArea}m²
+                    </div>
+                    <div className="text-sm text-muted-foreground">Floor Area</div>
                   </div>
-                  <div className="text-sm text-muted-foreground">Floor Area</div>
                 </div>
               )}
               {property.landArea && property.landArea > 0 && (
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-secondary" data-testid="text-detail-land-area">
-                    {property.landArea}m²
+                  <div className="flex flex-col items-center space-y-1">
+                    <MapPin className="h-5 w-5 text-purple-500" />
+                    <div className="text-2xl font-bold text-secondary" data-testid="text-detail-land-area">
+                      {property.landArea}m²
+                    </div>
+                    <div className="text-sm text-muted-foreground">Land Area</div>
                   </div>
-                  <div className="text-sm text-muted-foreground">Land Area</div>
                 </div>
               )}
             </div>
