@@ -357,7 +357,11 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createProperty(insertProperty: InsertProperty): Promise<Property> {
-    const [property] = await db.insert(properties).values(insertProperty).returning();
+    const insertData = {
+      ...insertProperty,
+      additionalImages: insertProperty.additionalImages || []
+    };
+    const [property] = await db.insert(properties).values(insertData).returning();
     return property;
   }
 
@@ -407,13 +411,24 @@ export class DatabaseStorage implements IStorage {
     const existing = await this.getUserPreferences(insertPreferences.userId!);
     
     if (existing) {
+      const updateData = {
+        ...insertPreferences,
+        updatedAt: new Date(),
+        preferredPropertyTypes: insertPreferences.preferredPropertyTypes || [],
+        preferredSuburbs: insertPreferences.preferredSuburbs || []
+      };
       const [updated] = await db.update(userPreferences)
-        .set({ ...insertPreferences, updatedAt: new Date() })
+        .set(updateData)
         .where(eq(userPreferences.userId, insertPreferences.userId!))
         .returning();
       return updated;
     } else {
-      const [created] = await db.insert(userPreferences).values(insertPreferences).returning();
+      const insertData = {
+        ...insertPreferences,
+        preferredPropertyTypes: insertPreferences.preferredPropertyTypes || [],
+        preferredSuburbs: insertPreferences.preferredSuburbs || []
+      };
+      const [created] = await db.insert(userPreferences).values(insertData).returning();
       return created;
     }
   }
@@ -437,7 +452,13 @@ export class DatabaseStorage implements IStorage {
 
   // Service Providers
   async createServiceProvider(insertProvider: InsertServiceProvider): Promise<ServiceProvider> {
-    const [provider] = await db.insert(serviceProviders).values(insertProvider).returning();
+    const insertData = {
+      ...insertProvider,
+      certifications: insertProvider.certifications || [],
+      servicesOffered: insertProvider.servicesOffered || [],
+      serviceAreas: insertProvider.serviceAreas || []
+    };
+    const [provider] = await db.insert(serviceProviders).values(insertData).returning();
     return provider;
   }
 
@@ -477,8 +498,13 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateProperty(id: string, data: Partial<InsertProperty>): Promise<Property> {
+    const updateData = {
+      ...data,
+      updatedAt: new Date(),
+      additionalImages: data.additionalImages || []
+    };
     const [updatedProperty] = await db.update(properties)
-      .set({ ...data, updatedAt: new Date() })
+      .set(updateData)
       .where(eq(properties.id, id))
       .returning();
     return updatedProperty;
