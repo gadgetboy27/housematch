@@ -29,15 +29,25 @@ async function comparePasswords(supplied: string, stored: string) {
 }
 
 export function setupAuth(app: Express) {
+  // Generate secure session secret if not provided
+  const sessionSecret = process.env.SESSION_SECRET;
+  if (!sessionSecret || sessionSecret === "dev-secret-change-in-production") {
+    console.error("🚨 SECURITY WARNING: SESSION_SECRET not set or using default value. Generate a strong secret for production!");
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error("SESSION_SECRET must be set in production environment");
+    }
+  }
+
+  const isProduction = process.env.NODE_ENV === 'production';
   const sessionSettings: session.SessionOptions = {
-    secret: process.env.SESSION_SECRET || "dev-secret-change-in-production",
+    secret: sessionSecret || "dev-secret-change-in-production",
     resave: false,
     saveUninitialized: false,
     cookie: {
-      secure: false, // Set to true in production with HTTPS
+      secure: isProduction, // Always true in production (requires HTTPS)
       httpOnly: true, // Prevent XSS attacks
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-      sameSite: 'lax', // CSRF protection
+      sameSite: 'strict', // Enhanced CSRF protection
     },
   };
 

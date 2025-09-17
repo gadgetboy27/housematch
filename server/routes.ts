@@ -6,6 +6,8 @@ import { insertPropertySchema, insertUserSwipeSchema, insertPurchaseOrderSchema,
 import { db } from "./db";
 import { analyzeUserPreferences, generatePropertyRecommendations, generateMarketInsights } from "./services/openai";
 import { setupAuth, requireAuth, requirePropertyOwnership } from "./auth";
+import helmet from "helmet";
+import rateLimit from "express-rate-limit";
 import {
   ObjectStorageService,
   ObjectNotFoundError,
@@ -17,6 +19,47 @@ import { sendPasswordResetEmailViaGmail } from './gmail-email';
 
 export async function registerRoutes(app: Express): Promise<Server> {
   
+  // Security middleware
+  app.use(helmet({
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+        fontSrc: ["'self'", "https://fonts.gstatic.com"],
+        imgSrc: ["'self'", "data:", "https:", "blob:"],
+        scriptSrc: ["'self'", "'unsafe-inline'"],
+        connectSrc: ["'self'", "wss:", "ws:"],
+      },
+    },
+    hsts: {
+      maxAge: 31536000,
+      includeSubDomains: true,
+      preload: true
+    }
+  }));
+
+  // Disable x-powered-by header
+  app.disable('x-powered-by');
+
+  // Global rate limiting
+  const globalLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 1000, // Limit each IP to 1000 requests per windowMs
+    message: { message: 'Too many requests from this IP, please try again later.' },
+    standardHeaders: true,
+    legacyHeaders: false,
+  });
+  app.use(globalLimiter);
+
+  // Stricter rate limiting for auth endpoints
+  const authLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 5, // Limit each IP to 5 auth requests per windowMs
+    message: { message: 'Too many authentication attempts, please try again later.' },
+    standardHeaders: true,
+    legacyHeaders: false,
+  });
+
   // Setup authentication
   setupAuth(app);
 
@@ -30,80 +73,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Seed pricing plans (development only)
-  app.post("/api/seed-pricing-plans", async (req, res) => {
-    try {
-      const plans = [
-        {
-          name: "Quick Match",
-          duration: 30,
-          price: 48800,
-          dailyRate: 1600,
-          savings: 1300,
-          description: "Perfect for motivated sellers who want quick results",
-          features: [
-            "Unlimited swipe-style exposure",
-            "Professional photo hosting", 
-            "TikTok-style video showcase",
-            "Basic analytics dashboard",
-            "Email support"
-          ],
-          isPopular: false,
-          sortOrder: 1,
-          isActive: true
-        },
-        {
-          name: "Serious Seller",
-          duration: 60,
-          price: 68800,
-          dailyRate: 1100,
-          savings: 1800,
-          description: "Most popular choice for sellers wanting maximum exposure",
-          features: [
-            "Everything in Quick Match",
-            "Priority listing placement",
-            "Advanced buyer insights", 
-            "Social media promotion",
-            "Dedicated seller support",
-            "Market trend analysis"
-          ],
-          isPopular: true,
-          sortOrder: 2,
-          isActive: true
-        },
-        {
-          name: "Committed Closer",
-          duration: 90,
-          price: 87800,
-          dailyRate: 900,
-          savings: 2000,
-          description: "Ultimate package for sellers who want every advantage",
-          features: [
-            "Everything in Serious Seller",
-            "Premium featured listings",
-            "AI-powered buyer matching",
-            "Professional video tours", 
-            "Priority customer success",
-            "Extended market analysis",
-            "Negotiation support"
-          ],
-          isPopular: false,
-          sortOrder: 3,
-          isActive: true
-        }
-      ];
-
-      const seededPlans = [];
-      for (const plan of plans) {
-        const seeded = await db.insert(pricingPlans).values(plan).returning();
-        seededPlans.push(seeded[0]);
-      }
-
-      res.json({ message: "Pricing plans seeded successfully", plans: seededPlans });
-    } catch (error) {
-      res.status(500).json({ message: "Failed to seed pricing plans" });
-    }
-  });
+  // SECURITY: Removed insecure public seed route - use admin interface or database migration
 
   // Property routes with personalization
   app.get("/api/properties", async (req, res) => {
