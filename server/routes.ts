@@ -174,7 +174,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Increment view count
-      await storage.updatePropertyMetrics(property.id, property.views + 1);
+      await storage.updatePropertyMetrics(property.id, (property.views || 0) + 1);
       
       res.json(property);
     } catch (error) {
@@ -186,7 +186,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const validatedData = insertPropertySchema.parse(req.body);
       // Add userId to property data from authenticated user
-      const propertyData = { ...validatedData, userId: req.userId! };
+      const propertyData = { ...validatedData, userId: req.user?.id! };
       
       // Check for duplicate properties (fraud detection)
       const existingProperty = await storage.findPropertyByAddressAndLot(
@@ -208,16 +208,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const property = await storage.createProperty(propertyData);
       res.status(201).json(property);
-    } catch (error) {
+    } catch (error: any) {
       // Handle database constraint violations
-      if (error.message.includes('unique constraint') || error.message.includes('UNIQUE constraint')) {
+      if (error.message?.includes('unique constraint') || error.message?.includes('UNIQUE constraint')) {
         return res.status(409).json({ 
           message: "Duplicate property detected", 
           error: "This property appears to already exist in our system (same address/lot number or certificate of title). Please verify your information."
         });
       }
       
-      res.status(400).json({ message: "Invalid property data", error: error.message });
+      res.status(400).json({ message: "Invalid property data", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -235,7 +235,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/users/:userId/properties", requireAuth, async (req, res) => {
     try {
       // Ensure user can only access their own properties
-      if (req.params.userId !== req.userId) {
+      if (req.params.userId !== req.user?.id) {
         return res.status(403).json({ message: "Access denied" });
       }
       
@@ -261,7 +261,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("Failed to update property:", error);
       res.status(400).json({ 
         message: "Failed to update property", 
-        error: error.message 
+        error: error instanceof Error ? error.message : String(error)
       });
     }
   });
@@ -287,13 +287,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const property = await storage.getProperty(swipe.propertyId!);
       if (property) {
         if (swipe.action === 'like' || swipe.action === 'super_like') {
-          await storage.updatePropertyMetrics(property.id, undefined, property.likes + 1);
+          await storage.updatePropertyMetrics(property.id, undefined, (property.likes || 0) + 1);
         }
       }
       
       res.status(201).json(swipe);
     } catch (error) {
-      res.status(400).json({ message: "Invalid swipe data", error: error.message });
+      res.status(400).json({ message: "Invalid swipe data", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -364,7 +364,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           priceRangeMin: preferences.preferredPriceRange.min.toString(),
           priceRangeMax: preferences.preferredPriceRange.max.toString(),
           preferredSuburbs: preferences.preferredSuburbs,
-          aiInsights: insights,
+          aiInsights: insights as any,
         });
       } catch (error) {
         console.warn("Failed to save user preferences:", error);
@@ -443,7 +443,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const order = await storage.createPurchaseOrder(validatedData);
       res.status(201).json(order);
     } catch (error) {
-      res.status(400).json({ message: "Invalid purchase order data", error: error.message });
+      res.status(400).json({ message: "Invalid purchase order data", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -732,7 +732,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const validatedData = insertServiceProviderSchema.parse(req.body);
       const provider = await storage.createServiceProvider(validatedData);
       res.status(201).json(provider);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Failed to create service provider:", error);
       if (error.code === '23505') { // Unique constraint violation
         res.status(409).json({ 
@@ -740,7 +740,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           error: "A service provider with this email already exists." 
         });
       } else {
-        res.status(400).json({ message: "Invalid service provider data", error: error.message });
+        res.status(400).json({ message: "Invalid service provider data", error: error instanceof Error ? error.message : String(error) });
       }
     }
   });
@@ -752,12 +752,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { profilePicture } = req.body;
 
       // Verify user is updating their own profile
-      if (req.userId !== userId) {
+      if (req.user?.id !== userId) {
         return res.status(403).json({ message: "You can only update your own profile picture" });
       }
 
       // Validate profile picture is safe (emoji or predefined avatar)
-      const isEmoji = /[\u{1F600}-\u{1F64F}]|[\u{1F300}-\u{1F5FF}]|[\u{1F680}-\u{1F6FF}]|[\u{1F1E0}-\u{1F1FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]/u.test(profilePicture);
+      const emojiRegex = new RegExp('[\u{1F600}-\\u{1F64F}]|[\\u{1F300}-\\u{1F5FF}]|[\u{1F680}-\\u{1F6FF}]|[\\u{1F1E0}-\\u{1F1FF}]|[\\u{2600}-\u{26FF}]|[\u{2700}-\\u{27BF}]', 'u');
+      const isEmoji = emojiRegex.test(profilePicture);
       const validAvatars = ['avatar1', 'avatar2', 'avatar3', 'avatar4', 'avatar5', 'avatar6', 'avatar7', 'avatar8'];
       const isValidAvatar = validAvatars.includes(profilePicture);
 
@@ -1402,7 +1403,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const operatingCost = await storage.createOperatingCost(
         validatedData,
-        req.user.id // Admin user ID
+        req.user!.id // Admin user ID
       );
 
       res.status(201).json({ success: true, data: operatingCost });
