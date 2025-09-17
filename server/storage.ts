@@ -110,18 +110,44 @@ export class DatabaseStorage implements IStorage {
   private async seedDatabase() {
     if (this.seeded) return;
     
-    // Create demo user first
+    // SECURITY CHECK: Prevent demo seeding in production environment
+    const isProduction = process.env.NODE_ENV === 'production';
+    if (isProduction) {
+      console.info('🔒 Production environment detected: Demo user seeding disabled for security');
+      this.seeded = true;
+      return;
+    }
+    
+    // Security warning for development/staging environments
+    console.warn('⚠️  DEVELOPMENT MODE: Demo user seeding enabled. This should NEVER happen in production!');
+    
+    // Create demo user first (development only)
     let demoUser;
     try {
       demoUser = await this.getUserByEmail("demo@example.com");
       if (!demoUser) {
+        // Import hash function to properly secure the demo password
+        const { scrypt, randomBytes } = await import("crypto");
+        const { promisify } = await import("util");
+        const scryptAsync = promisify(scrypt);
+        
+        // Hash the demo password properly (same logic as auth.ts)
+        const salt = randomBytes(16).toString("hex");
+        const buf = (await scryptAsync("demo123", salt, 64)) as Buffer;
+        const hashedPassword = `${buf.toString("hex")}.${salt}`;
+        
         demoUser = await this.createUser({
           email: "demo@example.com",
           name: "Demo User",
-          password: "demo123"
+          password: hashedPassword
         });
+        
+        console.log('🔐 Demo user created with hashed password (development only)');
+      } else {
+        console.log('📋 Demo user already exists, skipping creation');
       }
     } catch (error) {
+      console.error('❌ Error creating demo user:', error instanceof Error ? error.message : 'Unknown error');
       demoUser = await this.getUserByEmail("demo@example.com");
     }
 
@@ -284,12 +310,12 @@ export class DatabaseStorage implements IStorage {
       try {
         await db.insert(properties).values(property);
       } catch (error) {
-        console.log("Property already exists or error:", error.message);
+        console.log("Property already exists or error:", error instanceof Error ? error.message : 'Unknown error');
       }
     }
 
     this.seeded = true;
-    console.log("Database seeded with beautiful mock properties!");
+    console.log("🏡 Database seeded with mock properties (development only)");
   }
 
   async getUser(id: string): Promise<User | undefined> {
