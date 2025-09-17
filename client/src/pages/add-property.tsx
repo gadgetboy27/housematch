@@ -94,36 +94,47 @@ export default function AddProperty() {
     }
   }, [user, currentUser]);
 
-  // Create form schema that accepts strings and transforms to correct types
-  const formSchema = z.object({
-    title: z.string().min(1, "Title is required"),
-    address: z.string().min(1, "Address is required"),
-    suburb: z.string().min(1, "Suburb is required"),
-    price: z.string().optional(), // Optional now
-    propertyType: z.string().min(1, "Property type is required"),
-    bedrooms: z.string().transform(val => parseInt(val) || 0).optional(),
-    bathrooms: z.string().transform(val => parseInt(val) || 0).optional(),
-    floorArea: z.string().transform(val => parseInt(val) || 0).optional(),
-    landArea: z.string().transform(val => parseInt(val) || 0).optional(),
-    carSpaces: z.string().transform(val => parseInt(val) || 0).optional(),
-    parkingType: z.string().optional(), // New parking dropdown
-    lotNumber: z.string().min(1, "Council Lot Number is required for security verification"),
-    certificateOfTitle: z.string().min(1, "Certificate of Title is required for security verification"),
-    hideCertificateOfTitle: z.boolean().default(false),
-    zoning: z.string().optional(),
-    yearBuilt: z.string().transform(val => parseInt(val) || new Date().getFullYear()).optional(),
-    imageUrl: z.string().min(1, "At least one image is required"), // Images now required
-    videoUrl: z.string().optional(), // MP4 video tour
-    audioUrl: z.string().optional(), // MP3 audio description
-    description: z.string().optional(),
-    isLinzValidated: z.boolean().default(false),
-    selfDeclaration: z.boolean().refine((val) => val === true, {
-      message: "You must confirm the accuracy of the property details",
-    }),
-  });
+  // Create dynamic form schema based on property type
+  const createFormSchema = (propertyType: string) => {
+    const isRentalOrLease = propertyType === 'rental' || propertyType === 'lease';
+    
+    return z.object({
+      title: z.string().min(1, "Title is required"),
+      address: z.string().min(1, "Address is required"),
+      suburb: z.string().min(1, "Suburb is required"),
+      price: z.string().optional(), // Optional now
+      propertyType: z.string().min(1, "Property type is required"),
+      bedrooms: z.string().transform(val => parseInt(val) || 0).optional(),
+      bathrooms: z.string().transform(val => parseInt(val) || 0).optional(),
+      floorArea: z.string().transform(val => parseInt(val) || 0).optional(),
+      landArea: z.string().transform(val => parseInt(val) || 0).optional(),
+      carSpaces: z.string().transform(val => parseInt(val) || 0).optional(),
+      parkingType: z.string().optional(), // New parking dropdown
+      // Conditional validation for lot number and certificate of title
+      lotNumber: isRentalOrLease 
+        ? z.string().optional() 
+        : z.string().min(1, "Council Lot Number is required for security verification"),
+      certificateOfTitle: isRentalOrLease 
+        ? z.string().optional() 
+        : z.string().min(1, "Certificate of Title is required for security verification"),
+      hideCertificateOfTitle: z.boolean().default(false),
+      zoning: z.string().optional(),
+      yearBuilt: z.string().transform(val => parseInt(val) || new Date().getFullYear()).optional(),
+      imageUrl: z.string().min(1, "At least one image is required"), // Images now required
+      videoUrl: z.string().optional(), // MP4 video tour
+      audioUrl: z.string().optional(), // MP3 audio description
+      description: z.string().optional(),
+      isLinzValidated: z.boolean().default(false),
+      selfDeclaration: z.boolean().refine((val) => val === true, {
+        message: "You must confirm the accuracy of the property details",
+      }),
+    });
+  };
+
+  const formSchema = createFormSchema(selectedPropertyType);
 
   const form = useForm({
-    resolver: zodResolver(formSchema),
+    resolver: zodResolver(createFormSchema(selectedPropertyType)),
     defaultValues: {
       title: "",
       address: "",
@@ -154,6 +165,15 @@ export default function AddProperty() {
   useEffect(() => {
     if (selectedPropertyType) {
       form.setValue("propertyType", selectedPropertyType);
+      // Clear lot number and certificate fields for rental/lease properties
+      const isRentalOrLease = selectedPropertyType === 'rental' || selectedPropertyType === 'lease';
+      if (isRentalOrLease) {
+        form.setValue("lotNumber", "");
+        form.setValue("certificateOfTitle", "");
+      }
+      // Re-create form with new schema to update validation
+      const newSchema = createFormSchema(selectedPropertyType);
+      form.trigger(); // Trigger validation with new schema
     }
   }, [selectedPropertyType, form]);
 
@@ -181,7 +201,12 @@ export default function AddProperty() {
   // Check if all required fields are filled
   const watchedFields = form.watch();
   const isFormComplete = useMemo(() => {
-    const requiredFields = ['title', 'address', 'suburb', 'propertyType', 'lotNumber', 'certificateOfTitle'];
+    const isRentalOrLease = selectedPropertyType === 'rental' || selectedPropertyType === 'lease';
+    const baseRequiredFields = ['title', 'address', 'suburb', 'propertyType'];
+    // Only require lot number and certificate of title for non-rental/lease properties
+    const conditionalRequiredFields = isRentalOrLease ? [] : ['lotNumber', 'certificateOfTitle'];
+    const requiredFields = [...baseRequiredFields, ...conditionalRequiredFields];
+    
     const hasRequiredFields = requiredFields.every(field => {
       const fieldValue = (watchedFields as any)[field];
       return fieldValue && fieldValue.toString().trim() !== '';
@@ -190,7 +215,7 @@ export default function AddProperty() {
     const hasDeclaration = watchedFields.selfDeclaration === true;
     
     return hasRequiredFields && hasImages && hasDeclaration;
-  }, [watchedFields, uploadedImages]);
+  }, [watchedFields, uploadedImages, selectedPropertyType]);
 
   // Helper function to get required field status
   const getRequiredFieldStatus = (fieldName: string, value: any) => {
@@ -910,23 +935,43 @@ export default function AddProperty() {
                   name="lotNumber"
                   render={({ field }) => {
                     const fieldStatus = getRequiredFieldStatus('lotNumber', field.value);
+                    const isRentalOrLease = selectedPropertyType === 'rental' || selectedPropertyType === 'lease';
                     
                     return (
                       <FormItem>
-                        <FormLabel className={`flex items-center space-x-1 ${fieldStatus.hasError ? "text-red-600" : ""}`}>
+                        <FormLabel className={`flex items-center space-x-1 ${
+                          isRentalOrLease ? 'text-muted-foreground' : fieldStatus.hasError ? "text-red-600" : ""
+                        }`}>
                           <span>Council Lot Number</span>
-                          <span className="text-red-500 text-xs">*</span>
-                          <span className="text-xs text-muted-foreground">(Must match official records)</span>
+                          {isRentalOrLease ? (
+                            <span className="text-xs text-muted-foreground">(Not required for rentals/leases)</span>
+                          ) : (
+                            <>
+                              <span className="text-red-500 text-xs">*</span>
+                              <span className="text-xs text-muted-foreground">(Must match official records)</span>
+                            </>
+                          )}
                         </FormLabel>
                         <FormControl>
                           <Input 
-                            placeholder="PT LOT 15 DP 123456" 
+                            placeholder={isRentalOrLease ? "Not required for rentals/leases" : "PT LOT 15 DP 123456"}
                             {...field}
-                            className={`${fieldStatus.hasError ? 'border-red-500 focus:ring-red-500' : ''} ${form.formState.errors.lotNumber ? 'border-red-500 focus:ring-red-500 focus:border-red-500' : ''}`}
+                            disabled={isRentalOrLease}
+                            className={`${
+                              isRentalOrLease 
+                                ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
+                                : fieldStatus.hasError 
+                                ? 'border-red-500 focus:ring-red-500' 
+                                : ''
+                            } ${
+                              form.formState.errors.lotNumber && !isRentalOrLease 
+                                ? 'border-red-500 focus:ring-red-500 focus:border-red-500' 
+                                : ''
+                            }`}
                             data-testid="input-lot-number"
                           />
                         </FormControl>
-                        <FormMessage />
+                        {!isRentalOrLease && <FormMessage />}
                       </FormItem>
                     );
                   }}
@@ -937,23 +982,39 @@ export default function AddProperty() {
                   name="certificateOfTitle"
                   render={({ field }) => {
                     const fieldStatus = getRequiredFieldStatus('certificateOfTitle', field.value);
+                    const isRentalOrLease = selectedPropertyType === 'rental' || selectedPropertyType === 'lease';
                     
                     return (
                       <FormItem>
-                        <FormLabel className={`flex items-center space-x-1 ${fieldStatus.hasError ? "text-red-600" : ""}`}>
+                        <FormLabel className={`flex items-center space-x-1 ${
+                          isRentalOrLease ? 'text-muted-foreground' : fieldStatus.hasError ? "text-red-600" : ""
+                        }`}>
                           <span>Certificate of Title</span>
-                          <span className="text-red-500 text-xs">*</span>
-                          <span className="text-xs text-muted-foreground">(Must match official records)</span>
+                          {isRentalOrLease ? (
+                            <span className="text-xs text-muted-foreground">(Not required for rentals/leases)</span>
+                          ) : (
+                            <>
+                              <span className="text-red-500 text-xs">*</span>
+                              <span className="text-xs text-muted-foreground">(Must match official records)</span>
+                            </>
+                          )}
                         </FormLabel>
                         <FormControl>
                           <Input 
-                            placeholder="CT 456789/123" 
+                            placeholder={isRentalOrLease ? "Not required for rentals/leases" : "CT 456789/123"}
                             {...field}
-                            className={fieldStatus.hasError ? 'border-red-500 focus:ring-red-500' : ''}
+                            disabled={isRentalOrLease}
+                            className={`${
+                              isRentalOrLease 
+                                ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
+                                : fieldStatus.hasError 
+                                ? 'border-red-500 focus:ring-red-500' 
+                                : ''
+                            }`}
                             data-testid="input-certificate-title"
                           />
                         </FormControl>
-                        <FormMessage />
+                        {!isRentalOrLease && <FormMessage />}
                       </FormItem>
                     );
                   }}
