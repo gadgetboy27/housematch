@@ -78,6 +78,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
     legacyHeaders: false,
   });
 
+  // CSRF Protection Middleware
+  const generateCSRFToken = () => randomBytes(32).toString('hex');
+  
+  const csrfProtection = (req: any, res: any, next: any) => {
+    // Skip CSRF for GET, HEAD, OPTIONS
+    if (['GET', 'HEAD', 'OPTIONS'].includes(req.method)) {
+      return next();
+    }
+    
+    const tokenFromCookie = req.cookies['csrf-token'];
+    const tokenFromHeader = req.headers['x-csrf-token'];
+    
+    if (!tokenFromCookie || !tokenFromHeader || tokenFromCookie !== tokenFromHeader) {
+      return res.status(403).json({ message: 'Invalid CSRF token' });
+    }
+    
+    next();
+  };
+
+  // CSRF token endpoint
+  app.get('/api/csrf', (req, res) => {
+    const token = generateCSRFToken();
+    res.cookie('csrf-token', token, {
+      httpOnly: false, // Need to be readable by JS for header
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 60 * 60 * 1000 // 1 hour
+    });
+    res.json({ csrfToken: token });
+  });
+
   // Setup authentication
   setupAuth(app);
 
@@ -130,7 +161,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/properties", requireAuth, async (req, res) => {
+  app.post("/api/properties", csrfProtection, requireAuth, async (req, res) => {
     try {
       const validatedData = insertPropertySchema.parse(req.body);
       // Add userId to property data from authenticated user
@@ -169,7 +200,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/properties/:id/metrics", requireAuth, requirePropertyOwnership, async (req, res) => {
+  app.post("/api/properties/:id/metrics", csrfProtection, requireAuth, requirePropertyOwnership, async (req, res) => {
     try {
       const { views, likes, saves } = req.body;
       await storage.updatePropertyMetrics(req.params.id, views, likes, saves);
@@ -196,7 +227,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Update property
-  app.put("/api/properties/:id", requireAuth, requirePropertyOwnership, async (req, res) => {
+  app.put("/api/properties/:id", csrfProtection, requireAuth, requirePropertyOwnership, async (req, res) => {
     try {
       const validatedData = insertPropertySchema.parse(req.body);
       const updatedProperty = await storage.updateProperty(req.params.id, validatedData);
@@ -215,7 +246,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Delete property (soft delete)
-  app.delete("/api/properties/:id", requireAuth, requirePropertyOwnership, async (req, res) => {
+  app.delete("/api/properties/:id", csrfProtection, requireAuth, requirePropertyOwnership, async (req, res) => {
     try {
       await storage.softDeleteProperty(req.params.id);
       res.json({ message: "Property removed from listings" });
@@ -226,7 +257,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // User swipe routes
-  app.post("/api/swipes", async (req, res) => {
+  app.post("/api/swipes", csrfProtection, async (req, res) => {
     try {
       const validatedData = insertUserSwipeSchema.parse(req.body);
       const swipe = await storage.createUserSwipe(validatedData);
@@ -264,7 +295,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // AI recommendation routes
-  app.post("/api/ai/analyze-preferences", async (req, res) => {
+  app.post("/api/ai/analyze-preferences", csrfProtection, async (req, res) => {
     try {
       const { userId } = req.body;
       
@@ -334,7 +365,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/ai/recommendations", async (req, res) => {
+  app.post("/api/ai/recommendations", csrfProtection, async (req, res) => {
     try {
       const { userId } = req.body;
       
@@ -385,7 +416,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Purchase order routes
-  app.post("/api/purchase-orders", async (req, res) => {
+  app.post("/api/purchase-orders", csrfProtection, async (req, res) => {
     try {
       const validatedData = insertPurchaseOrderSchema.parse(req.body);
       const order = await storage.createPurchaseOrder(validatedData);
@@ -404,7 +435,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/purchase-orders/:id/status", async (req, res) => {
+  app.patch("/api/purchase-orders/:id/status", csrfProtection, async (req, res) => {
     try {
       const { status } = req.body;
       await storage.updatePurchaseOrderStatus(req.params.id, status);
@@ -415,7 +446,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // LINZ Property Validation routes
-  app.post("/api/validate-property", async (req, res) => {
+  app.post("/api/validate-property", csrfProtection, async (req, res) => {
     try {
       const { lotNumber, address, suburb } = req.body;
       
@@ -475,7 +506,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Individual field validation routes
-  app.post("/api/validate-lot-number", async (req, res) => {
+  app.post("/api/validate-lot-number", csrfProtection, async (req, res) => {
     try {
       const { lotNumber } = req.body;
       
@@ -503,7 +534,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/validate-address", async (req, res) => {
+  app.post("/api/validate-address", csrfProtection, async (req, res) => {
     try {
       const { address, suburb } = req.body;
       
@@ -530,7 +561,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/validate-certificate", async (req, res) => {
+  app.post("/api/validate-certificate", csrfProtection, async (req, res) => {
     try {
       const { certificate } = req.body;
       
@@ -611,7 +642,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // This endpoint is used to get the upload URL for an object entity.
-  app.post("/api/objects/upload", uploadLimiter, async (req, res) => {
+  app.post("/api/objects/upload", csrfProtection, uploadLimiter, async (req, res) => {
     const objectStorageService = new ObjectStorageService();
     try {
       const uploadURL = await objectStorageService.getObjectEntityUploadURL();
@@ -623,7 +654,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // An example endpoint for updating the model state after an object entity is uploaded (property image in this case).
-  app.put("/api/property-images", async (req, res) => {
+  app.put("/api/property-images", csrfProtection, async (req, res) => {
     if (!req.body.imageURL) {
       return res.status(400).json({ error: "imageURL is required" });
     }
@@ -732,7 +763,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   }
 
   // Password reset request (send email with reset link)
-  app.post("/api/auth/forgot-password", authLimiter, emailLimiter, async (req, res) => {
+  app.post("/api/auth/forgot-password", csrfProtection, authLimiter, emailLimiter, async (req, res) => {
     try {
       const { email } = req.body;
       
@@ -783,7 +814,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Password reset execution (process the reset with token)
-  app.post("/api/auth/reset-password", authLimiter, async (req, res) => {
+  app.post("/api/auth/reset-password", csrfProtection, authLimiter, async (req, res) => {
     try {
       const { token, newPassword } = req.body;
       
@@ -840,7 +871,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // ===== OFFER SYSTEM ENDPOINTS =====
 
   // Submit a property offer
-  app.post("/api/offers", async (req, res) => {
+  app.post("/api/offers", csrfProtection, async (req, res) => {
     try {
       console.log("📝 OFFER SUBMISSION:", {
         body: req.body,
