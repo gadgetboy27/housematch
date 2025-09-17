@@ -34,12 +34,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         styleSrc: [
           "'self'", 
           "https://fonts.googleapis.com",
+          "https://cdnjs.cloudflare.com", // Allow Font Awesome CDN
           // Allow nonce-based inline styles in production, unsafe-inline only in dev
           ...(process.env.NODE_ENV === 'production' 
             ? [(req: any, res: any) => `'nonce-${res.locals.nonce}'`] 
             : ["'unsafe-inline'"])
         ],
-        fontSrc: ["'self'", "https://fonts.gstatic.com"],
+        fontSrc: ["'self'", "https://fonts.gstatic.com", "https://cdnjs.cloudflare.com", "data:"],
         imgSrc: ["'self'", "data:", "https:", "blob:"],
         scriptSrc: [
           "'self'",
