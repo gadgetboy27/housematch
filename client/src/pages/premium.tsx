@@ -12,16 +12,16 @@ export default function PremiumPage() {
   const { toast } = useToast();
   const [, setLocation] = useLocation();
 
-  const { data: user } = useQuery({
+  const { data: user } = useQuery<any>({
     queryKey: ["/api/auth/user"],
   });
 
-  const { data: subscriptionStatus, isLoading: statusLoading } = useQuery({
+  const { data: subscriptionStatus, isLoading: statusLoading } = useQuery<any>({
     queryKey: ["/api/subscription/status"],
     enabled: !!user,
   });
 
-  const { data: plans, isLoading: plansLoading } = useQuery({
+  const { data: plans, isLoading: plansLoading } = useQuery<any[]>({
     queryKey: ["/api/subscription/plans"],
   });
 

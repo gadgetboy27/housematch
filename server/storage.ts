@@ -656,7 +656,7 @@ export class DatabaseStorage implements IStorage {
       ...insertProperty,
       additionalImages: insertProperty.additionalImages || []
     };
-    const [property] = await db.insert(properties).values(insertData).returning();
+    const [property] = await db.insert(properties).values(insertData as any).returning();
     return property;
   }
 
@@ -803,7 +803,7 @@ export class DatabaseStorage implements IStorage {
         preferredSuburbs: insertPreferences.preferredSuburbs || []
       };
       const [updated] = await db.update(userPreferences)
-        .set(updateData)
+        .set(updateData as any)
         .where(eq(userPreferences.userId, insertPreferences.userId!))
         .returning();
       return updated;
@@ -813,13 +813,13 @@ export class DatabaseStorage implements IStorage {
         preferredPropertyTypes: insertPreferences.preferredPropertyTypes || [],
         preferredSuburbs: insertPreferences.preferredSuburbs || []
       };
-      const [created] = await db.insert(userPreferences).values(insertData).returning();
+      const [created] = await db.insert(userPreferences).values(insertData as any).returning();
       return created;
     }
   }
 
   async createPurchaseOrder(insertOrder: InsertPurchaseOrder): Promise<PurchaseOrder> {
-    const [order] = await db.insert(purchaseOrders).values(insertOrder).returning();
+    const [order] = await db.insert(purchaseOrders).values(insertOrder as any).returning();
     return order;
   }
 
@@ -843,7 +843,7 @@ export class DatabaseStorage implements IStorage {
       servicesOffered: insertProvider.servicesOffered || [],
       serviceAreas: insertProvider.serviceAreas || []
     };
-    const [provider] = await db.insert(serviceProviders).values(insertData).returning();
+    const [provider] = await db.insert(serviceProviders).values(insertData as any).returning();
     return provider;
   }
 
@@ -889,7 +889,7 @@ export class DatabaseStorage implements IStorage {
       additionalImages: data.additionalImages || []
     };
     const [updatedProperty] = await db.update(properties)
-      .set(updateData)
+      .set(updateData as any)
       .where(eq(properties.id, id))
       .returning();
     return updatedProperty;
@@ -1280,11 +1280,11 @@ export class DatabaseStorage implements IStorage {
       .limit(10);
 
     return {
-      totalUsers: usersCount.count || 0,
-      totalProperties: propertiesCount.count || 0,
-      totalTransactions: transactionMetrics[0]?.totalTransactions || 0,
-      totalRevenueCents: transactionMetrics[0]?.totalRevenue || 0,
-      activeServiceProviders: providersCount.count || 0,
+      totalUsers: Number(usersCount.count) || 0,
+      totalProperties: Number(propertiesCount.count) || 0,
+      totalTransactions: Number(transactionMetrics[0]?.totalTransactions) || 0,
+      totalRevenueCents: Number(transactionMetrics[0]?.totalRevenue) || 0,
+      activeServiceProviders: Number(providersCount.count) || 0,
       recentTransactions: recentTransactions || [],
       userGrowthData: [], // TODO: Implement time series data
       revenueGrowthData: [], // TODO: Implement time series data
@@ -1340,10 +1340,10 @@ export class DatabaseStorage implements IStorage {
       ))
       .groupBy(operatingCosts.category);
 
-    const totalRevenueCents = revenueData.reduce((sum, item) => sum + (item.total || 0), 0);
-    const totalExpensesCents = expensesData.reduce((sum, item) => sum + (item.total || 0), 0) +
-                               operatingCostsData.reduce((sum, item) => sum + (item.total || 0), 0);
-    const platformFeesCents = revenueData.reduce((sum, item) => sum + (item.totalFees || 0), 0);
+    const totalRevenueCents = revenueData.reduce((sum, item) => sum + (Number(item.total) || 0), 0);
+    const totalExpensesCents = expensesData.reduce((sum, item) => sum + (Number(item.total) || 0), 0) +
+                               operatingCostsData.reduce((sum, item) => sum + (Number(item.total) || 0), 0);
+    const platformFeesCents = revenueData.reduce((sum, item) => sum + (Number(item.totalFees) || 0), 0);
     const netProfitCents = totalRevenueCents - totalExpensesCents;
 
     return {
@@ -1400,14 +1400,14 @@ export class DatabaseStorage implements IStorage {
     const metrics = propertyMetrics[0] || { totalProperties: 0, totalViews: 0, totalLikes: 0 };
 
     return {
-      totalProperties: metrics.totalProperties,
-      totalViews: metrics.totalViews,
-      totalLikes: metrics.totalLikes,
-      totalOffers: offersCount?.count || 0,
+      totalProperties: Number(metrics.totalProperties) || 0,
+      totalViews: Number(metrics.totalViews) || 0,
+      totalLikes: Number(metrics.totalLikes) || 0,
+      totalOffers: Number(offersCount?.count) || 0,
       totalSold: 0, // TODO: Implement sold properties tracking
       conversionRates: [
-        { stage: 'Views to Likes', rate: metrics.totalViews > 0 ? (metrics.totalLikes / metrics.totalViews * 100).toFixed(2) : '0' },
-        { stage: 'Likes to Offers', rate: metrics.totalLikes > 0 ? ((offersCount?.count || 0) / metrics.totalLikes * 100).toFixed(2) : '0' },
+        { stage: 'Views to Likes', rate: Number(metrics.totalViews) > 0 ? (Number(metrics.totalLikes) / Number(metrics.totalViews) * 100).toFixed(2) : '0' },
+        { stage: 'Likes to Offers', rate: Number(metrics.totalLikes) > 0 ? ((Number(offersCount?.count) || 0) / Number(metrics.totalLikes) * 100).toFixed(2) : '0' },
       ],
       funnelBySuburb: suburbMetrics,
       averagePriceByStage: [], // TODO: Implement price analysis by stage
@@ -1443,9 +1443,9 @@ export class DatabaseStorage implements IStorage {
       .where(eq(serviceProviders.status, 'approved'))
       .groupBy(serviceProviders.category);
 
-    const totalProviders = providerStats.reduce((sum, item) => sum + item.count, 0);
-    const activeProviders = providerStats.find(p => p.status === 'approved')?.count || 0;
-    const pendingApplications = providerStats.find(p => p.status === 'pending')?.count || 0;
+    const totalProviders = providerStats.reduce((sum, item) => sum + (Number(item.count) || 0), 0);
+    const activeProviders = Number(providerStats.find(p => p.status === 'approved')?.count) || 0;
+    const pendingApplications = Number(providerStats.find(p => p.status === 'pending')?.count) || 0;
 
     return {
       totalProviders,
@@ -1482,9 +1482,9 @@ export class DatabaseStorage implements IStorage {
       ));
 
     return {
-      totalUsers: totalUsers.count || 0,
+      totalUsers: Number(totalUsers.count) || 0,
       activeUsers: 0, // TODO: Implement based on engagement events
-      newSignups: newSignups[0]?.count || 0,
+      newSignups: Number(newSignups[0]?.count) || 0,
       retentionRate: 0, // TODO: Implement retention calculation
       averageSessionsPerUser: 0, // TODO: Implement session tracking
       engagementByEventType: [], // TODO: Implement based on engagement events
@@ -1537,11 +1537,11 @@ export class DatabaseStorage implements IStorage {
       .limit(limit)
       .offset(offset);
 
-    const totalPages = Math.ceil((totalCount.count || 0) / limit);
+    const totalPages = Math.ceil((Number(totalCount.count) || 0) / limit);
 
     return {
       transactions: transactionsList,
-      totalCount: totalCount.count || 0,
+      totalCount: Number(totalCount.count) || 0,
       totalPages,
       currentPage: page,
     };
@@ -1759,7 +1759,7 @@ export class DatabaseStorage implements IStorage {
   async createOfferCondition(condition: InsertOfferCondition): Promise<OfferCondition> {
     const [created] = await db
       .insert(offerConditions)
-      .values(condition)
+      .values(condition as any)
       .returning();
     return created;
   }
@@ -1784,7 +1784,7 @@ export class DatabaseStorage implements IStorage {
   async updateOfferCondition(id: string, data: Partial<InsertOfferCondition>): Promise<OfferCondition> {
     const [updated] = await db
       .update(offerConditions)
-      .set({ ...data, updatedAt: new Date() })
+      .set({ ...data, updatedAt: new Date() } as any)
       .where(eq(offerConditions.id, id))
       .returning();
     return updated;
@@ -1999,11 +1999,12 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getPartnerOrders(partnerId: string, status?: string): Promise<any[]> {
-    let query = db.select().from(serviceOrders).where(eq(serviceOrders.partnerId, partnerId));
-    if (status) {
-      query = query.where(and(eq(serviceOrders.partnerId, partnerId), eq(serviceOrders.status, status))) as any;
-    }
-    return await query.orderBy(sql`${serviceOrders.createdAt} DESC`);
+    const whereClause = status
+      ? and(eq(serviceOrders.partnerId, partnerId), eq(serviceOrders.status, status))
+      : eq(serviceOrders.partnerId, partnerId);
+    return await db.select().from(serviceOrders)
+      .where(whereClause)
+      .orderBy(sql`${serviceOrders.createdAt} DESC`);
   }
 
   async acceptServiceOrder(orderId: string, partnerUserId: string): Promise<any> {
@@ -2255,6 +2256,106 @@ export class DatabaseStorage implements IStorage {
         eq(serviceOrders.payoutStatus, 'unpaid')
       ))
       .orderBy(sql`${serviceOrders.completedAt} DESC`);
+  }
+
+  // ============================================================================
+  // PROPERTY REPORTS STUB METHODS
+  // ============================================================================
+
+  async createPropertyReport(report: InsertPropertyReport): Promise<PropertyReport> {
+    throw new Error('Not implemented');
+  }
+
+  async getPropertyReport(id: string): Promise<PropertyReport | undefined> {
+    throw new Error('Not implemented');
+  }
+
+  async getReportsByOrder(orderId: string): Promise<PropertyReport[]> {
+    throw new Error('Not implemented');
+  }
+
+  async getReportsByUser(userId: string): Promise<PropertyReport[]> {
+    throw new Error('Not implemented');
+  }
+
+  async getReportsByProperty(propertyId: string): Promise<PropertyReport[]> {
+    throw new Error('Not implemented');
+  }
+
+  async updateReportAccess(id: string): Promise<void> {
+    throw new Error('Not implemented');
+  }
+
+  async getAllReportPackages(): Promise<ReportPackage[]> {
+    throw new Error('Not implemented');
+  }
+
+  async getActiveReportPackages(): Promise<ReportPackage[]> {
+    throw new Error('Not implemented');
+  }
+
+  async getReportPackage(id: string): Promise<ReportPackage | undefined> {
+    throw new Error('Not implemented');
+  }
+
+  // ============================================================================
+  // ERROR MONITORING STUB METHODS
+  // ============================================================================
+
+  async createSentryError(error: any): Promise<any> {
+    throw new Error('Not implemented');
+  }
+
+  async getSentryError(id: string): Promise<any | undefined> {
+    throw new Error('Not implemented');
+  }
+
+  async getSentryErrorByEventId(eventId: string): Promise<any | undefined> {
+    throw new Error('Not implemented');
+  }
+
+  async getAllSentryErrors(limit?: number): Promise<any[]> {
+    throw new Error('Not implemented');
+  }
+
+  async getUnanalyzedErrors(): Promise<any[]> {
+    throw new Error('Not implemented');
+  }
+
+  async updateSentryError(id: string, data: any): Promise<void> {
+    throw new Error('Not implemented');
+  }
+
+  async markErrorAsAnalyzed(id: string): Promise<void> {
+    throw new Error('Not implemented');
+  }
+
+  async createErrorAnalysis(analysis: any): Promise<any> {
+    throw new Error('Not implemented');
+  }
+
+  async getErrorAnalysis(errorId: string): Promise<any | undefined> {
+    throw new Error('Not implemented');
+  }
+
+  async updateErrorAnalysis(id: string, data: any): Promise<void> {
+    throw new Error('Not implemented');
+  }
+
+  async createErrorFix(fix: any): Promise<any> {
+    throw new Error('Not implemented');
+  }
+
+  async getErrorFixes(errorId: string): Promise<any[]> {
+    throw new Error('Not implemented');
+  }
+
+  async updateErrorFixStatus(id: string, status: string): Promise<void> {
+    throw new Error('Not implemented');
+  }
+
+  async getPendingFixes(): Promise<any[]> {
+    throw new Error('Not implemented');
   }
 
   async getPartnerEarnings(partnerId: string): Promise<{ total: number; unpaid: number; paid: number }> {

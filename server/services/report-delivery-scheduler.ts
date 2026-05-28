@@ -191,11 +191,11 @@ class ReportDeliveryScheduler {
       
       linzData = {
         titleNumber: verificationResult.titleNumber || 'Not available',
-        landDistrict: verificationResult.landDistrict || 'Unknown',
+        landDistrict: (verificationResult as any).landDistrict || 'Unknown',
         legalDescription: verificationResult.legalDescription || 'Not available',
         titleType: verificationResult.titleType || 'Unknown',
         titleStatus: verificationResult.status || 'Unknown',
-        issueDate: verificationResult.issueDate || null,
+        issueDate: (verificationResult as any).issueDate || null,
         area: null,
       };
     }

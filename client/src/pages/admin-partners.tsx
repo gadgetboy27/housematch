@@ -21,17 +21,17 @@ export default function AdminPartners() {
   const [payoutData, setPayoutData] = useState({ amount: "", notes: "" });
 
   // Fetch pending partners
-  const { data: pendingPartners = [], isLoading: pendingLoading } = useQuery({
+  const { data: pendingPartners = [], isLoading: pendingLoading } = useQuery<any[]>({
     queryKey: ["/api/partners/pending"],
   });
 
   // Fetch all partners
-  const { data: allPartners = [], isLoading: partnersLoading } = useQuery({
+  const { data: allPartners = [], isLoading: partnersLoading } = useQuery<any[]>({
     queryKey: ["/api/partners"],
   });
 
   // Fetch unpaid orders
-  const { data: unpaidOrders = [], isLoading: unpaidLoading } = useQuery({
+  const { data: unpaidOrders = [], isLoading: unpaidLoading } = useQuery<any[]>({
     queryKey: ["/api/payouts/unpaid"],
   });
 

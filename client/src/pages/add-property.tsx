@@ -21,6 +21,8 @@ import { AuthModal } from "@/components/auth-modal";
 import { PricingSelection } from "@/components/pricing-selection";
 import { EarlyBirdBanner } from "@/components/early-bird-banner";
 import type { UploadResult } from "@uppy/core";
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type AnyUploadResult = UploadResult<any, any>;
 import { z } from "zod";
 import { getRegionOptions } from "@shared/nzRegions";
 import { Sparkles, Home, DollarSign, MapPin, Building, Upload, CheckCircle2, Loader2 } from "lucide-react";
@@ -167,6 +169,7 @@ export default function AddProperty() {
       imageUrl: z.string().min(1, "At least one image is required"),
       videoUrl: z.string().optional(),
       audioUrl: z.string().optional(),
+      additionalImages: z.array(z.string()).optional(),
       description: z.string().optional(),
       isLinzValidated: z.boolean().default(false),
       selfDeclaration: z.boolean().refine((val) => val === true, {
@@ -199,6 +202,7 @@ export default function AddProperty() {
       imageUrl: "",
       videoUrl: "",
       audioUrl: "",
+      additionalImages: [] as string[],
       description: "",
       isLinzValidated: false,
       selfDeclaration: false,
@@ -509,7 +513,7 @@ export default function AddProperty() {
   };
 
   // Handle image uploads
-  const handleImagesUploaded = async (results: UploadResult[]) => {
+  const handleImagesUploaded = async (results: AnyUploadResult[]) => {
     console.log('📸 Images uploaded:', results);
     
     if (results.length > 0) {
@@ -531,9 +535,9 @@ export default function AddProperty() {
     }
   };
 
-  const handleVideoUploaded = async (results: UploadResult[]) => {
+  const handleVideoUploaded = async (results: AnyUploadResult[]) => {
     if (results.length > 0 && results[0].successful && results[0].successful.length > 0) {
-      const videoUrl = results[0].successful[0].uploadURL;
+      const videoUrl = results[0].successful[0].uploadURL || '';
       setUploadedVideo(videoUrl);
       form.setValue('videoUrl', videoUrl);
       
@@ -544,9 +548,9 @@ export default function AddProperty() {
     }
   };
 
-  const handleAudioUploaded = async (results: UploadResult[]) => {
+  const handleAudioUploaded = async (results: AnyUploadResult[]) => {
     if (results.length > 0 && results[0].successful && results[0].successful.length > 0) {
-      const audioUrl = results[0].successful[0].uploadURL;
+      const audioUrl = results[0].successful[0].uploadURL || '';
       setUploadedAudio(audioUrl);
       form.setValue('audioUrl', audioUrl);
       
@@ -1497,9 +1501,8 @@ export default function AddProperty() {
       {/* Pricing Selection Modal */}
       {showPricingSelection && (
         <PricingSelection
-          isOpen={showPricingSelection}
           onClose={() => setShowPricingSelection(false)}
-          onSelectPlan={(plan) => {
+          onPlanSelect={(plan) => {
             setSelectedPricingPlan(plan);
             setIsPricingComplete(true);
             setShowPricingSelection(false);
@@ -1518,9 +1521,8 @@ export default function AddProperty() {
               </DialogDescription>
             </DialogHeader>
             <PricingSelection
-              isOpen={true}
               onClose={() => setShowPricingModal(false)}
-              onSelectPlan={handleSelectPlan}
+              onPlanSelect={handleSelectPlan}
               propertyId={createdPropertyId || undefined}
               userId={user?.id}
             />

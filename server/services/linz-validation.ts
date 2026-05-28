@@ -51,7 +51,7 @@ export class LINZValidationService {
           
           this.lastRequestTime = Date.now();
           const response = await fetch(url, options);
-          resolve(response);
+          resolve(response as unknown as Response);
         } catch (error) {
           reject(error); // Properly propagate errors to caller
         }

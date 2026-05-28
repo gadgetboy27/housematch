@@ -23,35 +23,33 @@ export default function AdminDashboard() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
 
-  const { data: user } = useQuery({
+  const { data: user } = useQuery<any>({
     queryKey: ["/api/auth/user"],
   });
 
-  const { data: pendingPartners = [] } = useQuery({
+  const { data: pendingPartners = [] } = useQuery<any[]>({
     queryKey: ["/api/partners/pending"],
   });
 
-  const { data: allPartners = [] } = useQuery({
+  const { data: allPartners = [] } = useQuery<any[]>({
     queryKey: ["/api/partners"],
   });
 
-  const { data: unpaidOrders = [] } = useQuery({
+  const { data: unpaidOrders = [] } = useQuery<any[]>({
     queryKey: ["/api/payouts/unpaid"],
   });
 
-  const { data: errors = [] } = useQuery({
+  const { data: errors = [] } = useQuery<any[]>({
     queryKey: ["/api/admin/errors"],
   });
 
-  const { data: earlyBird } = useQuery({
+  const { data: earlyBird } = useQuery<any>({
     queryKey: ["/api/admin/early-bird"],
   });
 
   const logoutMutation = useMutation({
     mutationFn: async () => {
-      return await apiRequest("/api/auth/logout", {
-        method: "POST",
-      });
+      return await apiRequest("POST", "/api/auth/logout");
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });

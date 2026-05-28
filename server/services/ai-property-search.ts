@@ -512,7 +512,7 @@ export async function performAIPropertySearch(
       try {
         const adaptiveReasons = await generateAdaptiveMatchReasons(
           property,
-          criteria,
+          criteria as any,
           property.matchScore,
           userPersona
         );

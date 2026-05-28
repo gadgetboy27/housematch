@@ -20,7 +20,7 @@ export default function PartnerOrders() {
   });
 
   // Fetch partner auth status to check verification
-  const { data: authStatus } = useQuery({
+  const { data: authStatus } = useQuery<any>({
     queryKey: ["/partner/auth/status"],
   });
 
@@ -28,7 +28,7 @@ export default function PartnerOrders() {
   const isVerified = partner?.verificationStatus === 'verified';
 
   // Fetch all orders
-  const { data: allOrders = [], isLoading } = useQuery({
+  const { data: allOrders = [], isLoading } = useQuery<any[]>({
     queryKey: ["/partner/orders"],
   });
 
@@ -39,7 +39,7 @@ export default function PartnerOrders() {
 
   // Accept order mutation
   const acceptOrderMutation = useMutation({
-    mutationFn: (orderId: string) => apiRequest(`/partner/orders/${orderId}/accept`, { method: "POST" }),
+    mutationFn: (orderId: string) => apiRequest("POST", `/partner/orders/${orderId}/accept`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/partner/orders"] });
       queryClient.invalidateQueries({ queryKey: ["/partner/analytics"] });
@@ -60,7 +60,7 @@ export default function PartnerOrders() {
   // Update order status mutation
   const updateOrderMutation = useMutation({
     mutationFn: ({ orderId, data }: { orderId: string; data: any }) =>
-      apiRequest(`/partner/orders/${orderId}/update`, { method: "POST", data }),
+      apiRequest("POST", `/partner/orders/${orderId}/update`, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/partner/orders"] });
       queryClient.invalidateQueries({ queryKey: ["/partner/analytics"] });

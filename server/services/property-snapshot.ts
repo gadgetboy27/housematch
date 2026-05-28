@@ -65,9 +65,9 @@ class PropertySnapshotService {
           landArea: linzData.legalDescription?.includes('m²') 
             ? linzData.legalDescription.match(/(\d+(?:\.\d+)?)\s*m²/)?.[0]
             : undefined,
-          issueDate: linzData.issueDate,
+          issueDate: (linzData as any).issueDate,
           legalDescription: linzData.legalDescription,
-          landDistrict: linzData.landDistrict,
+          landDistrict: (linzData as any).landDistrict,
           coordinates: linzData.coordinates,
         },
         isVerified: true,

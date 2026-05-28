@@ -196,6 +196,22 @@ const lawyerDetailsSchema = z.object({
   }
 });
 
+const buyerDetailsSchema = z.object({
+  hasSolicitor: z.boolean().default(false),
+  solicitorName: z.string().optional(),
+  solicitorFirm: z.string().optional(),
+  solicitorEmail: z.string().email().optional().or(z.literal('')),
+  solicitorPhone: z.string().optional(),
+  solicitorAddress: z.string().optional(),
+  buyerOccupation: z.string().optional(),
+});
+
+const conditionSchema = z.object({
+  conditionType: z.string().min(1, 'Condition type is required'),
+  description: z.string().min(1, 'Description is required'),
+  daysToSatisfy: z.coerce.number().min(1),
+});
+
 interface OfferWizardProps {
   propertyId: string;
   onClose: () => void;
@@ -215,17 +231,17 @@ export function OfferWizard({ propertyId, onClose }: OfferWizardProps) {
   }, []);
 
   // Fetch property details
-  const { data: property } = useQuery({
+  const { data: property } = useQuery<any>({
     queryKey: [`/api/properties/${propertyId}`],
   });
 
   // Fetch standard chattels
-  const { data: standardChattels = [] } = useQuery({
+  const { data: standardChattels = [] } = useQuery<any[]>({
     queryKey: ['/api/offer-wizard/standard-chattels'],
   });
 
   // Check for existing draft offer for this property
-  const { data: draftOffer, isLoading: draftLoading } = useQuery({
+  const { data: draftOffer, isLoading: draftLoading } = useQuery<any>({
     queryKey: [`/api/offer-wizard/properties/${propertyId}/draft-offer`],
   });
 
@@ -242,25 +258,25 @@ export function OfferWizard({ propertyId, onClose }: OfferWizardProps) {
   }, [draftOffer, offerId, toast]);
 
   // Fetch offer data if resuming
-  const { data: offer } = useQuery({
+  const { data: offer } = useQuery<any>({
     queryKey: [`/api/offer-wizard/offers/${offerId}`],
     enabled: !!offerId,
   });
 
   // Fetch buyer details
-  const { data: buyerDetails } = useQuery({
+  const { data: buyerDetails } = useQuery<any>({
     queryKey: [`/api/offer-wizard/offers/${offerId}/buyer-details`],
     enabled: !!offerId,
   });
 
   // Fetch conditions
-  const { data: conditions = [] } = useQuery({
+  const { data: conditions = [] } = useQuery<any[]>({
     queryKey: [`/api/offer-wizard/offers/${offerId}/conditions`],
     enabled: !!offerId,
   });
 
   // Fetch chattels
-  const { data: chattels = [] } = useQuery({
+  const { data: chattels = [] } = useQuery<any[]>({
     queryKey: [`/api/offer-wizard/offers/${offerId}/chattels`],
     enabled: !!offerId,
   });

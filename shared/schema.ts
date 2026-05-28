@@ -1707,6 +1707,7 @@ export const insertEarlyBirdUsageSchema = createInsertSchema(earlyBirdUsage).omi
 export type InsertEarlyBirdPromotion = z.infer<typeof insertEarlyBirdPromotionSchema>;
 export type EarlyBirdPromotion = typeof earlyBirdPromotion.$inferSelect;
 export type InsertEarlyBirdUsage = z.infer<typeof insertEarlyBirdUsageSchema>;
+export type EarlyBirdUsage = typeof earlyBirdUsage.$inferSelect;
 
 // ===== AI SCOUT / LIFESTYLE SWAP TABLES =====
 

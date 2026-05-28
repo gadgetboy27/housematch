@@ -38,12 +38,12 @@ export default function Home() {
   });
 
   // Fetch specific property if coming from search results
-  const { data: propertyFromUrl, isLoading: isPropertyLoading } = useQuery({
+  const { data: propertyFromUrl, isLoading: isPropertyLoading } = useQuery<any>({
     queryKey: ["/api/properties", propertyIdFromUrl],
     enabled: !!propertyIdFromUrl,
   });
 
-  const { data: properties = [], isLoading } = useQuery({
+  const { data: properties = [], isLoading } = useQuery<any[]>({
     queryKey: ["/api/properties", selectedPropertyType],
     queryFn: async () => {
       const url = selectedPropertyType === "all" 
@@ -164,7 +164,7 @@ export default function Home() {
 
       <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-white/95 via-white/60 via-white/30 to-transparent pointer-events-none"></div>
 
-      {showAIBrain && (<AIBrainPopup onClick={handleAIBrainClick} /> as unknown as JSX.Element)}
+      {showAIBrain && <AIBrainPopup onClick={handleAIBrainClick} />}
       <BottomNavigation />
 
       {/* AI Search Drawer */}

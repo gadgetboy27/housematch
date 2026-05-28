@@ -32,7 +32,7 @@ export default function PurchaseModal({
   const [selectedPropertyId, setSelectedPropertyId] = useState<string>("");
   const [paymentMethod, setPaymentMethod] = useState<string>("card");
 
-  const { data: properties = [] } = useQuery({
+  const { data: properties = [] } = useQuery<any[]>({
     queryKey: ["/api/properties"],
     enabled: isOpen,
   });

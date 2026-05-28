@@ -5,7 +5,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Building2, Mail, Phone, MapPin, BadgeCheck, Clock, XCircle, DollarSign, AlertCircle } from "lucide-react";
 
 export default function PartnerProfile() {
-  const { data: authStatus } = useQuery({
+  const { data: authStatus } = useQuery<any>({
     queryKey: ["/partner/auth/status"],
   });
 

@@ -1,7 +1,7 @@
 import { Property } from "@shared/schema";
 
 // Mock property data with real NZ addresses for development/demo purposes
-export const mockProperties: Omit<Property, 'id' | 'createdAt' | 'updatedAt'>[] = [
+export const mockProperties: Partial<Omit<Property, 'id' | 'createdAt' | 'updatedAt'>>[] = [
   {
     userId: "demo-user",
     title: "Modern Family Home",

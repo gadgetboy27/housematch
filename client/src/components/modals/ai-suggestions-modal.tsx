@@ -18,19 +18,19 @@ export default function AISuggestionsModal({ isOpen, onClose }: AISuggestionsMod
   const { toast } = useToast();
 
   // Get authenticated user
-  const { data: user } = useQuery({
+  const { data: user } = useQuery<{ id: string } | null>({
     queryKey: ["/api/auth/user"],
     retry: false,
   });
 
   const userId = user?.id;
 
-  const { data: marketInsights = [] } = useQuery({
+  const { data: marketInsights } = useQuery<any>({
     queryKey: ["/api/ai/market-insights"],
     enabled: isOpen,
   });
 
-  const { data: recommendations = [], refetch: refetchRecommendations } = useQuery({
+  const { data: recommendations = [], refetch: refetchRecommendations } = useQuery<any[]>({
     queryKey: ["/api/ai/recommendations"],
     enabled: isOpen && !!insights,
   });

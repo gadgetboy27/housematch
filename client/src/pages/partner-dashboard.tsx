@@ -8,26 +8,26 @@ import { Link } from "wouter";
 
 export default function PartnerDashboard() {
   // Fetch auth status to get partner data
-  const { data: authStatus } = useQuery({
+  const { data: authStatus } = useQuery<any>({
     queryKey: ["/partner/auth/status"],
   });
 
   const partnerUser = authStatus?.user;
-  
+
   // Fetch full partner details to get accountType
-  const { data: partnerData } = useQuery({
+  const { data: partnerData } = useQuery<any>({
     queryKey: ["/api/partners", partnerUser?.partnerId],
     enabled: !!partnerUser?.partnerId,
   });
 
   // Fetch partner analytics
-  const { data: analytics, isLoading: analyticsLoading } = useQuery({
+  const { data: analytics, isLoading: analyticsLoading } = useQuery<any>({
     queryKey: ["/partner/analytics"],
     enabled: !!partnerUser?.partnerId,
   });
 
   // Fetch recent orders (only for service partners)
-  const { data: orders, isLoading: ordersLoading } = useQuery({
+  const { data: orders, isLoading: ordersLoading } = useQuery<any[]>({
     queryKey: ["/partner/orders"],
     enabled: !!partnerUser?.partnerId && partnerData?.accountType !== 'preferred_client',
   });

@@ -27,7 +27,7 @@ function initPixel(pixelId: string) {
   script.src = 'https://connect.facebook.net/en_US/fbevents.js';
   document.head.appendChild(script);
 
-  window.fbq('init', pixelId);
+  fbq('init', pixelId);
 }
 
 export function FacebookPixel() {

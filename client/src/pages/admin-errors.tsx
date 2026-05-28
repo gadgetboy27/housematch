@@ -9,13 +9,13 @@ export default function AdminErrors() {
   const [selectedError, setSelectedError] = useState<string | null>(null);
 
   // Fetch all errors
-  const { data: errors, isLoading } = useQuery({
+  const { data: errors, isLoading } = useQuery<any[]>({
     queryKey: ['/api/admin/errors'],
     refetchInterval: 30000, // Refresh every 30 seconds
   });
 
   // Fetch selected error details
-  const { data: errorDetails } = useQuery({
+  const { data: errorDetails } = useQuery<any>({
     queryKey: ['/api/admin/errors', selectedError],
     enabled: !!selectedError,
   });

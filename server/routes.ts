@@ -668,10 +668,10 @@ Sitemap: ${baseUrl}/sitemap.xml
             );
             
             // Convert timestamp strings to Date objects
-            if (cleanProperty.createdAt) cleanProperty.createdAt = new Date(cleanProperty.createdAt);
-            if (cleanProperty.updatedAt) cleanProperty.updatedAt = new Date(cleanProperty.updatedAt);
-            if (cleanProperty.listedAt) cleanProperty.listedAt = new Date(cleanProperty.listedAt);
-            await storage.createProperty(cleanProperty);
+            if (cleanProperty.createdAt) cleanProperty.createdAt = new Date(cleanProperty.createdAt as any);
+            if (cleanProperty.updatedAt) cleanProperty.updatedAt = new Date(cleanProperty.updatedAt as any);
+            if (cleanProperty.listedAt) cleanProperty.listedAt = new Date(cleanProperty.listedAt as any);
+            await storage.createProperty(cleanProperty as any);
             results.properties++;
           } catch (error) {
             console.warn(`Skipping property ${property.id}:`, error);
@@ -701,10 +701,10 @@ Sitemap: ${baseUrl}/sitemap.xml
             );
             
             // Convert timestamp strings to Date objects
-            if (cleanOffer.createdAt) cleanOffer.createdAt = new Date(cleanOffer.createdAt);
-            if (cleanOffer.updatedAt) cleanOffer.updatedAt = new Date(cleanOffer.updatedAt);
-            if (cleanOffer.submittedAt) cleanOffer.submittedAt = new Date(cleanOffer.submittedAt);
-            await db.insert(offers).values(cleanOffer).onConflictDoNothing();
+            if (cleanOffer.createdAt) cleanOffer.createdAt = new Date(cleanOffer.createdAt as any);
+            if (cleanOffer.updatedAt) cleanOffer.updatedAt = new Date(cleanOffer.updatedAt as any);
+            if (cleanOffer.submittedAt) cleanOffer.submittedAt = new Date(cleanOffer.submittedAt as any);
+            await db.insert(offers).values(cleanOffer as any).onConflictDoNothing();
             results.offers++;
           } catch (error) {
             console.warn(`Skipping offer ${offer.id}:`, error);
@@ -821,7 +821,7 @@ Sitemap: ${baseUrl}/sitemap.xml
         default:
           // Newest first (already sorted by createdAt DESC in most queries)
           properties = properties.sort((a, b) => {
-            return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+            return new Date(b.createdAt as any).getTime() - new Date(a.createdAt as any).getTime();
           });
           break;
       }
@@ -1224,7 +1224,7 @@ Sitemap: ${baseUrl}/sitemap.xml
       }
       
       // Get the properties for these swipes
-      const propertyIds = likedSwipes.map(swipe => swipe.propertyId).filter(Boolean);
+      const propertyIds = likedSwipes.map(swipe => swipe.propertyId).filter(Boolean) as string[];
       console.log("📋 3. Property IDs:", propertyIds.length, "IDs");
       
       if (propertyIds.length === 0) {
@@ -1367,7 +1367,7 @@ Sitemap: ${baseUrl}/sitemap.xml
       if (swipeCount < 5) {
         // New users: show popular properties
         method = 'popular';
-        recommendations = getPopularProperties(availableProperties, 5);
+        recommendations = getPopularProperties(availableProperties as any, 5);
       } else if (swipeCount < 20) {
         // Learning phase: use simple algorithm
         method = 'simple';
@@ -1384,9 +1384,9 @@ Sitemap: ${baseUrl}/sitemap.xml
           ),
         });
         
-        const simplePreferences = analyzeUserPreferencesSimple(likedProperties, dislikedProperties);
+        const simplePreferences = analyzeUserPreferencesSimple(likedProperties as any, dislikedProperties as any);
         const seenPropertyIds = userSwipes.map(s => s.propertyId!);
-        recommendations = generateSimpleRecommendations(simplePreferences, availableProperties, seenPropertyIds);
+        recommendations = generateSimpleRecommendations(simplePreferences, availableProperties as any, seenPropertyIds);
       } else {
         // Established user: hybrid AI + caching
         const aiCheck = await shouldUseAI('recommendations', swipeCount);
@@ -1406,9 +1406,9 @@ Sitemap: ${baseUrl}/sitemap.xml
                 userSwipes.filter(s => s.action === 'like').map(s => s.propertyId!)
               ),
             });
-            const simplePrefs = analyzeUserPreferencesSimple(likedProps, []);
+            const simplePrefs = analyzeUserPreferencesSimple(likedProps as any, []);
             const seenIds = userSwipes.map(s => s.propertyId!);
-            recommendations = generateSimpleRecommendations(simplePrefs, availableProperties, seenIds);
+            recommendations = generateSimpleRecommendations(simplePrefs, availableProperties as any, seenIds);
           } else {
             recommendations = await smartAICall(
               'recommendations',
@@ -1426,9 +1426,9 @@ Sitemap: ${baseUrl}/sitemap.xml
               userSwipes.filter(s => s.action === 'like').map(s => s.propertyId!)
             ),
           });
-          const simplePrefs = analyzeUserPreferencesSimple(likedProps, []);
+          const simplePrefs = analyzeUserPreferencesSimple(likedProps as any, []);
           const seenIds = userSwipes.map(s => s.propertyId!);
-          recommendations = generateSimpleRecommendations(simplePrefs, availableProperties, seenIds);
+          recommendations = generateSimpleRecommendations(simplePrefs, availableProperties as any, seenIds);
         }
       }
 
@@ -1714,7 +1714,7 @@ Sitemap: ${baseUrl}/sitemap.xml
                     verifiedAt: new Date(),
                     stripeSubscriptionId: subscriptionData.id,
                     subscriptionStatus: 'active',
-                    currentPeriodEnd: new Date(subscriptionData.current_period_end * 1000),
+                    currentPeriodEnd: new Date((subscriptionData as any).current_period_end * 1000),
                   })
                   .where(eq(servicePartners.id, partnerId))
                   .returning();
@@ -1767,8 +1767,8 @@ Sitemap: ${baseUrl}/sitemap.xml
                     subscriptionTier: 'premium',
                     subscriptionStatus: 'active',
                     stripeSubscriptionId: subscriptionData.id,
-                    subscriptionStartDate: new Date(subscriptionData.current_period_start * 1000),
-                    subscriptionEndDate: new Date(subscriptionData.current_period_end * 1000),
+                    subscriptionStartDate: new Date((subscriptionData as any).current_period_start * 1000),
+                    subscriptionEndDate: new Date((subscriptionData as any).current_period_end * 1000),
                   })
                   .where(eq(users.id, userId))
                   .returning();
@@ -2115,10 +2115,9 @@ Sitemap: ${baseUrl}/sitemap.xml
       
       res.status(201).json(order);
     } catch (error) {
-      captureError(error, {
-        context: 'Service Order Creation',
+      captureError(error as Error, {
         userId: req.user?.id,
-        body: req.body,
+        additionalData: { context: 'Service Order Creation', body: req.body },
       });
       res.status(400).json({ 
         message: "Invalid service order data", 
@@ -2166,10 +2165,9 @@ Sitemap: ${baseUrl}/sitemap.xml
       
       res.status(201).json(inquiry);
     } catch (error) {
-      captureError(error, {
-        context: 'Service Inquiry Creation',
+      captureError(error as Error, {
         userId: req.user?.id,
-        body: req.body,
+        additionalData: { context: 'Service Inquiry Creation', body: req.body },
       });
       res.status(400).json({ 
         message: "Invalid inquiry data", 
@@ -4081,9 +4079,8 @@ Sitemap: ${baseUrl}/sitemap.xml
             paidAt: new Date(),
             deliveryScheduledFor,
             metadata,
-            amountCents: paymentSession.amountCents,
             stripePaymentIntentId: session.payment_intent as string,
-          }).returning();
+          } as any).returning();
 
           console.log('✅ Purchase order created:', purchaseOrder.id);
 
@@ -4250,7 +4247,7 @@ Sitemap: ${baseUrl}/sitemap.xml
         // Core references
         propertyId,
         buyerId: userId,
-        
+
         // Phase 1: Buyer contact info
         buyerFullName: req.body.buyerFullName || null,
         buyerPhone: req.body.buyerPhone || null,
@@ -4258,31 +4255,31 @@ Sitemap: ${baseUrl}/sitemap.xml
         buyerAddress: req.body.buyerAddress || null,
         buyingEntityType: req.body.buyingEntityType || null,
         trustOrCompanyName: req.body.trustOrCompanyName || null,
-        
+
         // Phase 1: Property confirmation
         propertyAddress: req.body.propertyAddress || null,
         propertyTitleReference: req.body.propertyTitleReference || null,
         propertyLegalDescription: req.body.propertyLegalDescription || null,
         propertyType: propertyType || null,
-        
+
         // Offer amounts (converted to decimals)
-        offerPrice: parseFloat(offerPrice),
-        depositAmount: parseFloat(depositAmount),
-        balancePayable: calculatedBalance, // Backend-calculated for integrity
-        
+        offerPrice: String(parseFloat(offerPrice)),
+        depositAmount: String(parseFloat(depositAmount)),
+        balancePayable: String(calculatedBalance), // Backend-calculated for integrity
+
         // Dates
         ...dateFields,
-        
+
         // Phase 1: Required condition toggles
         financeRequired: req.body.financeRequired || false,
-        financeAmount: req.body.financeAmount ? parseFloat(req.body.financeAmount) : null,
+        financeAmount: req.body.financeAmount ? String(parseFloat(req.body.financeAmount)) : null,
         limRequired: req.body.limRequired || false,
         buildingInspectionRequired: req.body.buildingInspectionRequired || false,
         methTestRequired: req.body.methTestRequired || false,
-        
+
         // Status
         status: 'draft',
-      });
+      } as any);
 
       // Log activity
       await storage.createOfferActivity({
@@ -4416,7 +4413,7 @@ Sitemap: ${baseUrl}/sitemap.xml
       if (updateData.offerPrice || updateData.depositAmount) {
         const finalOfferPrice = updateData.offerPrice ? parseFloat(updateData.offerPrice) : offer.offerPrice;
         const finalDepositAmount = updateData.depositAmount ? parseFloat(updateData.depositAmount) : offer.depositAmount;
-        updateData.balancePayable = finalOfferPrice - finalDepositAmount;
+        updateData.balancePayable = (parseFloat(String(finalOfferPrice)) - parseFloat(String(finalDepositAmount))).toString();
       }
 
       // PHASE 1: Convert all date strings to Date objects
@@ -4687,12 +4684,11 @@ Sitemap: ${baseUrl}/sitemap.xml
       // Update offer with submission, PDF tracking, and email delivery status
       await storage.updatePropertyOffer(req.params.offerId, {
         status: 'pending',
-        submittedAt: new Date(),
         pdfGenerated: true,
         emailSent: emailResult.buyerEmailSent && emailResult.sellerEmailSent,
         emailSentAt: new Date(),
         pdfUrl
-      });
+      } as any);
 
       // Log activity
       await storage.createOfferActivity({
