@@ -1,0 +1,36 @@
+Rendering OfferWizard on Liked page
+OfferWizard.tsx:141 💾 CREATING NEW OFFER with data: {offerPrice: '650000.00', depositAmount: '65000', depositPaymentDate: '2025-11-30', settlementDate: '2025-12-31'}
+queryClient.ts:84  POST https://1c4801d3-b756-4547-addf-b0b2f4dd5ffd-00-2fclfcq5sewjy.kirk.replit.dev/api/offer-wizard/offers 500 (Internal Server Error)
+(anonymous) @ @sentry_react.js?v=214b71d8:10247
+apiRequest @ queryClient.ts:84
+await in apiRequest
+apiRequestJson @ queryClient.ts:101
+mutationFn @ OfferWizard.tsx:142
+fn @ @tanstack_react-query.js?v=214b71d8:1189
+run @ @tanstack_react-query.js?v=214b71d8:494
+start @ @tanstack_react-query.js?v=214b71d8:536
+execute @ @tanstack_react-query.js?v=214b71d8:1225
+await in execute
+mutate @ @tanstack_react-query.js?v=214b71d8:2630
+(anonymous) @ @tanstack_react-query.js?v=214b71d8:3295
+(anonymous) @ OfferWizard.tsx:459
+(anonymous) @ chunk-4BFJKWC4.js?v=214b71d8:1465
+await in (anonymous)
+callCallback2 @ chunk-RPCDYKBN.js?v=214b71d8:3674
+sentryWrapped @ @sentry_react.js?v=214b71d8:12736
+invokeGuardedCallbackDev @ chunk-RPCDYKBN.js?v=214b71d8:3699
+invokeGuardedCallback @ chunk-RPCDYKBN.js?v=214b71d8:3733
+invokeGuardedCallbackAndCatchFirstError @ chunk-RPCDYKBN.js?v=214b71d8:3736
+executeDispatch @ chunk-RPCDYKBN.js?v=214b71d8:7014
+processDispatchQueueItemsInOrder @ chunk-RPCDYKBN.js?v=214b71d8:7034
+processDispatchQueue @ chunk-RPCDYKBN.js?v=214b71d8:7043
+dispatchEventsForPlugins @ chunk-RPCDYKBN.js?v=214b71d8:7051
+(anonymous) @ chunk-RPCDYKBN.js?v=214b71d8:7174
+batchedUpdates$1 @ chunk-RPCDYKBN.js?v=214b71d8:18913
+batchedUpdates @ chunk-RPCDYKBN.js?v=214b71d8:3579
+dispatchEventForPluginEventSystem @ chunk-RPCDYKBN.js?v=214b71d8:7173
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-RPCDYKBN.js?v=214b71d8:5478
+dispatchEvent @ chunk-RPCDYKBN.js?v=214b71d8:5472
+dispatchDiscreteEvent @ chunk-RPCDYKBN.js?v=214b71d8:5449
+sentryWrapped @ @sentry_react.js?v=214b71d8:12736Understand this error
+OfferWizard.tsx:157 ❌ OFFER ERROR: Error: 500: Error creating offer: insert or update on table "property_offers" violates foreign key constraint "property_offers_property_id_properties_id_fk"

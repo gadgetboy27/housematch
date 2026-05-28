@@ -1,0 +1,114 @@
+📦 CODE PLACEMENT BREAKDOWN
+
+1. HOUSEMATCH WEBSITE (Frontend/Client)
+Location: Your React/Next.js frontend code
+What Goes Here:
+✅ Facebook Pixel (Client-Side Tracking)
+File: public/facebook-pixel.js
+Where to add it:
+html<!-- In your main layout/index.html, before </head> -->
+<script src="/facebook-pixel.js"></script>
+What it does:
+
+Tracks pageviews automatically
+Tracks user actions (clicks, views, etc.)
+Works in the browser
+
+Integration points in your React components:
+javascript// Example: Property Detail Page Component
+// src/pages/PropertyDetail.jsx
+
+useEffect(() => {
+  // Track property view when page loads
+  window.HouseMatchTracking.trackPropertyView({
+    id: property.id,
+    address: property.address,
+    suburb: property.suburb,
+    price: property.price,
+    bedrooms: property.bedrooms,
+    type: property.type
+  });
+}, [property]);
+
+// Save button handler
+const handleSave = () => {
+  window.HouseMatchTracking.trackPropertySave(property);
+  // Your save logic
+  saveToFavorites(property);
+};
+
+// Contact agent button
+const handleContact = () => {
+  window.HouseMatchTracking.trackLead(property, 15);
+  // Your contact logic
+  showContactForm();
+};
+Files you need from the package:
+
+✅ public/facebook-pixel.js → Copy to your website's public folder
+✅ templates/pixel-integration-guide.html → Reference for examples
+
+
+2. HOUSEMATCH BACKEND (Server/API)
+Location: Your Node.js/Express API server
+What Goes Here:
+✅ Conversion API (Server-Side Tracking)
+File: src/conversion-api.js
+Where to add it:
+bash# Copy to your backend
+cp src/conversion-api.js /path/to/housematch-backend/utils/
+Integration in your API routes:
+javascript// Example: backend/routes/auth.js
+
+const FacebookConversionAPI = require('../utils/conversion-api');
+
+router.post('/signup', async (req, res) => {
+  try {
+    const { email, phone, firstName, lastName } = req.body;
+    
+    // 1. Your existing signup logic
+    const user = await User.create({ email, phone, firstName, lastName });
+    
+    // 2. NEW: Track to Facebook Conversion API
+    await FacebookConversionAPI.trackSignup(
+      { email, phone, firstName, lastName, city: 'Auckland', country: 'nz' },
+      req
+    );
+    
+    res.json({ success: true, user });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Example: backend/routes/properties.js
+
+router.post('/properties/:id/contact', async (req, res) => {
+  const property = await Property.findById(req.params.id);
+  const user = req.user; // From auth middleware
+  
+  // 1. Your existing logic
+  await Inquiry.create({
+    userId: user.id,
+    propertyId: property.id,
+    message: req.body.message
+  });
+  
+  // 2. NEW: Track to Facebook
+  await FacebookConversionAPI.trackLead(
+    { email: user.email, phone: user.phone },
+    { id: property.id, price: property.price, suburb: property.suburb },
+    req,
+    15
+  );
+  
+  res.json({ success: true });
+});
+Files you need:
+
+✅ src/conversion-api.js → Copy to your backend
+✅ templates/api-routes-example.js → Reference for examples
+
+Dependencies to install in your backend:
+bashcd /path/to/housematch-backend
+npm install axios dotenv

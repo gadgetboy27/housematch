@@ -1,4 +1,4 @@
-import { type User, type InsertUser, type Property, type InsertProperty, type UserSwipe, type InsertUserSwipe, type UserPreferences, type InsertUserPreferences, type PurchaseOrder, type InsertPurchaseOrder, type ServiceProvider, type InsertServiceProvider, type PricingPlan, type InsertPricingPlan, type Offer, type InsertOffer, type DraftDocument, type InsertDraftDocument, type LawyerReview, type InsertLawyerReview, type Transaction, type InsertTransaction, type StripeEvent, type InsertStripeEvent, type ServiceOrder, type InsertServiceOrder, type PropertyEvent, type InsertPropertyEvent, type EngagementEvent, type InsertEngagementEvent, type OperatingCost, type InsertOperatingCost, type DailyMetrics, type InsertDailyMetrics, users, properties, userSwipes, userPreferences, purchaseOrders, serviceProviders, passwordResetTokens, pricingPlans, offers, draftDocuments, lawyerReviews, transactions, stripeEvents, serviceOrders, propertyEvents, engagementEvents, operatingCosts, dailyMetrics } from "@shared/schema";
+import { type User, type InsertUser, type Property, type InsertProperty, type UserSwipe, type InsertUserSwipe, type UserSavedProperty, type InsertUserSavedProperty, type PropertyShare, type InsertPropertyShare, type UserPreferences, type InsertUserPreferences, type PurchaseOrder, type InsertPurchaseOrder, type PropertyReport, type InsertPropertyReport, type ReportPackage, type InsertReportPackage, type ServiceProvider, type InsertServiceProvider, type PricingPlan, type InsertPricingPlan, type Offer, type InsertOffer, type DraftDocument, type InsertDraftDocument, type LawyerReview, type InsertLawyerReview, type Transaction, type InsertTransaction, type StripeEvent, type InsertStripeEvent, type ServiceOrder, type InsertServiceOrder, type ServiceInquiry, type InsertServiceInquiry, type PropertyEvent, type InsertPropertyEvent, type EngagementEvent, type InsertEngagementEvent, type OperatingCost, type InsertOperatingCost, type DailyMetrics, type InsertDailyMetrics, type PropertyOffer, type InsertPropertyOffer, type OfferBuyerDetails, type InsertOfferBuyerDetails, type OfferCondition, type InsertOfferCondition, type OfferChattel, type InsertOfferChattel, type StandardChattel, type OfferActivity, type InsertOfferActivity, type OfferMessage, type InsertOfferMessage, type SentryError, type InsertSentryError, type ErrorAnalysis, type InsertErrorAnalysis, type ErrorFix, type InsertErrorFix, type EarlyBirdPromotion, type InsertEarlyBirdPromotion, type EarlyBirdUsage, type InsertEarlyBirdUsage, users, properties, userSwipes, userSavedProperties, propertyShares, userPreferences, purchaseOrders, propertyReports, reportPackages, serviceProviders, passwordResetTokens, pricingPlans, offers, draftDocuments, lawyerReviews, transactions, stripeEvents, serviceOrders, serviceInquiries, propertyEvents, engagementEvents, operatingCosts, dailyMetrics, propertyOffers, offerBuyerDetails, offerConditions, offerChattels, standardChattels, offerActivities, offerMessages, sentryErrors, errorAnalysis, errorFixes, earlyBirdPromotion, earlyBirdUsage, servicePartners, partnerUsers, partnerUpdates, serviceReviews, serviceInsights } from "@shared/schema";
 import { randomUUID } from "crypto";
 import { db } from "./db";
 import { eq, and, sql } from "drizzle-orm";
@@ -8,10 +8,12 @@ export interface IStorage {
   getUser(id: string): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
+  getAllUsers(): Promise<User[]>;
 
   // Properties
   getProperty(id: string): Promise<Property | undefined>;
   getAllProperties(): Promise<Property[]>;
+  getPropertiesBatch(limit: number, offset: number): Promise<Property[]>; // Added for pagination
   getPropertiesByType(type: string): Promise<Property[]>;
   createProperty(property: InsertProperty): Promise<Property>;
   updatePropertyMetrics(id: string, views?: number, likes?: number, saves?: number): Promise<void>;
@@ -23,6 +25,17 @@ export interface IStorage {
   getUserSwipes(userId: string): Promise<UserSwipe[]>;
   getUserSwipeCount(userId: string): Promise<number>;
 
+  // User Saved Properties
+  savePropertyForUser(userId: string, propertyId: string): Promise<void>;
+  unsavePropertyForUser(userId: string, propertyId: string): Promise<void>;
+  getUserSavedProperties(userId: string): Promise<Property[]>;
+  isPropertySavedByUser(userId: string, propertyId: string): Promise<boolean>;
+
+  // 🌟 AUTOMATIC STAR RATINGS - Calculated from Likes
+  // Stars auto-calculate based on like count (no manual rating needed)
+  // This method is called automatically when likes are updated
+  calculateAndUpdateStarRating(propertyId: string): Promise<void>;
+
   // User Preferences
   getUserPreferences(userId: string): Promise<UserPreferences | undefined>;
   createOrUpdateUserPreferences(preferences: InsertUserPreferences): Promise<UserPreferences>;
@@ -31,6 +44,19 @@ export interface IStorage {
   createPurchaseOrder(order: InsertPurchaseOrder): Promise<PurchaseOrder>;
   getUserPurchaseOrders(userId: string): Promise<PurchaseOrder[]>;
   updatePurchaseOrderStatus(id: string, status: string): Promise<void>;
+
+  // Property Reports
+  createPropertyReport(report: InsertPropertyReport): Promise<PropertyReport>;
+  getPropertyReport(id: string): Promise<PropertyReport | undefined>;
+  getReportsByOrder(orderId: string): Promise<PropertyReport[]>;
+  getReportsByUser(userId: string): Promise<PropertyReport[]>;
+  getReportsByProperty(propertyId: string): Promise<PropertyReport[]>;
+  updateReportAccess(id: string): Promise<void>;
+  
+  // Report Packages
+  getAllReportPackages(): Promise<ReportPackage[]>;
+  getActiveReportPackages(): Promise<ReportPackage[]>;
+  getReportPackage(id: string): Promise<ReportPackage | undefined>;
 
   // Service Providers
   createServiceProvider(provider: InsertServiceProvider): Promise<ServiceProvider>;
@@ -61,6 +87,7 @@ export interface IStorage {
   getOffer(id: string): Promise<Offer | undefined>;
   getOffersForProperty(propertyId: string): Promise<Offer[]>;
   updateOfferStatus(id: string, status: string): Promise<void>;
+  updateOfferEmailTracking(id: string, data: { pdfGenerated?: boolean; emailSent?: boolean; emailSentAt?: Date; pdfUrl?: string | null }): Promise<void>;
 
   // Draft Documents
   createDraftDocument(document: InsertDraftDocument): Promise<DraftDocument>;
@@ -196,21 +223,166 @@ export interface IStorage {
   // Daily Metrics Management
   getDailyMetrics(fromDate?: string, toDate?: string): Promise<any[]>;
   createOrUpdateDailyMetrics(date: string, metrics: any): Promise<any>;
+
+  // Property Shares
+  createPropertyShare(share: InsertPropertyShare): Promise<PropertyShare>;
+  getUserShares(userId: string): Promise<PropertyShare[]>;
+  getPropertyShares(propertyId: string): Promise<PropertyShare[]>;
+  markShareAsViewed(shareId: string): Promise<void>;
+
+  // ============================================================================
+  // OFFER WIZARD METHODS - HouseMatch Offer Wizard System
+  // ============================================================================
+  
+  // Property Offers (comprehensive wizard-based offers)
+  createPropertyOffer(offer: InsertPropertyOffer): Promise<PropertyOffer>;
+  getPropertyOffer(id: string): Promise<PropertyOffer | undefined>;
+  getPropertyOffersByProperty(propertyId: string): Promise<PropertyOffer[]>;
+  getPropertyOffersByBuyer(buyerId: string): Promise<PropertyOffer[]>;
+  getDraftOfferForProperty(propertyId: string, buyerId: string): Promise<PropertyOffer | undefined>;
+  updatePropertyOffer(id: string, data: Partial<InsertPropertyOffer>): Promise<PropertyOffer>;
+  updatePropertyOfferStatus(id: string, status: string): Promise<void>;
+  updatePropertyOfferWizardStep(id: string, step: number): Promise<void>;
+  deletePropertyOffer(id: string): Promise<void>;
+  
+  // Offer Buyer Details
+  createOfferBuyerDetails(details: InsertOfferBuyerDetails): Promise<OfferBuyerDetails>;
+  getOfferBuyerDetails(offerId: string): Promise<OfferBuyerDetails | undefined>;
+  updateOfferBuyerDetails(offerId: string, details: Partial<InsertOfferBuyerDetails>): Promise<OfferBuyerDetails>;
+  
+  // Offer Conditions
+  createOfferCondition(condition: InsertOfferCondition): Promise<OfferCondition>;
+  getOfferConditions(offerId: string): Promise<OfferCondition[]>;
+  getOfferCondition(id: string): Promise<OfferCondition | undefined>;
+  updateOfferCondition(id: string, data: Partial<InsertOfferCondition>): Promise<OfferCondition>;
+  updateOfferConditionStatus(id: string, status: string): Promise<void>;
+  deleteOfferCondition(id: string): Promise<void>;
+  
+  // Offer Chattels
+  createOfferChattel(chattel: InsertOfferChattel): Promise<OfferChattel>;
+  getOfferChattels(offerId: string): Promise<OfferChattel[]>;
+  updateOfferChattel(id: string, data: Partial<InsertOfferChattel>): Promise<OfferChattel>;
+  deleteOfferChattel(id: string): Promise<void>;
+  
+  // Standard Chattels (reference data)
+  getAllStandardChattels(): Promise<StandardChattel[]>;
+  getStandardChattelsByCategory(category: string): Promise<StandardChattel[]>;
+  
+  // Offer Activities (audit log)
+  createOfferActivity(activity: InsertOfferActivity): Promise<OfferActivity>;
+  getOfferActivities(offerId: string): Promise<OfferActivity[]>;
+  
+  // Offer Messages
+  createOfferMessage(message: InsertOfferMessage): Promise<OfferMessage>;
+  getOfferMessages(offerId: string): Promise<OfferMessage[]>;
+  markOfferMessageAsRead(id: string): Promise<void>;
+
+  // ============================================================================
+  // ERROR MONITORING METHODS - Automated Sentry Error Analysis System
+  // ============================================================================
+  
+  // Sentry Errors
+  createSentryError(error: any): Promise<any>;
+  getSentryError(id: string): Promise<any | undefined>;
+  getSentryErrorByEventId(eventId: string): Promise<any | undefined>;
+  getAllSentryErrors(limit?: number): Promise<any[]>;
+  getUnanalyzedErrors(): Promise<any[]>;
+  updateSentryError(id: string, data: any): Promise<void>;
+  markErrorAsAnalyzed(id: string): Promise<void>;
+  
+  // Error Analysis
+  createErrorAnalysis(analysis: any): Promise<any>;
+  getErrorAnalysis(errorId: string): Promise<any | undefined>;
+  updateErrorAnalysis(id: string, data: any): Promise<void>;
+  
+  // Error Fixes
+  createErrorFix(fix: any): Promise<any>;
+  getErrorFixes(errorId: string): Promise<any[]>;
+  updateErrorFixStatus(id: string, status: string): Promise<void>;
+  getPendingFixes(): Promise<any[]>;
+
+  // ============================================================================
+  // SERVICE ORDERS METHODS - Building Inspection & Meth Testing Orders
+  // ============================================================================
+  
+  // Service Orders
+  createServiceOrder(order: InsertServiceOrder): Promise<ServiceOrder>;
+  getServiceOrder(id: string): Promise<ServiceOrder | undefined>;
+  getUserServiceOrders(userId: string): Promise<ServiceOrder[]>;
+  getAllServiceOrders(): Promise<ServiceOrder[]>;
+  updateServiceOrderStatus(id: string, status: string): Promise<void>;
+  
+  // Service Inquiries (Moving, Staging, Cleaning, Hosting)
+  createServiceInquiry(inquiry: InsertServiceInquiry): Promise<ServiceInquiry>;
+  getServiceInquiry(id: string): Promise<ServiceInquiry | undefined>;
+  getUserServiceInquiries(userId: string): Promise<ServiceInquiry[]>;
+  getAllServiceInquiries(): Promise<ServiceInquiry[]>;
+
+  // ============================================================================
+  // PARTNER ECOSYSTEM METHODS - Service Partner Network & Marketplace
+  // ============================================================================
+  
+  // Service Partners
+  getAllServicePartners(): Promise<any[]>;
+  getPartnersByServiceType(serviceType: string): Promise<any[]>;
+  createServicePartner(data: any): Promise<any>;
+  updateServicePartner(id: string, data: any): Promise<any>;
+  getServicePartner(id: string): Promise<any | undefined>;
+  
+  // MVP: Partner Verification (Admin Manual Approval)
+  verifyPartner(partnerId: string, adminId: string, notes?: string): Promise<any>;
+  rejectPartner(partnerId: string, adminId: string, notes: string): Promise<any>;
+  getPendingPartners(): Promise<any[]>;
+  
+  // Partner Orders
+  getPartnerOrders(partnerId: string, status?: string): Promise<any[]>;
+  acceptServiceOrder(orderId: string, partnerUserId: string): Promise<any>;
+  assignPartnerToOrder(orderId: string, partnerId: string): Promise<any>;
+  
+  // MVP: Manual Payout Tracking
+  updatePayoutStatus(orderId: string, payoutData: { status: string; amount?: number; notes?: string }): Promise<any>;
+  getUnpaidOrders(): Promise<any[]>;
+  getPartnerEarnings(partnerId: string): Promise<{ total: number; unpaid: number; paid: number }>;
+  
+  // Partner Updates
+  createPartnerUpdate(update: any): Promise<any>;
+  getOrderUpdates(serviceOrderId: string): Promise<any[]>;
+  
+  // Partner Analytics
+  getPartnerAnalytics(partnerId: string): Promise<any>;
+  
+  // Service Reviews
+  createServiceReview(review: any): Promise<any>;
+  getPartnerReviews(partnerId: string): Promise<any[]>;
+  
+  // Service Insights
+  getServiceInsights(propertyId: string): Promise<any>;
+  createServiceInsight(data: any): Promise<any>;
+  
+  // Early Bird Promotion - Launch Special
+  getActiveEarlyBirdPromotion(): Promise<any | undefined>;
+  checkEarlyBirdEligibility(): Promise<{ eligible: boolean; remaining: number; total: number }>;
+  claimEarlyBirdSpot(promotionId: string, propertyId: string, userId: string): Promise<any>;
+  getEarlyBirdUsageCount(promotionId: string): Promise<number>;
 }
 
 
 export class DatabaseStorage implements IStorage {
   private seeded = false;
 
-  private async seedDatabase() {
+  private async seedDatabase(forceInProduction = false) {
     if (this.seeded) return;
     
     // SECURITY CHECK: Prevent demo seeding in production environment
     const isProduction = process.env.NODE_ENV === 'production';
-    if (isProduction) {
+    if (isProduction && !forceInProduction) {
       console.info('🔒 Production environment detected: Demo user seeding disabled for security');
       this.seeded = true;
       return;
+    }
+    
+    if (isProduction && forceInProduction) {
+      console.warn('⚠️  FORCED PRODUCTION SEEDING: Admin requested demo data initialization');
     }
     
     // Security warning for development/staging environments
@@ -427,6 +599,11 @@ export class DatabaseStorage implements IStorage {
     return user || undefined;
   }
 
+  async getUserByVerificationToken(token: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.emailVerificationToken, token));
+    return user || undefined;
+  }
+
   async createUser(insertUser: InsertUser): Promise<User> {
     const [user] = await db.insert(users).values(insertUser).returning();
     return user;
@@ -435,6 +612,10 @@ export class DatabaseStorage implements IStorage {
   async updateUser(id: string, updates: Partial<User>): Promise<User> {
     const [user] = await db.update(users).set(updates).where(eq(users.id, id)).returning();
     return user;
+  }
+
+  async getAllUsers(): Promise<User[]> {
+    return await db.select().from(users);
   }
 
   async getProperty(id: string): Promise<Property | undefined> {
@@ -447,6 +628,21 @@ export class DatabaseStorage implements IStorage {
       const result = await db.select().from(properties).where(eq(properties.isActive, true));
       return result;
     } catch (error) {
+      return [];
+    }
+  }
+
+  async getPropertiesBatch(limit: number, offset: number = 0): Promise<Property[]> {
+    try {
+      const result = await db
+        .select()
+        .from(properties)
+        .where(eq(properties.isActive, true))
+        .limit(limit)
+        .offset(offset);
+      return result;
+    } catch (error) {
+      console.error("Error fetching properties batch:", error);
       return [];
     }
   }
@@ -499,6 +695,96 @@ export class DatabaseStorage implements IStorage {
   async getUserSwipeCount(userId: string): Promise<number> {
     const swipes = await this.getUserSwipes(userId);
     return swipes.length;
+  }
+
+  // User Saved Properties Implementation
+  async savePropertyForUser(userId: string, propertyId: string): Promise<void> {
+    try {
+      await db.insert(userSavedProperties).values({
+        userId,
+        propertyId,
+      }).onConflictDoNothing(); // Prevent duplicate saves
+    } catch (error) {
+      console.error("Failed to save property:", error);
+      throw error;
+    }
+  }
+
+  async unsavePropertyForUser(userId: string, propertyId: string): Promise<void> {
+    await db.delete(userSavedProperties)
+      .where(
+        and(
+          eq(userSavedProperties.userId, userId),
+          eq(userSavedProperties.propertyId, propertyId)
+        )
+      );
+  }
+
+  async getUserSavedProperties(userId: string): Promise<Property[]> {
+    const savedRecords = await db
+      .select({
+        property: properties,
+      })
+      .from(userSavedProperties)
+      .innerJoin(properties, eq(userSavedProperties.propertyId, properties.id))
+      .where(eq(userSavedProperties.userId, userId));
+    
+    return savedRecords.map(record => record.property);
+  }
+
+  async isPropertySavedByUser(userId: string, propertyId: string): Promise<boolean> {
+    const [saved] = await db
+      .select()
+      .from(userSavedProperties)
+      .where(
+        and(
+          eq(userSavedProperties.userId, userId),
+          eq(userSavedProperties.propertyId, propertyId)
+        )
+      )
+      .limit(1);
+    
+    return !!saved;
+  }
+
+  // 🌟 AUTOMATIC STAR RATING CALCULATION FROM LIKES
+  // Multi-tasking efficiency: One action (like) powers both engagement AND trust signals
+  // Star Formula:
+  // 0-9 likes → No stars yet
+  // 10-20 likes → ⭐ (1 star)
+  // 21-30 likes → ⭐⭐ (2 stars)
+  // 31-40 likes → ⭐⭐⭐ (3 stars)
+  // 41-50 likes → ⭐⭐⭐⭐ (4 stars)
+  // 51+ likes → ⭐⭐⭐⭐⭐ (5 stars)
+  async calculateAndUpdateStarRating(propertyId: string): Promise<void> {
+    // Get the property to check current likes
+    const property = await this.getProperty(propertyId);
+    if (!property) return;
+
+    const likes = property.likes || 0;
+    let stars: number | null = null;
+
+    // Calculate stars based on likes
+    if (likes >= 51) {
+      stars = 5;
+    } else if (likes >= 41) {
+      stars = 4;
+    } else if (likes >= 31) {
+      stars = 3;
+    } else if (likes >= 21) {
+      stars = 2;
+    } else if (likes >= 10) {
+      stars = 1;
+    }
+    // 0-9 likes = no stars (null)
+
+    // Update the property's star rating
+    await db.update(properties)
+      .set({ 
+        averageRating: stars ? stars.toString() : null,
+        totalRatings: stars ? 1 : 0 // Keep totalRatings for compatibility (1 if has stars, 0 if not)
+      })
+      .where(eq(properties.id, propertyId));
   }
 
   async getUserPreferences(userId: string): Promise<UserPreferences | undefined> {
@@ -706,6 +992,12 @@ export class DatabaseStorage implements IStorage {
   async updateOfferStatus(id: string, status: string): Promise<void> {
     await db.update(offers)
       .set({ status, updatedAt: new Date() })
+      .where(eq(offers.id, id));
+  }
+
+  async updateOfferEmailTracking(id: string, data: { pdfGenerated?: boolean; emailSent?: boolean; emailSentAt?: Date; pdfUrl?: string | null }): Promise<void> {
+    await db.update(offers)
+      .set({ ...data, updatedAt: new Date() })
       .where(eq(offers.id, id));
   }
 
@@ -1319,6 +1611,670 @@ export class DatabaseStorage implements IStorage {
         .returning();
       return created;
     }
+  }
+
+  // Property Shares Implementation
+  async createPropertyShare(share: InsertPropertyShare): Promise<PropertyShare> {
+    const [created] = await db
+      .insert(propertyShares)
+      .values(share)
+      .returning();
+    return created;
+  }
+
+  async getUserShares(userId: string): Promise<PropertyShare[]> {
+    return await db
+      .select()
+      .from(propertyShares)
+      .where(eq(propertyShares.sharedWith, userId))
+      .orderBy(sql`${propertyShares.createdAt} DESC`);
+  }
+
+  async getPropertyShares(propertyId: string): Promise<PropertyShare[]> {
+    return await db
+      .select()
+      .from(propertyShares)
+      .where(eq(propertyShares.propertyId, propertyId))
+      .orderBy(sql`${propertyShares.createdAt} DESC`);
+  }
+
+  async markShareAsViewed(shareId: string): Promise<void> {
+    await db
+      .update(propertyShares)
+      .set({ viewed: true, viewedAt: new Date() })
+      .where(eq(propertyShares.id, shareId));
+  }
+
+  // ============================================================================
+  // OFFER WIZARD IMPLEMENTATION - HouseMatch Offer Wizard System
+  // ============================================================================
+  
+  // Property Offers Implementation
+  async createPropertyOffer(offer: InsertPropertyOffer): Promise<PropertyOffer> {
+    const [created] = await db
+      .insert(propertyOffers)
+      .values(offer)
+      .returning();
+    return created;
+  }
+
+  async getPropertyOffer(id: string): Promise<PropertyOffer | undefined> {
+    const [offer] = await db
+      .select()
+      .from(propertyOffers)
+      .where(eq(propertyOffers.id, id))
+      .limit(1);
+    return offer;
+  }
+
+  async getPropertyOffersByProperty(propertyId: string): Promise<PropertyOffer[]> {
+    return await db
+      .select()
+      .from(propertyOffers)
+      .where(eq(propertyOffers.propertyId, propertyId))
+      .orderBy(sql`${propertyOffers.createdAt} DESC`);
+  }
+
+  async getPropertyOffersByBuyer(buyerId: string): Promise<PropertyOffer[]> {
+    return await db
+      .select()
+      .from(propertyOffers)
+      .where(eq(propertyOffers.buyerId, buyerId))
+      .orderBy(sql`${propertyOffers.createdAt} DESC`);
+  }
+
+  async getDraftOfferForProperty(propertyId: string, buyerId: string): Promise<PropertyOffer | undefined> {
+    const [offer] = await db
+      .select()
+      .from(propertyOffers)
+      .where(
+        and(
+          eq(propertyOffers.propertyId, propertyId),
+          eq(propertyOffers.buyerId, buyerId),
+          eq(propertyOffers.status, 'draft')
+        )
+      )
+      .orderBy(sql`${propertyOffers.createdAt} DESC`)
+      .limit(1);
+    return offer;
+  }
+
+  async updatePropertyOffer(id: string, data: Partial<InsertPropertyOffer>): Promise<PropertyOffer> {
+    const [updated] = await db
+      .update(propertyOffers)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(propertyOffers.id, id))
+      .returning();
+    return updated;
+  }
+
+  async updatePropertyOfferStatus(id: string, status: string): Promise<void> {
+    await db
+      .update(propertyOffers)
+      .set({ status, updatedAt: new Date() })
+      .where(eq(propertyOffers.id, id));
+  }
+
+  async updatePropertyOfferWizardStep(id: string, step: number): Promise<void> {
+    await db
+      .update(propertyOffers)
+      .set({ wizardStep: step, updatedAt: new Date() })
+      .where(eq(propertyOffers.id, id));
+  }
+
+  async deletePropertyOffer(id: string): Promise<void> {
+    await db
+      .delete(propertyOffers)
+      .where(eq(propertyOffers.id, id));
+  }
+
+  // Offer Buyer Details Implementation
+  async createOfferBuyerDetails(details: InsertOfferBuyerDetails): Promise<OfferBuyerDetails> {
+    const [created] = await db
+      .insert(offerBuyerDetails)
+      .values(details)
+      .returning();
+    return created;
+  }
+
+  async getOfferBuyerDetails(offerId: string): Promise<OfferBuyerDetails | undefined> {
+    const [details] = await db
+      .select()
+      .from(offerBuyerDetails)
+      .where(eq(offerBuyerDetails.offerId, offerId))
+      .limit(1);
+    return details;
+  }
+
+  async updateOfferBuyerDetails(offerId: string, details: Partial<InsertOfferBuyerDetails>): Promise<OfferBuyerDetails> {
+    const [updated] = await db
+      .update(offerBuyerDetails)
+      .set({ ...details, updatedAt: new Date() })
+      .where(eq(offerBuyerDetails.offerId, offerId))
+      .returning();
+    return updated;
+  }
+
+  // Offer Conditions Implementation
+  async createOfferCondition(condition: InsertOfferCondition): Promise<OfferCondition> {
+    const [created] = await db
+      .insert(offerConditions)
+      .values(condition)
+      .returning();
+    return created;
+  }
+
+  async getOfferConditions(offerId: string): Promise<OfferCondition[]> {
+    return await db
+      .select()
+      .from(offerConditions)
+      .where(eq(offerConditions.offerId, offerId))
+      .orderBy(sql`${offerConditions.createdAt} ASC`);
+  }
+
+  async getOfferCondition(id: string): Promise<OfferCondition | undefined> {
+    const [condition] = await db
+      .select()
+      .from(offerConditions)
+      .where(eq(offerConditions.id, id))
+      .limit(1);
+    return condition;
+  }
+
+  async updateOfferCondition(id: string, data: Partial<InsertOfferCondition>): Promise<OfferCondition> {
+    const [updated] = await db
+      .update(offerConditions)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(offerConditions.id, id))
+      .returning();
+    return updated;
+  }
+
+  async updateOfferConditionStatus(id: string, status: string): Promise<void> {
+    await db
+      .update(offerConditions)
+      .set({ 
+        status, 
+        satisfiedAt: status === 'satisfied' ? new Date() : undefined,
+        updatedAt: new Date() 
+      })
+      .where(eq(offerConditions.id, id));
+  }
+
+  async deleteOfferCondition(id: string): Promise<void> {
+    await db
+      .delete(offerConditions)
+      .where(eq(offerConditions.id, id));
+  }
+
+  // Offer Chattels Implementation
+  async createOfferChattel(chattel: InsertOfferChattel): Promise<OfferChattel> {
+    const [created] = await db
+      .insert(offerChattels)
+      .values(chattel)
+      .returning();
+    return created;
+  }
+
+  async getOfferChattels(offerId: string): Promise<OfferChattel[]> {
+    return await db
+      .select()
+      .from(offerChattels)
+      .where(eq(offerChattels.offerId, offerId))
+      .orderBy(sql`${offerChattels.createdAt} ASC`);
+  }
+
+  async updateOfferChattel(id: string, data: Partial<InsertOfferChattel>): Promise<OfferChattel> {
+    const [updated] = await db
+      .update(offerChattels)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(offerChattels.id, id))
+      .returning();
+    return updated;
+  }
+
+  async deleteOfferChattel(id: string): Promise<void> {
+    await db
+      .delete(offerChattels)
+      .where(eq(offerChattels.id, id));
+  }
+
+  // Standard Chattels Implementation
+  async getAllStandardChattels(): Promise<StandardChattel[]> {
+    return await db
+      .select()
+      .from(standardChattels)
+      .orderBy(sql`${standardChattels.displayOrder} ASC`);
+  }
+
+  async getStandardChattelsByCategory(category: string): Promise<StandardChattel[]> {
+    return await db
+      .select()
+      .from(standardChattels)
+      .where(eq(standardChattels.category, category))
+      .orderBy(sql`${standardChattels.displayOrder} ASC`);
+  }
+
+  // Offer Activities Implementation
+  async createOfferActivity(activity: InsertOfferActivity): Promise<OfferActivity> {
+    const [created] = await db
+      .insert(offerActivities)
+      .values(activity)
+      .returning();
+    return created;
+  }
+
+  async getOfferActivities(offerId: string): Promise<OfferActivity[]> {
+    return await db
+      .select()
+      .from(offerActivities)
+      .where(eq(offerActivities.offerId, offerId))
+      .orderBy(sql`${offerActivities.createdAt} DESC`);
+  }
+
+  // Offer Messages Implementation
+  async createOfferMessage(message: InsertOfferMessage): Promise<OfferMessage> {
+    const [created] = await db
+      .insert(offerMessages)
+      .values(message)
+      .returning();
+    return created;
+  }
+
+  async getOfferMessages(offerId: string): Promise<OfferMessage[]> {
+    return await db
+      .select()
+      .from(offerMessages)
+      .where(eq(offerMessages.offerId, offerId))
+      .orderBy(sql`${offerMessages.createdAt} ASC`);
+  }
+
+  async markOfferMessageAsRead(id: string): Promise<void> {
+    await db
+      .update(offerMessages)
+      .set({ isRead: true, readAt: new Date() })
+      .where(eq(offerMessages.id, id));
+  }
+
+  // ============================================================================
+  // SERVICE ORDERS IMPLEMENTATION - Building Inspection & Meth Testing Orders
+  // ============================================================================
+  
+  async createServiceOrder(order: InsertServiceOrder): Promise<ServiceOrder> {
+    const [created] = await db
+      .insert(serviceOrders)
+      .values(order)
+      .returning();
+    return created;
+  }
+
+  async getServiceOrder(id: string): Promise<ServiceOrder | undefined> {
+    const [order] = await db
+      .select()
+      .from(serviceOrders)
+      .where(eq(serviceOrders.id, id));
+    return order;
+  }
+
+  async getUserServiceOrders(userId: string): Promise<ServiceOrder[]> {
+    return await db
+      .select()
+      .from(serviceOrders)
+      .where(eq(serviceOrders.buyerId, userId))
+      .orderBy(sql`${serviceOrders.createdAt} DESC`);
+  }
+
+  async getAllServiceOrders(): Promise<ServiceOrder[]> {
+    return await db
+      .select()
+      .from(serviceOrders)
+      .orderBy(sql`${serviceOrders.createdAt} DESC`);
+  }
+
+  async updateServiceOrderStatus(id: string, status: string): Promise<void> {
+    await db
+      .update(serviceOrders)
+      .set({ status })
+      .where(eq(serviceOrders.id, id));
+  }
+
+  // Service Inquiry methods
+  async createServiceInquiry(inquiry: InsertServiceInquiry): Promise<ServiceInquiry> {
+    const [created] = await db
+      .insert(serviceInquiries)
+      .values(inquiry)
+      .returning();
+    return created;
+  }
+
+  async getServiceInquiry(id: string): Promise<ServiceInquiry | undefined> {
+    const [inquiry] = await db
+      .select()
+      .from(serviceInquiries)
+      .where(eq(serviceInquiries.id, id));
+    return inquiry;
+  }
+
+  async getUserServiceInquiries(userId: string): Promise<ServiceInquiry[]> {
+    return await db
+      .select()
+      .from(serviceInquiries)
+      .where(eq(serviceInquiries.userId, userId))
+      .orderBy(sql`${serviceInquiries.createdAt} DESC`);
+  }
+
+  async getAllServiceInquiries(): Promise<ServiceInquiry[]> {
+    return await db
+      .select()
+      .from(serviceInquiries)
+      .orderBy(sql`${serviceInquiries.createdAt} DESC`);
+  }
+
+  // ============================================================================
+  // PARTNER ECOSYSTEM IMPLEMENTATION
+  // ============================================================================
+  
+  async getAllServicePartners(): Promise<any[]> {
+    return await db.select().from(servicePartners).orderBy(sql`${servicePartners.createdAt} DESC`);
+  }
+
+  async getPartnersByServiceType(serviceType: string): Promise<any[]> {
+    const partners = await db.select().from(servicePartners).where(eq(servicePartners.status, 'active'));
+    return partners.filter(p => p.serviceTypes?.includes(serviceType));
+  }
+
+  async createServicePartner(data: any): Promise<any> {
+    const [partner] = await db.insert(servicePartners).values(data).returning();
+    return partner;
+  }
+
+  async updateServicePartner(id: string, data: any): Promise<any> {
+    const [partner] = await db.update(servicePartners).set(data).where(eq(servicePartners.id, id)).returning();
+    return partner;
+  }
+
+  async getServicePartner(id: string): Promise<any | undefined> {
+    const [partner] = await db.select().from(servicePartners).where(eq(servicePartners.id, id));
+    return partner;
+  }
+
+  async getPartnerOrders(partnerId: string, status?: string): Promise<any[]> {
+    let query = db.select().from(serviceOrders).where(eq(serviceOrders.partnerId, partnerId));
+    if (status) {
+      query = query.where(and(eq(serviceOrders.partnerId, partnerId), eq(serviceOrders.status, status))) as any;
+    }
+    return await query.orderBy(sql`${serviceOrders.createdAt} DESC`);
+  }
+
+  async acceptServiceOrder(orderId: string, partnerUserId: string): Promise<any> {
+    const [order] = await db.update(serviceOrders)
+      .set({ status: 'accepted', acceptedAt: new Date(), updatedAt: new Date() })
+      .where(eq(serviceOrders.id, orderId))
+      .returning();
+    return order;
+  }
+
+  async assignPartnerToOrder(orderId: string, partnerId: string): Promise<any> {
+    const [order] = await db.update(serviceOrders)
+      .set({ partnerId, status: 'assigned', assignedAt: new Date(), updatedAt: new Date() })
+      .where(eq(serviceOrders.id, orderId))
+      .returning();
+    return order;
+  }
+
+  async createPartnerUpdate(update: any): Promise<any> {
+    const [created] = await db.insert(partnerUpdates).values(update).returning();
+    
+    // Also update the service order status
+    await db.update(serviceOrders)
+      .set({ status: update.status, updatedAt: new Date() })
+      .where(eq(serviceOrders.id, update.serviceOrderId));
+    
+    return created;
+  }
+
+  async getOrderUpdates(serviceOrderId: string): Promise<any[]> {
+    return await db.select().from(partnerUpdates).where(eq(partnerUpdates.serviceOrderId, serviceOrderId)).orderBy(sql`${partnerUpdates.createdAt} DESC`);
+  }
+
+  async getPartnerAnalytics(partnerId: string): Promise<any> {
+    const orders = await this.getPartnerOrders(partnerId);
+    const reviews = await this.getPartnerReviews(partnerId);
+    const [partner] = await db.select().from(servicePartners).where(eq(servicePartners.id, partnerId));
+    
+    return {
+      totalJobs: orders.length,
+      completedJobs: orders.filter(o => o.status === 'completed').length,
+      pendingJobs: orders.filter(o => o.status === 'pending' || o.status === 'assigned').length,
+      inProgressJobs: orders.filter(o => o.status === 'in_progress' || o.status === 'accepted').length,
+      averageRating: partner?.averageRating || 0,
+      totalReviews: reviews.length,
+      totalEarnings: partner?.totalEarnings || 0,
+      recentOrders: orders.slice(0, 10),
+      recentReviews: reviews.slice(0, 5),
+    };
+  }
+
+  async createServiceReview(review: any): Promise<any> {
+    const [created] = await db.insert(serviceReviews).values(review).returning();
+    
+    // Update partner average rating
+    const reviews = await this.getPartnerReviews(review.partnerId);
+    const avgRating = reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length;
+    await db.update(servicePartners)
+      .set({ averageRating: avgRating.toString() })
+      .where(eq(servicePartners.id, review.partnerId));
+    
+    return created;
+  }
+
+  async getPartnerReviews(partnerId: string): Promise<any[]> {
+    return await db.select().from(serviceReviews).where(eq(serviceReviews.partnerId, partnerId)).orderBy(sql`${serviceReviews.createdAt} DESC`);
+  }
+
+  async getServiceInsights(propertyId: string): Promise<any> {
+    const [insights] = await db.select().from(serviceInsights).where(eq(serviceInsights.propertyId, propertyId));
+    return insights;
+  }
+
+  async createServiceInsight(data: any): Promise<any> {
+    const [insight] = await db.insert(serviceInsights).values(data).returning();
+    return insight;
+  }
+
+  // ============================================================================
+  // EARLY BIRD PROMOTION - Launch Special
+  // ============================================================================
+
+  async getActiveEarlyBirdPromotion(): Promise<any | undefined> {
+    const [promotion] = await db
+      .select()
+      .from(earlyBirdPromotion)
+      .where(eq(earlyBirdPromotion.isActive, true))
+      .orderBy(sql`${earlyBirdPromotion.createdAt} DESC`)
+      .limit(1);
+    return promotion;
+  }
+
+  async checkEarlyBirdEligibility(): Promise<{ eligible: boolean; remaining: number; total: number }> {
+    const promotion = await this.getActiveEarlyBirdPromotion();
+    
+    if (!promotion) {
+      return { eligible: false, remaining: 0, total: 0 };
+    }
+
+    const remaining = promotion.totalLimit - promotion.totalUsed;
+    const eligible = remaining > 0;
+
+    return {
+      eligible,
+      remaining,
+      total: promotion.totalLimit
+    };
+  }
+
+  async claimEarlyBirdSpot(promotionId: string, propertyId: string, userId: string): Promise<any> {
+    // Atomically check and claim a spot
+    const promotion = await db
+      .select()
+      .from(earlyBirdPromotion)
+      .where(eq(earlyBirdPromotion.id, promotionId))
+      .limit(1);
+
+    if (!promotion || promotion.length === 0) {
+      throw new Error('Promotion not found');
+    }
+
+    const currentPromotion = promotion[0];
+    
+    if (!currentPromotion.isActive) {
+      throw new Error('Promotion is no longer active');
+    }
+
+    if (currentPromotion.totalUsed >= currentPromotion.totalLimit) {
+      throw new Error('Promotion limit reached');
+    }
+
+    // Increment counter
+    const newUsageNumber = currentPromotion.totalUsed + 1;
+    
+    await db
+      .update(earlyBirdPromotion)
+      .set({ 
+        totalUsed: newUsageNumber,
+        updatedAt: new Date()
+      })
+      .where(eq(earlyBirdPromotion.id, promotionId));
+
+    // Track this specific usage
+    const [usage] = await db.insert(earlyBirdUsage).values({
+      promotionId,
+      propertyId,
+      userId,
+      usageNumber: newUsageNumber
+    }).returning();
+
+    // Auto-close promotion if limit reached
+    if (newUsageNumber >= currentPromotion.totalLimit) {
+      await db
+        .update(earlyBirdPromotion)
+        .set({ 
+          isActive: false,
+          endedAt: new Date()
+        })
+        .where(eq(earlyBirdPromotion.id, promotionId));
+    }
+
+    return usage;
+  }
+
+  async getEarlyBirdUsageCount(promotionId: string): Promise<number> {
+    const result = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(earlyBirdUsage)
+      .where(eq(earlyBirdUsage.promotionId, promotionId));
+    
+    return result[0]?.count || 0;
+  }
+
+  // ============================================================================
+  // MVP: PARTNER VERIFICATION (Admin Manual Approval)
+  // ============================================================================
+
+  async verifyPartner(partnerId: string, adminId: string, notes?: string): Promise<any> {
+    const [partner] = await db.update(servicePartners)
+      .set({
+        verificationStatus: 'verified',
+        verificationNotes: notes || 'Approved by admin',
+        verifiedBy: adminId,
+        verifiedAt: new Date(),
+        status: 'active', // Automatically activate upon verification
+        updatedAt: new Date(),
+      })
+      .where(eq(servicePartners.id, partnerId))
+      .returning();
+    return partner;
+  }
+
+  async rejectPartner(partnerId: string, adminId: string, notes: string): Promise<any> {
+    const [partner] = await db.update(servicePartners)
+      .set({
+        verificationStatus: 'rejected',
+        verificationNotes: notes,
+        verifiedBy: adminId,
+        status: 'inactive',
+        updatedAt: new Date(),
+      })
+      .where(eq(servicePartners.id, partnerId))
+      .returning();
+    return partner;
+  }
+
+  async getPendingPartners(): Promise<any[]> {
+    return await db.select()
+      .from(servicePartners)
+      .where(eq(servicePartners.verificationStatus, 'pending'))
+      .orderBy(sql`${servicePartners.createdAt} DESC`);
+  }
+
+  // ============================================================================
+  // MVP: MANUAL PAYOUT TRACKING (Admin Bank Transfers)
+  // ============================================================================
+
+  async updatePayoutStatus(orderId: string, payoutData: { status: string; amount?: number; notes?: string }): Promise<any> {
+    const updateData: any = {
+      payoutStatus: payoutData.status,
+      updatedAt: new Date(),
+    };
+    
+    if (payoutData.amount !== undefined) {
+      updateData.payoutAmount = payoutData.amount;
+    }
+    
+    if (payoutData.notes) {
+      updateData.payoutNotes = payoutData.notes;
+    }
+    
+    if (payoutData.status === 'paid') {
+      updateData.payoutDate = new Date();
+    }
+    
+    const [order] = await db.update(serviceOrders)
+      .set(updateData)
+      .where(eq(serviceOrders.id, orderId))
+      .returning();
+    
+    return order;
+  }
+
+  async getUnpaidOrders(): Promise<any[]> {
+    return await db.select()
+      .from(serviceOrders)
+      .where(and(
+        eq(serviceOrders.status, 'completed'),
+        eq(serviceOrders.payoutStatus, 'unpaid')
+      ))
+      .orderBy(sql`${serviceOrders.completedAt} DESC`);
+  }
+
+  async getPartnerEarnings(partnerId: string): Promise<{ total: number; unpaid: number; paid: number }> {
+    const orders = await db.select()
+      .from(serviceOrders)
+      .where(eq(serviceOrders.partnerId, partnerId));
+    
+    const total = orders
+      .filter(o => o.status === 'completed')
+      .reduce((sum, o) => sum + (o.payoutAmount || o.providerEarningsCents || 0), 0);
+    
+    const unpaid = orders
+      .filter(o => o.status === 'completed' && o.payoutStatus === 'unpaid')
+      .reduce((sum, o) => sum + (o.payoutAmount || o.providerEarningsCents || 0), 0);
+    
+    const paid = orders
+      .filter(o => o.payoutStatus === 'paid')
+      .reduce((sum, o) => sum + (o.payoutAmount || 0), 0);
+    
+    return { total, unpaid, paid };
   }
 }
 

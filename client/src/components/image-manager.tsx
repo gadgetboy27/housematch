@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -6,55 +6,63 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { ObjectUploader } from "@/components/ObjectUploader";
 
+// Helper function extracted outside component to avoid recreation
+function normalizeImagePath(uploadURL: string): string {
+  if (uploadURL.startsWith("https://storage.googleapis.com/")) {
+    const url = new URL(uploadURL);
+    const pathParts = url.pathname.split("/");
+    if (pathParts.length >= 4) {
+      const objectId = pathParts.slice(3).join("/");
+      return `/objects/${objectId}`;
+    }
+  }
+  return uploadURL;
+}
+
 interface ImageManagerProps {
+  userId: string; // REQUIRED - authenticated user ID from session
   mainImage: string;
   additionalImages: string[];
   onMainImageChange: (url: string) => void;
   onAdditionalImagesChange: (images: string[]) => void;
-  maxAdditionalImages?: number;
+  isPremium?: boolean; // Premium users get 11-20 images, regular users get 10
 }
 
 export function ImageManager({ 
+  userId,
   mainImage, 
   additionalImages, 
   onMainImageChange, 
   onAdditionalImagesChange,
-  maxAdditionalImages = 10 
+  isPremium = false
 }: ImageManagerProps) {
+  // Set image limits: 10 for regular users, 20 for premium users
+  const imageLimit = isPremium ? 20 : 10;
+  if (!userId) {
+    throw new Error('ImageManager requires userId from authenticated session');
+  }
   const [isUploading, setIsUploading] = useState(false);
   const { toast } = useToast();
 
-  const handleMainImageUpload = async () => {
-    return {
-      method: "PUT" as const,
-      url: await getUploadURL(),
-    };
-  };
-
-  const handleAdditionalImageUpload = async () => {
-    return {
-      method: "PUT" as const,
-      url: await getUploadURL(),
-    };
-  };
-
-  const getUploadURL = async (): Promise<string> => {
+  const getUploadURL = useCallback(async (): Promise<string> => {
     const response = await apiRequest("POST", "/api/objects/upload");
     const data = await response.json();
     return data.uploadURL;
-  };
+  }, []);
 
-  const normalizeImagePath = (uploadURL: string): string => {
-    if (uploadURL.startsWith("https://storage.googleapis.com/")) {
-      const url = new URL(uploadURL);
-      const pathParts = url.pathname.split("/");
-      if (pathParts.length >= 4) {
-        const objectId = pathParts.slice(3).join("/");
-        return `/objects/${objectId}`;
-      }
-    }
-    return uploadURL;
-  };
+  const handleMainImageUpload = useCallback(async () => {
+    return {
+      method: "PUT" as const,
+      url: await getUploadURL(),
+    };
+  }, [getUploadURL]);
+
+  const handleAdditionalImageUpload = useCallback(async () => {
+    return {
+      method: "PUT" as const,
+      url: await getUploadURL(),
+    };
+  }, [getUploadURL]);
 
   const handleMainImageComplete = (uploadedUrls: string[]) => {
     if (uploadedUrls.length > 0) {
@@ -100,7 +108,7 @@ export function ImageManager({
     });
   };
 
-  const canAddMore = additionalImages.length < maxAdditionalImages;
+  const canAddMore = additionalImages.length < imageLimit;
 
   return (
     <Card>
@@ -131,7 +139,7 @@ export function ImageManager({
               maxNumberOfFiles={1}
               maxFileSize={10485760} // 10MB
               allowedFileTypes={['image/*']}
-              userId="demo-user"
+              userId={userId}
               onGetUploadParameters={handleMainImageUpload}
               onComplete={handleMainImageComplete}
               buttonClassName="w-full"
@@ -147,7 +155,7 @@ export function ImageManager({
         {/* Additional Images */}
         <div>
           <label className="text-sm font-medium block mb-3">
-            Additional Images ({additionalImages.length}/{maxAdditionalImages})
+            Additional Images ({additionalImages.length}/{imageLimit})
           </label>
           
           {/* Current Additional Images */}
@@ -184,7 +192,7 @@ export function ImageManager({
               maxNumberOfFiles={1}
               maxFileSize={10485760} // 10MB
               allowedFileTypes={['image/*']}
-              userId="demo-user"
+              userId={userId}
               onGetUploadParameters={handleAdditionalImageUpload}
               onComplete={handleAdditionalImageComplete}
               buttonClassName="w-full"
@@ -198,7 +206,7 @@ export function ImageManager({
 
           {!canAddMore && (
             <p className="text-sm text-gray-500 text-center py-4">
-              Maximum of {maxAdditionalImages} additional images reached
+              Maximum of {imageLimit} additional images reached. {!isPremium && "Upgrade to premium for up to 20 images!"}
             </p>
           )}
 

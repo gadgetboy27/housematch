@@ -8,6 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { LocalStorageService } from "@/lib/local-storage";
 import HeartBubbles from "./heart-bubbles";
 import { PricingCard } from "./pricing-card";
+import { fbTrackViewContent, fbTrackAddToWishlist } from "@/components/FacebookPixel";
 
 interface SwipeCard {
   type: 'property' | 'pricing';
@@ -20,6 +21,8 @@ interface SwipeContainerProps {
   onSwipeAction: (direction: "left" | "right" | "up", action: string) => void;
   onPropertyTypeFilter?: (type: string) => void;
   selectedPropertyType?: string;
+  user?: { id: string; name: string; email: string } | null;
+  onOpenAuth?: () => void;
 }
 
 const SwipeContainer = forwardRef<
@@ -31,6 +34,8 @@ const SwipeContainer = forwardRef<
   onSwipeAction,
   onPropertyTypeFilter,
   selectedPropertyType,
+  user,
+  onOpenAuth,
 }, ref) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isSwipingDisabled, setIsSwipingDisabled] = useState(false);
@@ -62,6 +67,7 @@ const SwipeContainer = forwardRef<
   };
 
   const cards = mixedCards();
+  
 
   // Create storage key based on property type filter
   const getStorageKey = () => `property-position-${selectedPropertyType || 'all'}`;
@@ -90,25 +96,44 @@ const SwipeContainer = forwardRef<
 
   const x = useMotionValue(0);
   const y = useMotionValue(0);
-  const rotate = useTransform(x, [-200, 0, 200], [-15, 0, 15]); // More subtle rotation like Tinder
+  const rotate = useTransform(x, [-200, 0, 200], [-30, 0, 30]); // More dramatic rotation for better visual feedback
   const opacity = useTransform(x, [-200, -50, 0, 50, 200], [0.3, 1, 1, 1, 0.3]); // Better opacity curve
-  const likeOpacity = useTransform(x, [50, 150], [0, 1]); // Earlier feedback
-  const nopeOpacity = useTransform(x, [-150, -50], [1, 0]); // Earlier feedback
+  const likeOpacity = useTransform(x, [0, 100], [0, 1]); // Smoother fade-in
+  const nopeOpacity = useTransform(x, [-100, 0], [1, 0]); // Smoother fade-out
 
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const userId = "demo-user";
 
   const swipeMutation = useMutation({
-    mutationFn: async (swipeData: { userId: string; propertyId: string; action: string }) => {
+    mutationFn: async (swipeData: { propertyId: string; action: string }) => {
       const res = await apiRequest("POST", "/api/swipes", swipeData);
       return res.json();
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["/api/swipes", userId] }),
+    onSuccess: () => {
+      // Invalidate swipes for the currently logged-in user
+      const session = LocalStorageService.getUserSession();
+      if (session.userId) {
+        queryClient.invalidateQueries({ queryKey: ["/api/swipes", session.userId] });
+      }
+    },
   });
 
   const currentCard = cards[currentIndex];
   const currentProperty = currentCard?.type === 'property' ? currentCard.data as Property : null;
+
+  // Track ViewContent on Facebook Pixel whenever a new property card becomes active
+  useEffect(() => {
+    if (currentProperty) {
+      fbTrackViewContent({
+        id: currentProperty.id,
+        address: currentProperty.address,
+        suburb: currentProperty.suburb ?? undefined,
+        price: currentProperty.price ?? undefined,
+        bedrooms: currentProperty.bedrooms ?? undefined,
+        propertyType: currentProperty.propertyType ?? undefined,
+      });
+    }
+  }, [currentIndex]);
 
   const handleSwipe = async (direction: "left" | "right" | "up", action: string) => {
     if (isSwipingDisabled || !currentCard) return;
@@ -116,22 +141,36 @@ const SwipeContainer = forwardRef<
 
     if (currentCard.type === 'property') {
       const property = currentCard.data as Property;
+      
+      // Check if user is logged in for database persistence
+      const session = LocalStorageService.getUserSession();
+      const isLoggedIn = session.isLoggedIn && session.userId;
+      
       // Heart bubble for likes
-      if (action === "like" || action === "super_like") {
-        if (action === "like") setHeartTrigger(true);
-        LocalStorageService.addLikedProperty(property, action as "like" | "super_like");
+      if (action === "like") {
+        setHeartTrigger(true);
+        LocalStorageService.addLikedProperty(property, action as "like");
+        // FB: Track property save as AddToWishlist
+        fbTrackAddToWishlist({
+          id: property.id,
+          address: property.address,
+          price: property.price ?? undefined,
+          propertyType: property.propertyType ?? undefined,
+        });
         toast({
-          title: action === "super_like" ? "Super Liked!" : "Liked!",
-          description: `${property.title} saved`,
-          duration: 800,
-          variant: (action === "super_like" ? "superlike" : "subtle") as any,
+          title: isLoggedIn ? "Liked!" : "Liked (Login to save)",
+          description: isLoggedIn 
+            ? `${property.title} saved` 
+            : "Log in to save your likes and access them later",
+          duration: isLoggedIn ? 800 : 2000,
+          variant: "subtle" as any,
         });
       }
 
-      // Record swipe for property only
-      const session = LocalStorageService.getUserSession();
-      const uid = session.isLoggedIn && session.userId ? session.userId : userId;
-      swipeMutation.mutate({ userId: uid, propertyId: property.id, action });
+      // Only record swipe in database if user is logged in
+      if (isLoggedIn) {
+        swipeMutation.mutate({ propertyId: property.id, action });
+      }
     } else {
       // Handle pricing card swipe - no database record needed
       const plan = currentCard.data as PricingPlan;
@@ -140,12 +179,6 @@ const SwipeContainer = forwardRef<
         toast({
           title: "💰 Interested in selling?",
           description: `${plan.name} could save you thousands in commission fees!`,
-          duration: 2500,
-        });
-      } else if (action === "super_like") {
-        toast({
-          title: "🚀 Ready to sell smart?",
-          description: `${plan.name} - Skip the $20k+ agent fees!`,
           duration: 2500,
         });
       }
@@ -169,22 +202,9 @@ const SwipeContainer = forwardRef<
     const nextIndex = (currentIndex + 1) % cards.length;
     setCurrentIndex(nextIndex);
     
-    // For superlike (up swipe), animate new card in from above
-    if (direction === "up") {
-      y.set(-window.innerHeight * 1.5); // Start closer to screen
-      x.set(0);
-      // Faster but still smooth animation
-      // Same speed as exit animation
-      await animate(y, 0, { 
-        type: "spring", 
-        stiffness: 240,  // More responsive
-        damping: 22     // Quick settling
-      });
-    } else {
-      // For left/right swipes, just reset to center
-      x.set(0);
-      y.set(0);
-    }
+    // Reset card position to center
+    x.set(0);
+    y.set(0);
     
     setIsSwipingDisabled(false);
     setHeartTrigger(false);
@@ -227,12 +247,10 @@ const SwipeContainer = forwardRef<
 
     if (Math.abs(info.offset.x) > threshold || Math.abs(info.velocity.x) > velocityThreshold) {
       handleSwipe(info.offset.x > 0 ? "right" : "left", info.offset.x > 0 ? "like" : "dislike");
-    } else if (Math.abs(info.offset.y) > threshold && info.offset.y < 0) {
-      handleSwipe("up", "super_like");
     } else {
-      // Smooth spring reset using framer motion animate
-      animate(x, 0, { type: "spring", stiffness: 180, damping: 18 });
-      animate(y, 0, { type: "spring", stiffness: 180, damping: 18 });
+      // Silky smooth spring reset using optimized parameters
+      animate(x, 0, { type: "spring", stiffness: 250, damping: 20, mass: 0.6 });
+      animate(y, 0, { type: "spring", stiffness: 250, damping: 20, mass: 0.6 });
     }
   };
 
@@ -244,7 +262,7 @@ const SwipeContainer = forwardRef<
   );
 
   return (
-    <div className="absolute inset-2">
+    <div className="absolute inset-2 di-negative-top">
       <motion.div
         className="absolute inset-0 rounded-2xl overflow-hidden cursor-grab active:cursor-grabbing"
         style={{ 
@@ -264,9 +282,9 @@ const SwipeContainer = forwardRef<
         dragElastic={0.2} // Slightly more elastic for better mobile feel
         dragMomentum={false} // Prevents overshoot
         dragTransition={{ 
-          bounceStiffness: 600,
-          bounceDamping: 20,
-          power: 0.3 // Smoother mobile dragging
+          bounceStiffness: 800,
+          bounceDamping: 15,
+          power: 0.2 // Ultra smooth mobile dragging
         }}
         onDragEnd={handleDragEnd}
         whileTap={{ scale: 0.98 }}
@@ -276,16 +294,19 @@ const SwipeContainer = forwardRef<
         }}
         transition={{ 
           type: "spring", 
-          stiffness: 300, // Reduced for smoother mobile performance
-          damping: 35,    // Higher damping for less bounce
-          mass: 0.8       // Lighter feel
+          stiffness: 400, // Increased for silky smooth response
+          damping: 25,    // Reduced for smoother transitions
+          mass: 0.6,      // Even lighter feel for fluid motion
+          velocity: 0     // Start from rest for consistent feel
         }}
       >
         {currentCard?.type === 'property' ? (
           <PropertyCard 
             property={currentCard.data as Property} 
             onPropertyTypeFilter={onPropertyTypeFilter} 
-            selectedPropertyType={selectedPropertyType} 
+            selectedPropertyType={selectedPropertyType}
+            user={user}
+            onOpenAuth={onOpenAuth} 
           />
         ) : currentCard?.type === 'pricing' ? (
           <PricingCard 
@@ -293,12 +314,24 @@ const SwipeContainer = forwardRef<
           />
         ) : null}
 
-        <motion.div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none z-30" style={{ opacity: likeOpacity }}>
-          <div className="text-green-500 text-6xl font-bold transform -rotate-12 drop-shadow-lg">LIKE</div>
+        {/* LIKE Overlay - Enhanced styling */}
+        <motion.div 
+          className="absolute top-12 left-8 border-4 border-green-500 px-6 py-3 rounded-xl -rotate-[30deg] pointer-events-none z-30" 
+          style={{ opacity: likeOpacity }}
+        >
+          <span className="text-6xl font-black text-green-500 tracking-wider">
+            LIKE
+          </span>
         </motion.div>
 
-        <motion.div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none z-30" style={{ opacity: nopeOpacity }}>
-          <div className="text-red-500 text-6xl font-bold transform rotate-12 drop-shadow-lg">NOPE</div>
+        {/* NOPE Overlay - Enhanced styling */}
+        <motion.div 
+          className="absolute top-12 right-8 border-4 border-red-500 px-6 py-3 rounded-xl rotate-[30deg] pointer-events-none z-30" 
+          style={{ opacity: nopeOpacity }}
+        >
+          <span className="text-6xl font-black text-red-500 tracking-wider">
+            NOPE
+          </span>
         </motion.div>
 
         <HeartBubbles trigger={heartTrigger} onComplete={() => setHeartTrigger(false)} />

@@ -1,0 +1,558 @@
+🔧 Critical Missing Features
+1. No Payment/Escrow System
+typescript// ❌ MISSING: How do partners actually get paid?
+// ✅ IMPLEMENT:
+
+// Use Stripe Connect for marketplace payments
+import Stripe from 'stripe';
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+
+// When creating partner account
+async function onboardPartner(partnerId: number) {
+  const partner = await getPartner(partnerId);
+  
+  // Create Stripe Connect account
+  const account = await stripe.accounts.create({
+    type: 'express',
+    country: 'NZ',
+    email: partner.email,
+    business_type: 'company',
+    capabilities: {
+      transfers: { requested: true },
+    },
+  });
+  
+  // Save Stripe account ID
+  await db.update(servicePartners)
+    .set({ stripeAccountId: account.id })
+    .where(eq(servicePartners.id, partnerId));
+  
+  // Generate onboarding link
+  const accountLink = await stripe.accountLinks.create({
+    account: account.id,
+    refresh_url: 'https://swiperight.nz/partner/onboarding',
+    return_url: 'https://swiperight.nz/partner/dashboard',
+    type: 'account_onboarding',
+  });
+  
+  return accountLink.url;
+}
+
+// When customer pays for service
+async function processServicePayment(orderId: number) {
+  const order = await getServiceOrder(orderId);
+  const partner = await getPartner(order.partnerId);
+  
+  // Charge customer
+  const paymentIntent = await stripe.paymentIntents.create({
+    amount: order.amount * 100, // Convert to cents
+    currency: 'nzd',
+    customer: order.customerId,
+    application_fee_amount: Math.round(order.amount * 0.15 * 100), // 15% commission
+    transfer_data: {
+      destination: partner.stripeAccountId, // Pay partner directly
+    },
+  });
+  
+  // Update order
+  await db.update(serviceOrders)
+    .set({ 
+      paymentIntentId: paymentIntent.id,
+      status: 'paid',
+      commissionAmount: order.amount * 0.15
+    })
+    .where(eq(serviceOrders.id, orderId));
+}
+
+// Release payment after job completion
+async function releasePayment(orderId: number) {
+  const order = await getServiceOrder(orderId);
+  
+  // Capture the payment (was held in escrow)
+  await stripe.paymentIntents.capture(order.paymentIntentId);
+  
+  // Partner gets paid automatically via Stripe Connect
+  await db.update(serviceOrders)
+    .set({ 
+      status: 'completed',
+      completedAt: new Date()
+    })
+    .where(eq(serviceOrders.id, orderId));
+}
+2. No Refund/Dispute System
+typescript// Add dispute resolution
+export const serviceDisputes = pgTable('service_disputes', {
+  id: serial('id').primaryKey(),
+  orderId: integer('order_id').references(() => serviceOrders.id),
+  initiatedBy: text('initiated_by').notNull(), // 'customer' or 'partner'
+  reason: text('reason').notNull(),
+  description: text('description').notNull(),
+  evidence: json('evidence'), // Photos, messages
+  status: text('status').notNull().default('open'), // open, under_review, resolved
+  resolution: text('resolution'),
+  refundAmount: decimal('refund_amount'),
+  resolvedBy: integer('resolved_by').references(() => adminUsers.id),
+  createdAt: timestamp('created_at').defaultNow(),
+  resolvedAt: timestamp('resolved_at'),
+});
+
+// API endpoints
+app.post('/api/service-orders/:id/dispute', requireAuth, async (req, res) => {
+  const { reason, description, evidence } = req.body;
+  
+  await db.insert(serviceDisputes).values({
+    orderId: Number(req.params.id),
+    initiatedBy: 'customer',
+    reason,
+    description,
+    evidence,
+  });
+  
+  // Notify admin and partner
+  await sendDisputeNotifications(req.params.id);
+  
+  res.json({ success: true });
+});
+3. No Background Checks/Verification
+typescript// Add partner verification
+export const partnerVerifications = pgTable('partner_verifications', {
+  id: serial('id').primaryKey(),
+  partnerId: integer('partner_id').references(() => servicePartners.id),
+  verificationType: text('verification_type').notNull(), // license, insurance, background
+  status: text('status').notNull().default('pending'),
+  documentUrl: text('document_url'),
+  expiryDate: timestamp('expiry_date'),
+  verifiedBy: integer('verified_by').references(() => adminUsers.id),
+  verifiedAt: timestamp('verified_at'),
+  notes: text('notes'),
+});
+
+// Required documents for each service type
+const requiredVerifications = {
+  building_inspection: ['license', 'insurance', 'background_check'],
+  photography: ['portfolio', 'insurance'],
+  conveyancing: ['law_society_registration', 'insurance'],
+  mortgage_broker: ['faa_license', 'insurance'],
+};
+
+// Block unverified partners from accepting jobs
+app.post('/partner/orders/:id/accept', requirePartnerAuth, async (req, res) => {
+  const partner = req.partner;
+  
+  // Check if all verifications are complete
+  const verifications = await db
+    .select()
+    .from(partnerVerifications)
+    .where(
+      and(
+        eq(partnerVerifications.partnerId, partner.servicePartnerId),
+        eq(partnerVerifications.status, 'approved')
+      )
+    );
+  
+  const required = requiredVerifications[partner.serviceType];
+  const completed = verifications.map(v => v.verificationType);
+  const missing = required.filter(r => !completed.includes(r));
+  
+  if (missing.length > 0) {
+    return res.status(403).json({
+      error: 'Account not fully verified',
+      missingVerifications: missing
+    });
+  }
+  
+  // Proceed with accepting order...
+});
+4. No Service Level Agreements (SLAs)
+typescript// Add SLAs to track partner performance
+export const serviceSLAs = pgTable('service_slas', {
+  serviceType: text('service_type').primaryKey(),
+  responseTimeHours: integer('response_time_hours').notNull(),
+  completionTimeDays: integer('completion_time_days').notNull(),
+  maxActiveOrders: integer('max_active_orders').notNull(),
+  cancellationPenalty: decimal('cancellation_penalty').notNull(),
+  lateCompletionPenalty: decimal('late_completion_penalty').notNull(),
+});
+
+// Track SLA violations
+async function checkSLACompliance(orderId: number) {
+  const order = await getServiceOrder(orderId);
+  const sla = await getSLA(order.serviceType);
+  
+  const violations = [];
+  
+  // Check response time
+  const responseTime = order.acceptedAt 
+    ? (order.acceptedAt.getTime() - order.createdAt.getTime()) / (1000 * 60 * 60)
+    : null;
+  
+  if (!responseTime || responseTime > sla.responseTimeHours) {
+    violations.push({
+      type: 'late_response',
+      penalty: sla.cancellationPenalty * 0.1
+    });
+  }
+  
+  // Check completion time
+  const completionTime = order.completedAt
+    ? (order.completedAt.getTime() - order.acceptedAt.getTime()) / (1000 * 60 * 60 * 24)
+    : null;
+  
+  if (completionTime && completionTime > sla.completionTimeDays) {
+    violations.push({
+      type: 'late_completion',
+      penalty: sla.lateCompletionPenalty
+    });
+  }
+  
+  // Apply penalties
+  if (violations.length > 0) {
+    const totalPenalty = violations.reduce((sum, v) => sum + Number(v.penalty), 0);
+    
+    await db.update(serviceOrders)
+      .set({ 
+        slaViolations: violations,
+        penaltyAmount: totalPenalty
+      })
+      .where(eq(serviceOrders.id, orderId));
+    
+    // Deduct from partner earnings
+    await adjustPartnerEarnings(order.partnerId, -totalPenalty);
+  }
+}
+5. No Notification System
+typescript// Critical missing: Partners need real-time notifications
+
+// Install: npm install pusher socket.io-client
+import Pusher from 'pusher';
+
+const pusher = new Pusher({
+  appId: process.env.PUSHER_APP_ID,
+  key: process.env.PUSHER_KEY,
+  secret: process.env.PUSHER_SECRET,
+  cluster: 'ap4', // NZ region
+});
+
+// Send notifications
+async function notifyPartner(partnerId: number, event: string, data: any) {
+  // 1. Real-time push notification
+  await pusher.trigger(`partner-${partnerId}`, event, data);
+  
+  // 2. Email notification
+  await sendEmail({
+    to: await getPartnerEmail(partnerId),
+    subject: getEmailSubject(event),
+    template: event,
+    data,
+  });
+  
+  // 3. SMS for urgent events
+  if (['new_order', 'order_cancelled'].includes(event)) {
+    await sendSMS({
+      to: await getPartnerPhone(partnerId),
+      message: getSMSMessage(event, data)
+    });
+  }
+  
+  // 4. Store in-app notification
+  await db.insert(partnerNotifications).values({
+    partnerId,
+    type: event,
+    data,
+    read: false,
+    createdAt: new Date(),
+  });
+}
+
+// Use throughout the system
+app.post('/api/service-orders/:id/assign', requireAdmin, async (req, res) => {
+  const { partnerId } = req.body;
+  
+  await assignOrder(req.params.id, partnerId);
+  
+  // Notify partner immediately
+  await notifyPartner(partnerId, 'new_order', {
+    orderId: req.params.id,
+    serviceType: order.serviceType,
+    amount: order.amount,
+    deadline: order.requestedCompletionDate,
+  });
+  
+  res.json({ success: true });
+});
+
+💡 Additional Services You Can Offer
+For Service Partners:
+1. Lead Generation Service
+typescript// Premium tier: Partners pay for exclusive leads
+const partnerTiers = {
+  basic: {
+    cost: 0,
+    leadsPerMonth: 10,
+    exclusive: false,
+    listingPriority: 'low',
+  },
+  premium: {
+    cost: 199, // $199/mo
+    leadsPerMonth: 50,
+    exclusive: true, // No other partners see these leads
+    listingPriority: 'high',
+    analytics: true,
+  },
+  enterprise: {
+    cost: 499,
+    leadsPerMonth: 'unlimited',
+    exclusive: true,
+    listingPriority: 'featured',
+    analytics: true,
+    dedicatedSupport: true,
+    apiAccess: true,
+  }
+};
+2. Marketing & Branding Tools
+typescript// Partners can upgrade their profiles
+const marketingAddOns = {
+  featuredListing: {
+    cost: 99, // $99/mo
+    benefit: 'Appear first in search results'
+  },
+  portfolioWebsite: {
+    cost: 49, // $49/mo
+    benefit: 'Custom subdomain: photography.swiperight.nz'
+  },
+  videoProfile: {
+    cost: 199, // One-time
+    benefit: 'Professional video introduction'
+  },
+  sponsoredContent: {
+    cost: 299, // $299/mo
+    benefit: 'Featured in newsletter & blog posts'
+  }
+};
+3. Business Intelligence Dashboard
+typescript// Premium analytics for partners
+const analyticsFeatures = {
+  competitorBenchmarking: 'See how you rank vs other partners',
+  leadSourceTracking: 'Know which marketing channels work',
+  customerJourneyMap: 'See when customers convert',
+  priceOptimization: 'AI suggests optimal pricing',
+  demandForecasting: 'Predict busy periods',
+};
+
+// Charge $49/mo for premium analytics
+4. Training & Certification
+typescriptconst trainingPrograms = {
+  customerService: {
+    cost: 299,
+    duration: '4 weeks online',
+    benefit: 'SwipeRight Certified badge',
+  },
+  propertyPhotography: {
+    cost: 499,
+    duration: '1 day workshop',
+    benefit: 'Professional certification',
+  },
+  digitalMarketing: {
+    cost: 399,
+    duration: '6 weeks',
+    benefit: 'Grow your business online',
+  }
+};
+5. API Access for Integration
+typescript// Enterprise partners can integrate directly
+const apiProducts = {
+  webhooks: {
+    cost: 99, // $99/mo
+    events: ['new_order', 'order_completed', 'review_received'],
+  },
+  restAPI: {
+    cost: 199, // $199/mo
+    rateLimit: 10000, // requests/day
+    features: ['Create orders', 'Update status', 'Upload photos'],
+  },
+  whiteLabel: {
+    cost: 999, // $999/mo
+    features: ['Custom branding', 'Your domain', 'No SwipeRight branding'],
+  }
+};
+
+For Property Discoverers (Buyers/Sellers):
+1. Concierge Service Bundle
+typescriptconst conciergePackages = {
+  basicBuyer: {
+    cost: 499,
+    includes: [
+      'Dedicated buyer agent',
+      'Unlimited property viewings',
+      'Offer negotiation support',
+      'Settlement coordination',
+    ]
+  },
+  premiumBuyer: {
+    cost: 999,
+    includes: [
+      'Everything in Basic',
+      'Professional building inspection',
+      'Free LIM report',
+      'Mortgage pre-approval assistance',
+      'Moving service discount (20%)',
+    ]
+  },
+  turnkeySeller: {
+    cost: 1999,
+    includes: [
+      'Professional staging consultation',
+      'Premium photography + drone',
+      '3D virtual tour',
+      'Platinum listing (180 days)',
+      'Price optimization AI',
+      'Open home management',
+      'All negotiations handled',
+    ]
+  }
+};
+2. Property Management Subscription
+typescript// For landlords/investors
+const propertyManagement = {
+  selfManaged: {
+    cost: 29, // $29/mo
+    features: [
+      'Tenant screening',
+      'Rent collection',
+      'Maintenance tracking',
+      'Document storage',
+      'Tax reporting',
+    ]
+  },
+  fullService: {
+    cost: '8% of rent', // Industry standard
+    features: [
+      'Everything in Self-Managed',
+      'Tenant placement',
+      'Property inspections',
+      'Maintenance coordination',
+      '24/7 emergency support',
+      'Legal compliance',
+    ]
+  }
+};
+3. Home Warranty/Insurance
+typescript// Partner with insurance companies
+const homeWarranty = {
+  basic: {
+    cost: 49, // $49/mo
+    coverage: 'Major systems (HVAC, plumbing, electrical)',
+    deductible: 150,
+  },
+  premium: {
+    cost: 89, // $89/mo
+    coverage: 'Major systems + appliances',
+    deductible: 100,
+  },
+  platinum: {
+    cost: 129, // $129/mo
+    coverage: 'Complete coverage',
+    deductible: 50,
+    extras: ['Pool/spa', 'Roof', 'Septic'],
+  }
+};
+
+// Your commission: 20-30% of premium
+4. Smart Home Services
+typescriptconst smartHomePackages = {
+  security: {
+    cost: 1499, // One-time
+    includes: [
+      'Smart locks (3)',
+      'Security cameras (4)',
+      'Doorbell camera',
+      'Professional installation',
+      '1 year monitoring',
+    ]
+  },
+  automation: {
+    cost: 2999,
+    includes: [
+      'Smart thermostat',
+      'Smart lighting (10 bulbs)',
+      'Voice assistant setup',
+      'Home hub installation',
+      'Smart irrigation',
+    ]
+  },
+  solarPackage: {
+    cost: 'Custom quote',
+    includes: [
+      'Solar panel installation',
+      'Battery storage',
+      'Smart energy monitoring',
+      'Government rebate assistance',
+    ],
+    referralFee: 500 // $500 per installation
+  }
+};
+5. Financial Services Marketplace
+typescriptconst financialServices = {
+  mortgageComparison: {
+    free: true,
+    commission: 3900, // From banks (0.65% of loan)
+  },
+  insuranceQuotes: {
+    free: true,
+    commission: 150, // Per policy sold
+  },
+  investmentAdvice: {
+    cost: 299, // Initial consultation
+    ongoing: '1% AUM', // Assets under management
+    commission: '50% split with advisor'
+  },
+  taxPlanning: {
+    cost: 499, // For property investors
+    features: [
+      'Depreciation schedule',
+      'Tax optimization',
+      'Deduction maximization',
+      'Accountant referral',
+    ]
+  }
+};
+```
+
+---
+
+## 📊 Revenue Optimization Strategy
+
+### **Current Model:**
+```
+Service Order: $699 (building inspection)
+Your commission: 15% = $105
+Partner gets: $594
+```
+
+### **Enhanced Model:**
+```
+Service Order: $699
+Base commission: 15% = $105
+
+Additional Revenue Streams:
++ Partner Premium Tier: $199/mo
++ Lead generation fee: $50 per lead
++ Transaction processing: 2.9% = $20
++ Insurance upsell: $89/mo (you get $18/mo)
++ Warranty upsell: $49/mo (you get $15/mo)
+
+Total per transaction: $105 + $50 + $20 = $175
+Plus ongoing: $199 + $18 + $15 = $232/mo per partner
+```
+
+### **Scale Impact:**
+```
+100 active service partners:
+- One-time revenue: $17,500 per month (100 jobs × $175)
+- Recurring revenue: $23,200 per month (100 partners × $232)
+- Total: $40,700/month = $488,400/year
+
+500 active partners:
+- One-time: $87,500/month
+- Recurring: $116,000/month
+- Total: $203,500/month = $2,442,000/year

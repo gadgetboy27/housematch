@@ -1,9 +1,19 @@
 import OpenAI from "openai";
 
-// the newest OpenAI model is "gpt-5" which was released August 7, 2025. do not change this unless explicitly requested by the user
+// Using GPT-3.5-turbo for cost optimization (60x cheaper than GPT-4)
+// Cost: $0.0005/1K input + $0.0015/1K output vs GPT-4's $0.03/1K + $0.06/1K
+
+// CRITICAL: Validate API key exists before initializing
+const apiKey = process.env.OPENAI_API_KEY || process.env.OPENAI_API_KEY_ENV_VAR;
+if (!apiKey) {
+  throw new Error("OPENAI_API_KEY is required. Please set the OPENAI_API_KEY environment variable.");
+}
+
 const openai = new OpenAI({ 
-  apiKey: process.env.OPENAI_API_KEY || process.env.OPENAI_API_KEY_ENV_VAR || "default_key" 
+  apiKey 
 });
+
+const AI_MODEL = "gpt-3.5-turbo"; // 60x cheaper than GPT-4, perfect for property recommendations
 
 export interface PropertyRecommendation {
   propertyId: string;
@@ -22,7 +32,7 @@ export interface UserInsights {
 export async function analyzeUserPreferences(
   likedProperties: any[],
   dislikedProperties: any[]
-): Promise<UserInsights> {
+): Promise<{ result: UserInsights; usage: { prompt_tokens: number; completion_tokens: number; total_tokens: number } }> {
   try {
     const prompt = `
     Analyze the following user's property preferences based on their liked and disliked properties.
@@ -44,7 +54,7 @@ export async function analyzeUserPreferences(
     `;
 
     const response = await openai.chat.completions.create({
-      model: "gpt-5",
+      model: AI_MODEL,
       messages: [
         {
           role: "system",
@@ -56,10 +66,18 @@ export async function analyzeUserPreferences(
         }
       ],
       response_format: { type: "json_object" },
+      max_tokens: 500, // Cost control: limit response tokens to prevent unbounded costs
     });
 
     const result = JSON.parse(response.choices[0].message.content || "{}");
-    return result as UserInsights;
+    return {
+      result: result as UserInsights,
+      usage: {
+        prompt_tokens: response.usage?.prompt_tokens || 0,
+        completion_tokens: response.usage?.completion_tokens || 0,
+        total_tokens: response.usage?.total_tokens || 0,
+      },
+    };
   } catch (error) {
     console.error("Error analyzing user preferences:", error);
     throw new Error("Failed to analyze user preferences");
@@ -69,7 +87,7 @@ export async function analyzeUserPreferences(
 export async function generatePropertyRecommendations(
   userPreferences: UserInsights,
   availableProperties: any[]
-): Promise<PropertyRecommendation[]> {
+): Promise<{ result: PropertyRecommendation[]; usage: { prompt_tokens: number; completion_tokens: number; total_tokens: number } }> {
   try {
     const prompt = `
     Based on these user preferences:
@@ -93,7 +111,7 @@ export async function generatePropertyRecommendations(
     `;
 
     const response = await openai.chat.completions.create({
-      model: "gpt-5",
+      model: AI_MODEL,
       messages: [
         {
           role: "system",
@@ -105,10 +123,18 @@ export async function generatePropertyRecommendations(
         }
       ],
       response_format: { type: "json_object" },
+      max_tokens: 800, // Cost control: limit response tokens (need more for multiple property recommendations)
     });
 
     const result = JSON.parse(response.choices[0].message.content || "{}");
-    return result.recommendations || [];
+    return {
+      result: result.recommendations || [],
+      usage: {
+        prompt_tokens: response.usage?.prompt_tokens || 0,
+        completion_tokens: response.usage?.completion_tokens || 0,
+        total_tokens: response.usage?.total_tokens || 0,
+      },
+    };
   } catch (error) {
     console.error("Error generating recommendations:", error);
     throw new Error("Failed to generate property recommendations");
@@ -118,7 +144,7 @@ export async function generatePropertyRecommendations(
 export async function generateMarketInsights(
   userLocation: string,
   propertyType: string
-): Promise<string[]> {
+): Promise<{ result: string[]; usage: { prompt_tokens: number; completion_tokens: number; total_tokens: number } }> {
   try {
     const prompt = `
     Generate 3-4 relevant market insights for ${propertyType} properties in ${userLocation}, New Zealand.
@@ -131,7 +157,7 @@ export async function generateMarketInsights(
     `;
 
     const response = await openai.chat.completions.create({
-      model: "gpt-5",
+      model: AI_MODEL,
       messages: [
         {
           role: "system",
@@ -143,12 +169,23 @@ export async function generateMarketInsights(
         }
       ],
       response_format: { type: "json_object" },
+      max_tokens: 400, // Cost control: limit response tokens for market insights
     });
 
     const result = JSON.parse(response.choices[0].message.content || "{}");
-    return result.insights || [];
+    return {
+      result: result.insights || [],
+      usage: {
+        prompt_tokens: response.usage?.prompt_tokens || 0,
+        completion_tokens: response.usage?.completion_tokens || 0,
+        total_tokens: response.usage?.total_tokens || 0,
+      },
+    };
   } catch (error) {
     console.error("Error generating market insights:", error);
-    return ["Market data temporarily unavailable"];
+    return {
+      result: ["Market data temporarily unavailable"],
+      usage: { prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 },
+    };
   }
 }

@@ -66,12 +66,31 @@ export class AnalyticsService {
   }
 
   async getPersonalizedProperties(userId: string, limit = 20): Promise<PropertyScore[]> {
-    const allProperties = await this.storage.getAllProperties();
+    // FIXED: Memory bomb - use batched queries instead of loading all properties
     const userSwipes = await this.storage.getUserSwipes(userId);
     const swipedPropertyIds = new Set(userSwipes.map(s => s.propertyId));
     
-    // Filter out already swiped properties
-    const unswipedProperties = allProperties.filter(p => !swipedPropertyIds.has(p.id));
+    // Fetch properties in batches until we have enough unswiped ones
+    // This prevents loading entire property table into memory
+    const unswipedProperties: Property[] = [];
+    const batchSize = 50;
+    let offset = 0;
+    
+    // Continue until we have enough unswiped properties OR no more exist in DB
+    // No arbitrary limit - ensures heavy users still get recommendations
+    while (unswipedProperties.length < limit) {
+      const batchProperties = await this.storage.getPropertiesBatch(batchSize, offset);
+      
+      if (batchProperties.length === 0) {
+        break; // No more properties in database
+      }
+      
+      // Filter out already swiped properties from this batch
+      const batchUnswipedProperties = batchProperties.filter(p => !swipedPropertyIds.has(p.id));
+      unswipedProperties.push(...batchUnswipedProperties);
+      
+      offset += batchSize;
+    }
 
     if (userSwipes.length < 3) {
       // Not enough data for personalization, return random selection

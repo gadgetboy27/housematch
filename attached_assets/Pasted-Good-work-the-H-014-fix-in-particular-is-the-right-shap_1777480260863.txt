@@ -1,0 +1,21 @@
+Good work — the H-014 fix in particular is the right shape. The atomic conditional claim is exactly what serialises two concurrent writers correctly, and your justification for keeping EMAIL_NOT_VERIFIED post-credential-verify is sound (it only fires after the password is right, so there's no pre-auth oracle).
+A few things to push back on or add:
+New issue: timing oracle in customer login. With the partner cross-check removed, the customer flow now does a scrypt comparison when the user exists, and returns immediately when they don't. That's a measurable timing difference — typical scrypt run is 50–200ms, the no-user path is sub-millisecond. An attacker can enumerate registered emails by measuring response time, even though the response codes are identical. The fix is a fake comparison on the no-user path:
+tsconst FAKE_HASH = '0'.repeat(128) + '.' + '0'.repeat(32);
+const user = await storage.getUserByEmail(email);
+if (!user) {
+  // Run a real scrypt to equalise timing — discard the result
+  await comparePasswords(password, FAKE_HASH).catch(() => false);
+  return done(null, false, { message: 'INVALID_CREDENTIALS' });
+}
+Same applies to /api/auth/forgot-password (which is otherwise correctly designed not to reveal account existence — but probably still has the timing tell). Worth doing both.
+H-014 residual: stuck-state risk. Your atomic claim is correct serialisation, but it relies on the post-claim work always completing. If the claim succeeds and then the property activation throws (network blip mid-transaction, Drizzle pool exhaustion, anything), the session is marked completed but the property never went paid, and neither the webhook nor a retry will rerun it (both will skip on status === 'completed'). Two ways to harden:
+
+Wrap the claim and the metadata writes in a single db.transaction(...) so a failure rolls back the claim.
+Or: drop the session status as the activation lock entirely. Use properties.paymentStatus as the gate (the webhook already does if (existingProperty.paymentStatus === 'paid') return). The session status becomes a UI breadcrumb, not a serialisation primitive. Lower coordination, fully idempotent activation.
+
+The transaction wrap is the smaller change.
+H-023 — confirm transaction boundary. Insert-first with onConflictDoNothing() on the unique stripe_event_id is correct. The bit I want to confirm is that the side effects (property update, transactions row, partner credential creation, email enqueue) are inside the same db.transaction(...) as the stripeEvents insert. If yes, you have at-most-once. If the insert is in one transaction and the switch body is outside, you have a smaller race window than before but still not zero. Email-send obviously can't be transactional — that one needs an outbox pattern (insert into email_outbox inside the txn, separate worker drains it) for proper exactly-once-ish, but that's future work.
+H-016 — quick verify. "CSRF middleware registered before setupAuth" works only if csrfProtection is globally mounted before setupAuth(app) runs, since setupAuth registers routes directly on the app rather than on a router that gets mounted later. Just worth a grep -n "setupAuth\|csrfProtection" server/routes.ts to confirm the order is what you think it is. Easy to misread.
+Concur on the rest. H-015 / H-017 — fair, I had the wrong mental model of where the constraints lived. H-037 chart.tsx — agreed, that's standard shadcn pattern, no flow from user input. H-030 auth-gated as interim is reasonable until the object-storage migration. H-027 / H-028 / H-034 / H-036 / H-040 — yes, those are projects.
+Net of this round: 30 of 40 closed, all critical and high closed, the residuals are real projects or documented interim states. The new timing-oracle item should probably get a number — call it H-041 if you're keeping the registry. Worth fixing in the same area as the H-010 work since you're already in the file.

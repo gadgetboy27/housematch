@@ -10,7 +10,9 @@ export interface PasswordResetEmailParams {
 // Create Gmail SMTP transporter
 function createGmailTransporter() {
   if (!process.env.GMAIL_EMAIL || !process.env.GMAIL_APP_PASSWORD) {
-    throw new Error("Gmail credentials not found. Please set GMAIL_EMAIL and GMAIL_APP_PASSWORD environment variables.");
+    // Log internally only - don't expose credential status to external callers
+    console.error("Gmail transporter initialization failed: missing credentials");
+    throw new Error("Email service unavailable");
   }
 
   return nodemailer.createTransport({
@@ -150,7 +152,7 @@ export async function sendOfferNotificationViaGmail(
         </div>
         
         <div style="background: #333; color: white; padding: 20px; text-align: center;">
-          <p style="margin: 0; opacity: 0.7;">This offer was submitted through Cribsy Property Platform</p>
+          <p style="margin: 0; opacity: 0.7;">This offer was submitted through HouseMatch NZ</p>
           <p style="margin: 5px 0 0 0; font-size: 12px; opacity: 0.5;">Secure • Verified • Legally Compliant</p>
         </div>
       </div>
@@ -184,7 +186,7 @@ A formal PDF document is attached for your legal review.
     `;
 
     const mailOptions: any = {
-      from: `"Cribsy Property Platform" <${process.env.GMAIL_EMAIL}>`,
+      from: `"HouseMatch NZ" <${process.env.GMAIL_EMAIL}>`,
       to: sellerEmail,
       subject,
       text: textContent,

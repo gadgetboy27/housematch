@@ -22,12 +22,87 @@ interface ValidationResult {
 export class LINZValidationService {
   private apiKey: string;
   private baseUrl = 'https://data.linz.govt.nz/services';
+  
+  // Rate limiting to prevent API abuse and IP bans
+  private lastRequestTime: number = 0;
+  private readonly MIN_REQUEST_INTERVAL_MS = 500; // Minimum 500ms between requests
+  private requestQueue: Array<() => Promise<any>> = [];
+  private isProcessingQueue: boolean = false;
 
   constructor() {
     this.apiKey = process.env.LINZ_API_KEY || '';
     if (!this.apiKey) {
       console.warn('LINZ_API_KEY not found in environment variables');
     }
+  }
+  
+  // Throttled fetch to prevent rate limiting/IP bans
+  private async throttledFetch(url: string, options?: any): Promise<Response> {
+    return new Promise((resolve, reject) => {
+      const executeFetch = async () => {
+        try {
+          const now = Date.now();
+          const timeSinceLastRequest = now - this.lastRequestTime;
+          
+          if (timeSinceLastRequest < this.MIN_REQUEST_INTERVAL_MS) {
+            const delay = this.MIN_REQUEST_INTERVAL_MS - timeSinceLastRequest;
+            await new Promise(r => setTimeout(r, delay));
+          }
+          
+          this.lastRequestTime = Date.now();
+          const response = await fetch(url, options);
+          resolve(response);
+        } catch (error) {
+          reject(error); // Properly propagate errors to caller
+        }
+      };
+      
+      this.requestQueue.push(executeFetch);
+      this.processQueue();
+    });
+  }
+  
+  private async processQueue(): Promise<void> {
+    if (this.isProcessingQueue || this.requestQueue.length === 0) {
+      return;
+    }
+    
+    this.isProcessingQueue = true;
+    
+    try {
+      while (this.requestQueue.length > 0) {
+        const nextRequest = this.requestQueue.shift();
+        if (nextRequest) {
+          try {
+            await nextRequest();
+          } catch (error) {
+            // Log error but continue processing queue
+            console.error('LINZ request failed:', error);
+          }
+        }
+      }
+    } finally {
+      // Always clear processing flag so queue can continue after errors
+      this.isProcessingQueue = false;
+    }
+  }
+
+  /**
+   * Escape special characters in CQL strings to prevent injection attacks
+   * CQL (Common Query Language) uses single quotes and has special characters
+   */
+  private escapeCQL(value: string): string {
+    if (!value) return '';
+    
+    return value
+      .replace(/\\/g, '\\\\')  // Escape backslashes first
+      .replace(/'/g, "''")      // Escape single quotes (SQL standard)
+      .replace(/%/g, '\\%')     // Escape wildcards
+      .replace(/_/g, '\\_')     // Escape single char wildcard
+      .replace(/;/g, '')        // Remove semicolons (statement terminators)
+      .replace(/--/g, '')       // Remove SQL comments
+      .replace(/\/\*/g, '')     // Remove block comment starts
+      .replace(/\*\//g, '');    // Remove block comment ends
   }
 
   /**
@@ -47,6 +122,10 @@ export class LINZValidationService {
       // Remove PT prefix if present for broader search
       const searchLotNumber = cleanLotNumber.replace(/^PT\s+/, '');
       
+      // Escape user input to prevent CQL injection
+      const escapedSearchLot = this.escapeCQL(searchLotNumber);
+      const escapedCleanLot = this.escapeCQL(cleanLotNumber);
+      
       // LINZ WFS query for property titles by legal description
       const wfsUrl = `${this.baseUrl};key=${this.apiKey}/wfs`;
       const params = new URLSearchParams({
@@ -54,12 +133,12 @@ export class LINZValidationService {
         version: '2.0.0',
         request: 'GetFeature',
         typeNames: 'layer-50772', // NZ Primary Parcels layer
-        cql_filter: `appellation LIKE '%${searchLotNumber}%' OR appellation LIKE '%${cleanLotNumber}%'`,
+        cql_filter: `appellation LIKE '%${escapedSearchLot}%' OR appellation LIKE '%${escapedCleanLot}%'`,
         outputformat: 'json',
         count: '10'
       });
 
-      const response = await fetch(`${wfsUrl}?${params}`);
+      const response = await this.throttledFetch(`${wfsUrl}?${params}`);
       
       if (!response.ok) {
         throw new Error(`LINZ API error: ${response.status}`);
@@ -111,18 +190,21 @@ export class LINZValidationService {
       // For now, we'll use a simplified approach with property titles
       const searchTerm = `${address}${suburb ? ` ${suburb}` : ''}`.trim();
       
+      // Escape user input to prevent CQL injection
+      const escapedSearchTerm = this.escapeCQL(searchTerm);
+      
       const wfsUrl = `${this.baseUrl};key=${this.apiKey}/wfs`;
       const params = new URLSearchParams({
         service: 'WFS',
         version: '2.0.0',
         request: 'GetFeature',
         typeNames: 'layer-50772',
-        cql_filter: `appellation LIKE '%${searchTerm}%' OR titles LIKE '%${searchTerm}%'`,
+        cql_filter: `appellation LIKE '%${escapedSearchTerm}%' OR titles LIKE '%${escapedSearchTerm}%'`,
         outputformat: 'json',
         count: '5'
       });
 
-      const response = await fetch(`${wfsUrl}?${params}`);
+      const response = await this.throttledFetch(`${wfsUrl}?${params}`);
       
       if (!response.ok) {
         throw new Error(`LINZ API error: ${response.status}`);
@@ -221,7 +303,7 @@ export class LINZValidationService {
         count: '5'
       });
 
-      const response = await fetch(`${wfsUrl}?${params}`);
+      const response = await this.throttledFetch(`${wfsUrl}?${params}`);
       const data = await response.json() as { features: LINZPropertyData[] };
       
       return data.features?.map(f => f.properties.appellation).filter(Boolean) || [];

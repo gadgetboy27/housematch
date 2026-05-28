@@ -9,26 +9,23 @@ import {
   setObjectAclPolicy,
 } from "./objectAcl";
 
-const REPLIT_SIDECAR_ENDPOINT = "http://127.0.0.1:1106";
+// GCS client — uses GOOGLE_APPLICATION_CREDENTIALS env var (path to service account JSON)
+// or GCS_SERVICE_ACCOUNT_KEY env var (JSON string of service account credentials).
+// In development without credentials, object storage operations will fail gracefully.
+function buildStorageClient(): Storage {
+  if (process.env.GCS_SERVICE_ACCOUNT_KEY) {
+    try {
+      const credentials = JSON.parse(process.env.GCS_SERVICE_ACCOUNT_KEY);
+      return new Storage({ credentials, projectId: credentials.project_id });
+    } catch {
+      console.warn("⚠️  GCS_SERVICE_ACCOUNT_KEY is set but invalid JSON — falling back to ADC");
+    }
+  }
+  // GOOGLE_APPLICATION_CREDENTIALS env var is picked up automatically by the SDK
+  return new Storage();
+}
 
-// The object storage client is used to interact with the object storage service.
-export const objectStorageClient = new Storage({
-  credentials: {
-    audience: "replit",
-    subject_token_type: "access_token",
-    token_url: `${REPLIT_SIDECAR_ENDPOINT}/token`,
-    type: "external_account",
-    credential_source: {
-      url: `${REPLIT_SIDECAR_ENDPOINT}/credential`,
-      format: {
-        type: "json",
-        subject_token_field_name: "access_token",
-      },
-    },
-    universe_domain: "googleapis.com",
-  },
-  projectId: "",
-});
+export const objectStorageClient = buildStorageClient();
 
 export class ObjectNotFoundError extends Error {
   constructor() {
@@ -202,7 +199,18 @@ export class ObjectStorageService {
     }
   
     // Extract the entity ID from the path
-    const entityId = rawObjectPath.slice(objectEntityDir.length);
+    let entityId = rawObjectPath.slice(objectEntityDir.length);
+    
+    // SECURITY: Sanitize entityId to prevent path traversal attacks
+    // Remove any directory traversal sequences (../ or ..\)
+    entityId = entityId.replace(/\.\./g, '');
+    // Remove leading/trailing slashes for consistency
+    entityId = entityId.replace(/^\/+|\/+$/g, '');
+    // Validate no path separators remain (should be a single file/entity ID)
+    if (entityId.includes('/') || entityId.includes('\\')) {
+      throw new Error('Invalid entity path: contains directory separators');
+    }
+    
     return `/objects/${entityId}`;
   }
 
@@ -271,29 +279,12 @@ async function signObjectURL({
   method: "GET" | "PUT" | "DELETE" | "HEAD";
   ttlSec: number;
 }): Promise<string> {
-  const request = {
-    bucket_name: bucketName,
-    object_name: objectName,
-    method,
-    expires_at: new Date(Date.now() + ttlSec * 1000).toISOString(),
-  };
-  const response = await fetch(
-    `${REPLIT_SIDECAR_ENDPOINT}/object-storage/signed-object-url`,
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(request),
-    }
-  );
-  if (!response.ok) {
-    throw new Error(
-      `Failed to sign object URL, errorcode: ${response.status}, ` +
-        `make sure you're running on Replit`
-    );
-  }
-
-  const { signed_url: signedURL } = await response.json();
+  const bucket = objectStorageClient.bucket(bucketName);
+  const file = bucket.file(objectName);
+  const [signedURL] = await file.getSignedUrl({
+    version: 'v4',
+    action: method === 'PUT' ? 'write' : method === 'DELETE' ? 'delete' : 'read',
+    expires: Date.now() + ttlSec * 1000,
+  });
   return signedURL;
 }

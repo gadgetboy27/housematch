@@ -38,7 +38,7 @@ export default function PropertyTypeDropdown({ currentType, onTypeChange }: Prop
   const { data: allProperties = [] } = useQuery({
     queryKey: ["/api/properties", "all"],
     queryFn: async () => {
-      const response = await fetch("/api/properties?userId=demo-user");
+      const response = await fetch("/api/properties");
       return response.json();
     }
   });
@@ -75,9 +75,9 @@ export default function PropertyTypeDropdown({ currentType, onTypeChange }: Prop
         onPointerDown={(e) => e.stopPropagation()}
         onTouchStart={(e) => e.stopPropagation()}
         className={`px-3 py-1 rounded-full text-xs font-medium flex items-center gap-1 transition-all duration-300 
-                   backdrop-blur-2xl bg-gradient-to-br from-blue-800/60 via-blue-900/50 to-blue-950/40 border border-blue-700/50 shadow-2xl
-                   hover:from-blue-800/70 hover:via-blue-900/60 hover:to-blue-950/50 hover:shadow-[0_16px_40px_rgba(30,58,138,0.4)] hover:border-blue-700/60 hover:scale-105
-                   active:scale-95 active:from-blue-800/50 active:via-blue-900/40 active:to-blue-950/30 active:shadow-inner
+                   bg-gradient-to-br from-blue-800/80 via-blue-900/70 to-blue-950/60 border border-blue-700/50 shadow-2xl
+                   hover:from-blue-800/90 hover:via-blue-900/80 hover:to-blue-950/70 hover:shadow-[0_16px_40px_rgba(30,58,138,0.4)] hover:border-blue-700/60 hover:scale-105
+                   active:scale-95 active:from-blue-800/70 active:via-blue-900/60 active:to-blue-950/50 active:shadow-inner
                    before:absolute before:inset-0 before:rounded-full before:bg-gradient-to-br before:from-blue-600/20 before:via-blue-700/10 before:to-transparent before:pointer-events-none
                    relative overflow-hidden`}
         data-testid="button-property-type-dropdown"
@@ -105,7 +105,7 @@ export default function PropertyTypeDropdown({ currentType, onTypeChange }: Prop
           
           {/* Menu */}
           <div 
-            className="absolute top-full left-0 mt-2 w-48 backdrop-blur-2xl bg-gradient-to-br from-blue-800/70 via-blue-900/60 to-blue-950/50 rounded-xl shadow-2xl border border-blue-700/50 z-20 overflow-hidden"
+            className="absolute top-full left-0 mt-2 w-48 bg-gradient-to-br from-blue-800/90 via-blue-900/85 to-blue-950/80 rounded-xl shadow-2xl border border-blue-700/50 z-20 overflow-hidden"
             style={{
               boxShadow: '0 20px 60px rgba(0,0,0,0.4), 0 8px 20px rgba(30,58,138,0.2), inset 0 2px 4px rgba(96,165,250,0.15)',
             }}
@@ -125,7 +125,7 @@ export default function PropertyTypeDropdown({ currentType, onTypeChange }: Prop
                     handleTypeSelect(type.value);
                   }}
                   className={`w-full px-4 py-2 text-left text-sm transition-all duration-150 
-                             hover:bg-blue-700/30 hover:backdrop-blur-lg
+                             hover:bg-blue-700/30
                              ${isSelected ? 'bg-blue-700/40 font-semibold text-white' : 'text-white/90'}
                              border-b border-blue-600/20 last:border-b-0`}
                   data-testid={`option-property-type-${type.value}`}

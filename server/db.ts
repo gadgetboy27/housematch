@@ -12,9 +12,11 @@ if (!process.env.DATABASE_URL) {
 }
 
 // Configure pool with better connection handling for Neon
+// Production-grade connection pool sizing based on expected load
 export const pool = new Pool({ 
   connectionString: process.env.DATABASE_URL,
-  max: 10, // Maximum number of connections
+  max: 30, // Maximum number of connections - increased from 10 for production load
+  min: 5, // Minimum idle connections
   idleTimeoutMillis: 30000, // Close idle connections after 30 seconds
   connectionTimeoutMillis: 10000, // Timeout after 10 seconds if unable to connect
 });

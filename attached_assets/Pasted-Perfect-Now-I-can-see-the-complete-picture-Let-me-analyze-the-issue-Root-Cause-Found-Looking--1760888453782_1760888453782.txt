@@ -1,0 +1,130 @@
+Perfect! Now I can see the complete picture. Let me analyze the issue:
+🔍 Root Cause Found!
+Looking at your reports.tsx (line 42-46), the query is running before authentication is confirmed:
+typescript// Get current user
+const { data: user } = useQuery({
+  queryKey: ["/api/auth/user"],
+  // ...
+});
+
+// Fetch liked properties - THIS RUNS IMMEDIATELY!
+const { data: properties = [], isLoading, error } = useQuery({
+  queryKey: user?.id ? [`/api/users/${user.id}/liked-properties`] : ["/api/properties"],
+  enabled: true, // ❌ PROBLEM: Always enabled, even when user is still loading
+});
+The Issue:
+
+Both queries run simultaneously
+The liked-properties query might run before user is loaded
+It falls back to /api/properties (all properties) instead of waiting for the user ID
+Even when user loads, React Query doesn't re-fetch because enabled: true was already satisfied
+
+
+✅ The Fix
+Update client/src/pages/reports.tsx lines 27-54:
+typescript// Get current user
+const { data: user, isLoading: userLoading } = useQuery({
+  queryKey: ["/api/auth/user"],
+  queryFn: async () => {
+    try {
+      const response = await fetch("/api/auth/user", {
+        credentials: 'include', // ✅ Ensure cookies are sent
+      });
+      if (!response.ok) return null;
+      return response.json();
+    } catch {
+      return null;
+    }
+  },
+  retry: false,
+  staleTime: 5 * 60 * 1000, // Cache for 5 minutes
+});
+
+// Fetch liked properties ONLY if user is logged in
+const { 
+  data: properties = [], 
+  isLoading: propertiesLoading, 
+  error: propertiesError 
+} = useQuery({
+  queryKey: user?.id ? [`/api/users/${user.id}/liked-properties`] : ["/api/properties"],
+  queryFn: async ({ queryKey }) => {
+    const url = queryKey[0] as string;
+    const response = await fetch(url, {
+      credentials: 'include', // ✅ Ensure cookies are sent
+    });
+    if (!response.ok) {
+      throw new Error('Failed to fetch properties');
+    }
+    return response.json();
+  },
+  enabled: !userLoading, // ✅ CRITICAL: Wait for user to load first!
+  staleTime: 2 * 60 * 1000, // Cache for 2 minutes
+});
+
+// Combined loading state
+const isLoading = userLoading || propertiesLoading;
+
+// Debug logging
+console.log("📋 Reports Page - Query State:", {
+  userLoading,
+  userId: user?.id,
+  propertiesCount: properties.length,
+  propertiesLoading,
+  error: propertiesError,
+  queryKey: user?.id ? `/api/users/${user.id}/liked-properties` : "/api/properties"
+});
+
+🎯 Why This Fixes It
+
+Sequential Loading: Properties query waits for user query to complete (enabled: !userLoading)
+Correct Query Key: Once user loads, React Query sees the key changed from /api/properties → /api/users/{userId}/liked-properties and re-fetches
+Credentials Included: Explicitly sends cookies with both requests
+Better UX: Combined loading state shows spinner while both queries resolve
+
+
+🔥 Additional Check: Verify Backend is Working
+Your backend code looks correct! But let's verify the swipe is actually being saved. Add this logging to server/routes.ts line 482:
+typescriptapp.post("/api/swipes", csrfProtection, requireAuth, async (req, res) => {
+  try {
+    console.log("🔐 Swipe Request:");
+    console.log("  - User ID (from session):", req.user!.id);
+    console.log("  - Property ID:", req.body.propertyId);
+    console.log("  - Action:", req.body.action);
+    
+    const swipeData = {
+      userId: req.user!.id,
+      propertyId: req.body.propertyId,
+      action: req.body.action,
+    };
+    
+    const validatedData = insertUserSwipeSchema.parse(swipeData);
+    const swipe = await storage.createUserSwipe(validatedData);
+    
+    console.log("✅ Swipe saved with ID:", swipe.id);
+    
+    // ... rest of code
+
+📊 Testing Checklist
+After applying the fix:
+
+Clear browser storage: localStorage.clear() in console
+Hard refresh: Ctrl+Shift+R (or Cmd+Shift+R on Mac)
+Check Network tab:
+
+/api/auth/user should return your user object
+/api/users/{userId}/liked-properties should fire AFTER auth completes
+
+
+Swipe on a property and watch the console logs
+Go to Reports page - dropdown should now show your 26 properties!
+
+
+🚨 If Still Not Working
+If the dropdown is still empty after this fix, it means swipes aren't being saved. Check:
+
+CSRF Token: Make sure apiRequest in queryClient.ts includes the CSRF token
+Session Cookie: Check Application → Cookies → connect.sid exists
+Backend Logs: Should see the console.log from swipe endpoint
+Database: Run this query to verify swipes exist:
+
+sql   SELECT * FROM user_swipes WHERE user_id = 'your-user-id' AND action = 'like';

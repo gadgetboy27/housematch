@@ -1,6 +1,8 @@
 import { motion } from "framer-motion";
 import { AlertTriangle, Video, Mic, CreditCard } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { PaymentConfirmationAlert } from "@/components/payment-confirmation-alert";
+import { useStripePayment } from "@/hooks/use-stripe-payment";
 
 interface StorageLimitModalProps {
   isOpen: boolean;
@@ -9,7 +11,7 @@ interface StorageLimitModalProps {
   exceededBy: number;
   currentUsage: number;
   limit: number;
-  onPurchaseUpgrade: () => void;
+  onPurchaseUpgrade?: () => void;
   isPurchasing?: boolean;
 }
 
@@ -23,6 +25,8 @@ export function StorageLimitModal({
   onPurchaseUpgrade,
   isPurchasing = false
 }: StorageLimitModalProps) {
+  const { initiatePayment, processPayment, cancelPayment, showConfirmation, currentItem, isProcessing } = useStripePayment();
+
   if (!isOpen) return null;
 
   const formatBytes = (bytes: number) => {
@@ -33,9 +37,24 @@ export function StorageLimitModal({
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
-  const upgradePrice = fileType === 'video' ? 9.99 : 6.99;
+  const upgradePrice = fileType === 'video' ? 999 : 990; // In cents
   const upgradeAmount = fileType === 'video' ? 150 : 50; // MB
   const icon = fileType === 'video' ? <Video className="w-8 h-8" /> : <Mic className="w-8 h-8" />;
+  const planId = fileType === 'video' ? 'extra-video-storage' : 'extra-audio-storage';
+
+  const handlePurchaseClick = () => {
+    initiatePayment({
+      name: `Extra ${fileType === 'video' ? 'Video' : 'Audio'} Storage`,
+      description: `Add ${upgradeAmount}MB more ${fileType} storage to your account`,
+      price: upgradePrice,
+      planId,
+      planType: 'storage',
+    });
+  };
+
+  const handleConfirmPayment = async () => {
+    await processPayment();
+  };
 
   return (
     <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4" data-testid="modal-storage-limit">
@@ -94,7 +113,7 @@ export function StorageLimitModal({
             </div>
             <div className="text-right">
               <div className="text-lg font-bold text-blue-600">
-                ${upgradePrice}
+                ${(upgradePrice / 100).toFixed(2)}
               </div>
               <div className="text-xs text-gray-500">one-time</div>
             </div>
@@ -112,12 +131,12 @@ export function StorageLimitModal({
             Cancel
           </Button>
           <Button 
-            onClick={onPurchaseUpgrade}
-            disabled={isPurchasing}
+            onClick={handlePurchaseClick}
+            disabled={isPurchasing || isProcessing}
             className="flex-1 bg-blue-600 hover:bg-blue-700"
             data-testid="button-purchase-upgrade"
           >
-            {isPurchasing ? (
+            {isPurchasing || isProcessing ? (
               <>
                 <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
                 Processing...
@@ -125,7 +144,7 @@ export function StorageLimitModal({
             ) : (
               <>
                 <CreditCard className="w-4 h-4 mr-2" />
-                Purchase ${upgradePrice}
+                Purchase ${(upgradePrice / 100).toFixed(2)}
               </>
             )}
           </Button>
@@ -136,6 +155,19 @@ export function StorageLimitModal({
           After purchase, you'll be able to upload this file and continue adding {fileType} content.
         </p>
       </motion.div>
+
+      {/* Payment Confirmation Alert */}
+      {currentItem && (
+        <PaymentConfirmationAlert
+          isOpen={showConfirmation}
+          onClose={cancelPayment}
+          onConfirm={handleConfirmPayment}
+          itemName={currentItem.name}
+          itemPrice={currentItem.price}
+          itemDescription={currentItem.description}
+          isProcessing={isProcessing}
+        />
+      )}
     </div>
   );
 }

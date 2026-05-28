@@ -1,0 +1,552 @@
+// ============================================
+// 🎭 ADAPTIVE AI PERSONA SYSTEM
+// ============================================
+// 
+// Speaks to users in THEIR language:
+// - Families: Emotional, lifestyle-focused
+// - Investors: Analytical, numbers-focused
+// - Professionals: Modern, convenience-focused
+// - Retirees: Comfort, accessibility-focused
+//
+// ============================================
+
+import Anthropic from "@anthropic-ai/sdk";
+import { db } from "@db";
+import { users, propertySwipes, aiSearchHistory } from "@db/schema";
+import { eq } from "drizzle-orm";
+
+const anthropic = new Anthropic({
+  apiKey: process.env.ANTHROPIC_API_KEY!,
+});
+
+// ============================================
+// USER PERSONA DETECTION
+// ============================================
+
+interface UserPersona {
+  type: 'family' | 'investor' | 'professional' | 'retiree' | 'first_home_buyer';
+  confidence: number; // 0-1
+  traits: {
+    emotional: number;    // 0-1 (high = emotional language)
+    analytical: number;   // 0-1 (high = numbers/data)
+    lifestyle: number;    // 0-1 (high = lifestyle focus)
+    financial: number;    // 0-1 (high = ROI focus)
+  };
+  indicators: string[];   // What told us this persona
+}
+
+async function detectUserPersona(userId: number): Promise<UserPersona> {
+  
+  // ┌─────────────────────────────────────────────────────┐
+  // │ 🎯 DETECT USER TYPE FROM BEHAVIOR                   │
+  // └─────────────────────────────────────────────────────┘
+  
+  // Get user's search history
+  const searches = await db
+    .select()
+    .from(aiSearchHistory)
+    .where(eq(aiSearchHistory.userId, userId))
+    .limit(10);
+  
+  // Get user's swipe patterns
+  const swipes = await db
+    .select()
+    .from(propertySwipes)
+    .where(eq(propertySwipes.userId, userId))
+    .limit(50);
+  
+  // Analyze query language
+  const queries = searches.map(s => s.rawQuery.toLowerCase()).join(' ');
+  
+  // Detection signals
+  const signals = {
+    family: 0,
+    investor: 0,
+    professional: 0,
+    retiree: 0,
+    first_home_buyer: 0,
+  };
+  
+  // Family indicators
+  if (queries.match(/family|kids|children|school|backyard|garden|safe|playground/)) {
+    signals.family += 3;
+  }
+  if (queries.match(/bedroom.*3|bedroom.*4|large.*room|spacious/)) {
+    signals.family += 2;
+  }
+  
+  // Investor indicators
+  if (queries.match(/investment|yield|rental|ROI|return|capital|growth|tenant/)) {
+    signals.investor += 5;
+  }
+  if (queries.match(/cash.*flow|positive.*gearing|depreciation|tax/)) {
+    signals.investor += 3;
+  }
+  
+  // Professional indicators
+  if (queries.match(/modern|contemporary|apartment|CBD|city|commute|work/)) {
+    signals.professional += 3;
+  }
+  if (queries.match(/gym|parking|security|lock.*leave|low.*maintenance/)) {
+    signals.professional += 2;
+  }
+  
+  // Retiree indicators
+  if (queries.match(/single.*level|no.*stairs|retirement|quiet|peaceful|low.*maintenance/)) {
+    signals.retiree += 4;
+  }
+  if (queries.match(/garden.*easy|small.*garden|retirement.*village/)) {
+    signals.retiree += 2;
+  }
+  
+  // First home buyer indicators
+  if (queries.match(/first.*home|affordable|cheap|under.*500|starter/)) {
+    signals.first_home_buyer += 4;
+  }
+  
+  // Find dominant persona
+  const dominant = Object.entries(signals).sort(([,a], [,b]) => b - a)[0];
+  const [personaType, score] = dominant;
+  
+  // Calculate confidence (0-1)
+  const totalScore = Object.values(signals).reduce((a, b) => a + b, 0);
+  const confidence = totalScore > 0 ? score / totalScore : 0.3;
+  
+  // Define trait weights based on persona
+  const traits = getTraitsForPersona(personaType as any);
+  
+  // Build indicators list
+  const indicators = buildIndicators(queries, personaType as any);
+  
+  return {
+    type: personaType as any,
+    confidence,
+    traits,
+    indicators,
+  };
+}
+
+function getTraitsForPersona(type: string) {
+  const traitMap = {
+    family: {
+      emotional: 0.9,    // High emotional language
+      analytical: 0.2,   // Low numbers focus
+      lifestyle: 0.95,   // Very high lifestyle focus
+      financial: 0.3,    // Low ROI focus
+    },
+    investor: {
+      emotional: 0.1,    // Low emotional language
+      analytical: 0.95,  // Very high numbers focus
+      lifestyle: 0.3,    // Low lifestyle focus
+      financial: 0.95,   // Very high ROI focus
+    },
+    professional: {
+      emotional: 0.4,
+      analytical: 0.6,
+      lifestyle: 0.7,
+      financial: 0.5,
+    },
+    retiree: {
+      emotional: 0.7,
+      analytical: 0.3,
+      lifestyle: 0.8,
+      financial: 0.4,
+    },
+    first_home_buyer: {
+      emotional: 0.8,
+      analytical: 0.5,
+      lifestyle: 0.7,
+      financial: 0.6,
+    },
+  };
+  
+  return traitMap[type] || traitMap.family;
+}
+
+function buildIndicators(queries: string, type: string): string[] {
+  const indicators: string[] = [];
+  
+  if (type === 'family') {
+    if (queries.includes('school')) indicators.push('Mentioned schools');
+    if (queries.includes('bedroom')) indicators.push('Multiple bedrooms needed');
+    if (queries.includes('backyard')) indicators.push('Wants outdoor space');
+  } else if (type === 'investor') {
+    if (queries.includes('yield')) indicators.push('Focused on rental yield');
+    if (queries.includes('investment')) indicators.push('Investment language used');
+  }
+  
+  return indicators;
+}
+
+// ============================================
+// ADAPTIVE MATCH REASON GENERATION
+// ============================================
+
+async function generateAdaptiveMatchReasons(
+  property: any,
+  criteria: any,
+  matchScore: number,
+  persona: UserPersona
+): Promise<string[]> {
+  
+  // Build property features summary
+  const propertyContext = {
+    bedrooms: property.bedrooms,
+    bathrooms: property.bathrooms,
+    price: property.priceCents,
+    suburb: property.suburb,
+    features: property.features || {},
+    propertyType: property.propertyType,
+  };
+  
+  // Build persona-specific prompt
+  const prompt = buildPersonaPrompt(propertyContext, criteria, persona);
+  
+  // Call Claude to generate adaptive reasons
+  const message = await anthropic.messages.create({
+    model: "claude-sonnet-4-20250514",
+    max_tokens: 500,
+    messages: [{
+      role: "user",
+      content: prompt
+    }]
+  });
+  
+  const responseText = message.content[0].type === 'text' 
+    ? message.content[0].text 
+    : '';
+  
+  // Parse reasons (one per line)
+  const reasons = responseText
+    .split('\n')
+    .map(r => r.replace(/^[-•*]\s*/, '').trim())
+    .filter(r => r.length > 0)
+    .slice(0, 5); // Top 5 reasons
+  
+  return reasons;
+}
+
+function buildPersonaPrompt(
+  property: any,
+  criteria: any,
+  persona: UserPersona
+): string {
+  
+  let prompt = '';
+  
+  // ┌─────────────────────────────────────────────────────┐
+  // │ 🎭 FAMILY PERSONA - Emotional, Lifestyle Language   │
+  // └─────────────────────────────────────────────────────┘
+  if (persona.type === 'family') {
+    prompt = `You're helping a family find their perfect home. Be warm, emotional, and paint a picture of life there.
+
+Property:
+- ${property.bedrooms} bedrooms, ${property.bathrooms} bathrooms
+- ${property.suburb}
+- $${(property.price / 100).toFixed(0)} NZD
+- Features: ${JSON.stringify(property.features)}
+
+Write 3-5 compelling reasons why this home is perfect for their family.
+
+IMPORTANT RULES:
+- NO percentages or match scores (like "92% match")
+- NO technical jargon
+- USE emotional, human language
+- FOCUS ON: Family moments, daily life, kids, comfort, safety
+- PAINT A PICTURE: "Imagine Saturday mornings...", "Your kids will love..."
+- BE SPECIFIC: "The huge backyard" not "good outdoor space"
+
+Examples of GOOD reasons:
+✅ "Imagine your kids running around that massive backyard while you watch from the deck"
+✅ "The kitchen opens to the living room - perfect for keeping an eye on little ones while cooking"
+✅ "Just a 5-minute walk to excellent schools means no stressful morning drives"
+✅ "Four bedrooms means everyone gets their own space as the kids grow"
+
+Examples of BAD reasons:
+❌ "92% lifestyle match score"
+❌ "Property features optimize for family requirements"
+❌ "Exceeds bedroom requirements by 25%"
+
+Write 3-5 compelling, emotional reasons (one per line):`;
+  }
+  
+  // ┌─────────────────────────────────────────────────────┐
+  // │ 💼 INVESTOR PERSONA - Analytical, Numbers-Focused    │
+  // └─────────────────────────────────────────────────────┘
+  else if (persona.type === 'investor') {
+    prompt = `You're advising a property investor. Be analytical, data-driven, and ROI-focused.
+
+Property:
+- ${property.bedrooms} bedrooms, ${property.bathrooms} bathrooms
+- ${property.suburb}
+- Purchase price: $${(property.price / 100).toFixed(0)} NZD
+- Features: ${JSON.stringify(property.features)}
+
+Write 3-5 investment-focused reasons why this property has strong potential.
+
+IMPORTANT RULES:
+- USE numbers, percentages, ROI metrics
+- FOCUS ON: Rental yield, capital growth, market trends, tenant demand
+- BE ANALYTICAL: "8% annual appreciation", "4.2% rental yield"
+- INCLUDE STRATEGY: "Hold 5-7 years for optimal capital gain"
+
+Examples of GOOD reasons:
+✅ "Strong rental demand in this suburb - properties lease within 2 weeks on average"
+✅ "Estimated rental yield of 4.5% ($720/week) - above area average of 3.8%"
+✅ "Suburb shows 9% annual capital growth over last 3 years"
+✅ "Near decile 10 school - attracts premium tenants willing to pay extra"
+
+Examples of BAD reasons:
+❌ "Beautiful kitchen perfect for family dinners"
+❌ "Kids will love the backyard"
+❌ "Cozy and comfortable living spaces"
+
+Write 3-5 analytical, investment-focused reasons (one per line):`;
+  }
+  
+  // ┌─────────────────────────────────────────────────────┐
+  // │ 👔 PROFESSIONAL PERSONA - Modern, Convenience         │
+  // └─────────────────────────────────────────────────────┘
+  else if (persona.type === 'professional') {
+    prompt = `You're helping a busy professional find a home. Focus on convenience, modern features, and lifestyle.
+
+Property:
+- ${property.bedrooms} bedrooms, ${property.bathrooms} bathrooms
+- ${property.suburb}
+- $${(property.price / 100).toFixed(0)} NZD
+- Features: ${JSON.stringify(property.features)}
+
+Write 3-5 reasons highlighting convenience and modern living.
+
+FOCUS ON: Commute, modern features, low maintenance, amenities, work-life balance
+
+Examples:
+✅ "Just 15 minutes to CBD - more time for what matters"
+✅ "Modern, low-maintenance design means weekends are yours"
+✅ "Secure parking for two cars - no street hunting after work"
+✅ "Smart home features let you control everything from your phone"
+
+Write 3-5 reasons (one per line):`;
+  }
+  
+  // ┌─────────────────────────────────────────────────────┐
+  // │ 🏡 RETIREE PERSONA - Comfort, Accessibility          │
+  // └─────────────────────────────────────────────────────┘
+  else if (persona.type === 'retiree') {
+    prompt = `You're helping retirees find a comfortable, low-maintenance home. Focus on ease, accessibility, and peace.
+
+Property:
+- ${property.bedrooms} bedrooms, ${property.bathrooms} bathrooms
+- ${property.suburb}
+- $${(property.price / 100).toFixed(0)} NZD
+- Features: ${JSON.stringify(property.features)}
+
+Write 3-5 reasons emphasizing comfort and practicality.
+
+FOCUS ON: Single level, low maintenance, quiet, accessible, mature gardens
+
+Examples:
+✅ "All on one level - no stairs to worry about"
+✅ "Beautifully established garden that's easy to maintain"
+✅ "Quiet street perfect for peaceful retirement living"
+✅ "Walking distance to shops and medical facilities"
+
+Write 3-5 reasons (one per line):`;
+  }
+  
+  // ┌─────────────────────────────────────────────────────┐
+  // │ 🏠 FIRST HOME BUYER - Excited, Value-Focused         │
+  // └─────────────────────────────────────────────────────┘
+  else {
+    prompt = `You're helping first home buyers. Be encouraging, focus on value and potential.
+
+Property:
+- ${property.bedrooms} bedrooms, ${property.bathrooms} bathrooms
+- ${property.suburb}
+- $${(property.price / 100).toFixed(0)} NZD
+- Features: ${JSON.stringify(property.features)}
+
+Write 3-5 reasons showing this is a great first home.
+
+FOCUS ON: Affordability, value, potential, starting out, making it their own
+
+Examples:
+✅ "Priced perfectly for first home buyers to get on the ladder"
+✅ "Solid bones with potential to add value over time"
+✅ "Great starter suburb with young families nearby"
+✅ "Two bedrooms now, plus space to extend when needed"
+
+Write 3-5 reasons (one per line):`;
+  }
+  
+  return prompt;
+}
+
+// ============================================
+// ADAPTIVE MATCH SCORE DISPLAY
+// ============================================
+
+function formatMatchScoreForPersona(
+  matchScore: number,
+  persona: UserPersona
+): {
+  showScore: boolean;
+  label: string;
+  description: string;
+} {
+  
+  // ┌─────────────────────────────────────────────────────┐
+  // │ 🎭 FAMILIES DON'T CARE ABOUT PERCENTAGES            │
+  // └─────────────────────────────────────────────────────┘
+  if (persona.type === 'family') {
+    return {
+      showScore: false, // Hide the percentage
+      label: matchScore >= 80 ? "Perfect for Your Family!" :
+             matchScore >= 60 ? "Great Family Home" :
+             matchScore >= 40 ? "Worth Considering" :
+             "Might Work",
+      description: matchScore >= 80 ? "This ticks all your boxes!" :
+                  matchScore >= 60 ? "Your family would love it here" :
+                  "Some great features for families"
+    };
+  }
+  
+  // ┌─────────────────────────────────────────────────────┐
+  // │ 💼 INVESTORS WANT THE NUMBERS                        │
+  // └─────────────────────────────────────────────────────┘
+  else if (persona.type === 'investor') {
+    return {
+      showScore: true, // Show the percentage
+      label: `${matchScore}% Investment Match`,
+      description: matchScore >= 80 ? "Strong ROI potential" :
+                  matchScore >= 60 ? "Good investment opportunity" :
+                  "Moderate potential"
+    };
+  }
+  
+  // ┌─────────────────────────────────────────────────────┐
+  // │ 👔 PROFESSIONALS WANT QUICK ASSESSMENT               │
+  // └─────────────────────────────────────────────────────┘
+  else if (persona.type === 'professional') {
+    return {
+      showScore: true, // Show but de-emphasize
+      label: matchScore >= 80 ? "Excellent Match" :
+             matchScore >= 60 ? "Good Match" :
+             "Fair Match",
+      description: matchScore >= 80 ? "Fits your lifestyle perfectly" :
+                  "Meets most of your needs"
+    };
+  }
+  
+  // Default
+  return {
+    showScore: true,
+    label: `${matchScore}% Match`,
+    description: ""
+  };
+}
+
+// ============================================
+// EXAMPLE USAGE IN YOUR SEARCH FUNCTION
+// ============================================
+
+export async function generatePersonalizedPropertyDescription(
+  property: any,
+  criteria: any,
+  matchScore: number,
+  userId: number
+): Promise<{
+  matchDisplay: any;
+  reasons: string[];
+  tone: string;
+}> {
+  
+  // Step 1: Detect user persona
+  const persona = await detectUserPersona(userId);
+  
+  console.log(`🎭 Detected persona: ${persona.type} (${(persona.confidence * 100).toFixed(0)}% confident)`);
+  
+  // Step 2: Generate adaptive match reasons
+  const reasons = await generateAdaptiveMatchReasons(
+    property,
+    criteria,
+    matchScore,
+    persona
+  );
+  
+  // Step 3: Format match score appropriately
+  const matchDisplay = formatMatchScoreForPersona(matchScore, persona);
+  
+  return {
+    matchDisplay,
+    reasons,
+    tone: persona.type,
+  };
+}
+
+// ============================================
+// EXAMPLE OUTPUT DIFFERENCES
+// ============================================
+
+/*
+
+SAME PROPERTY, DIFFERENT PERSONAS:
+
+Property: 4 bed, 2 bath house in Ponsonby, $850k, big backyard, near school
+
+═══════════════════════════════════════════════════════════════
+
+🎭 FAMILY PERSONA:
+
+Match Display:
+  Label: "Perfect for Your Family!"
+  Score: HIDDEN
+  Description: "This ticks all your boxes!"
+
+Reasons:
+  ✨ "Your kids will love that enormous backyard - perfect for weekend cricket and summer BBQs"
+  ✨ "The kitchen flows into the living room so you can keep an eye on little ones while cooking"
+  ✨ "Just a 3-minute walk to Ponsonby Primary - those morning school runs just got a lot easier"
+  ✨ "Four spacious bedrooms mean everyone gets their own space as they grow"
+  ✨ "Safe, quiet street where kids can ride bikes and play with neighbors"
+
+═══════════════════════════════════════════════════════════════
+
+💼 INVESTOR PERSONA:
+
+Match Display:
+  Label: "92% Investment Match"
+  Score: 92%
+  Description: "Strong ROI potential"
+
+Reasons:
+  📊 "Strong capital growth corridor - area showing 8.5% annual appreciation"
+  📊 "Estimated rental yield: 4.2% ($850/week) - above Ponsonby average of 3.6%"
+  📊 "Near Auckland Grammar (decile 10) - attracts premium tenants, lower vacancy"
+  📊 "1,012m² land - potential subdivision for dual income in 3-5 years"
+  📊 "Weatherboard construction - lower maintenance costs than brick"
+
+═══════════════════════════════════════════════════════════════
+
+👔 PROFESSIONAL PERSONA:
+
+Match Display:
+  Label: "Excellent Match"
+  Score: 92%
+  Description: "Fits your lifestyle perfectly"
+
+Reasons:
+  ⚡ "Just 12 minutes to Auckland CBD - more time for what matters"
+  ⚡ "Modern, low-maintenance design means weekends are yours to enjoy"
+  ⚡ "Off-street parking for two cars - no stress after a long day"
+  ⚡ "Thriving Ponsonby scene - dozens of cafes and restaurants at your doorstep"
+  ⚡ "Smart home ready with fiber internet for seamless remote work"
+
+*/
+
+export {
+  detectUserPersona,
+  generateAdaptiveMatchReasons,
+  formatMatchScoreForPersona,
+  type UserPersona,
+};

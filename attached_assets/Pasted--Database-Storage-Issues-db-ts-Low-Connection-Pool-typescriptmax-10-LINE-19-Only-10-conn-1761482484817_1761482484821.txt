@@ -1,0 +1,80 @@
+⚠️ Database & Storage Issues
+db.ts - Low Connection Pool
+typescriptmax: 10 // LINE 19 - Only 10 connections
+Issue: Insufficient for production under load.
+Fix: Increase to 20-50 based on load testing.
+objectAcl.ts - Incomplete Feature
+typescript// LINE 99
+default:
+  throw new Error(`Unknown access group type: ${group.type}`);
+Impact: ACL system is non-functional stub. Every access check throws.
+Fix: Implement or remove entirely.
+objectStorage.ts - Path Traversal Risk
+typescript// LINE 241
+const entityId = rawObjectPath.slice(objectEntityDir.length);
+return `/objects/${entityId}`;
+Issue: No sanitization on entityId. Could allow ../ traversal.
+Fix: Validate with path.normalize() and check for ...
+
+💸 Cost & Performance Issues
+openai.ts - No Token Limits
+typescriptconst response = await openai.chat.completions.create({
+  model: AI_MODEL,
+  messages: [...], // No max_tokens specified
+Impact: Unbounded costs. Single request could consume thousands of tokens.
+Fix: Add max_tokens: 500 (adjust per use case).
+analytics.ts - Memory Bomb
+typescript// LINE 49
+const allProperties = await this.storage.getAllProperties(); // No LIMIT
+Impact: Loads entire property table into memory.
+Fix: Paginate or add LIMIT.
+ai-cache-wrapper.ts - Fire-and-Forget
+typescript// LINE 102
+updateUserAISpending(userId).catch(err => 
+  console.error('Failed to update user AI spending:', err)
+); // Async, no await
+Issue: Lost updates if process crashes before completion.
+Fix: Queue-based processing (Bull/BullMQ).
+
+📧 Email Vulnerabilities
+email-verification.ts - No Rate Limiting
+typescriptexport async function sendVerificationEmail(params: EmailVerificationParams): Promise<boolean> {
+  // No check for recent sends, email bombing possible
+Fix: Implement rate limit (1 per 60s per email).
+linz-validation.ts - API Abuse
+typescript// No rate limiting on LINZ API calls
+const response = await fetch(`${wfsUrl}?${params}`);
+Impact: Could hit rate limits, get IP banned.
+Fix: Add request queuing/throttling.
+
+🏗️ Production Readiness Gaps
+Missing Files (Can't Verify)
+
+auth.ts: Password hashing? Session security?
+routes.ts: Input validation? Protected routes?
+storage.ts: SQL injection prevention?
+
+No Monitoring
+
+No health check endpoint
+No metrics/APM (Prometheus, DataDog)
+No structured logging
+
+No Graceful Degradation
+
+Missing fallbacks for external APIs (LINZ, OpenAI, Trade Me)
+No circuit breakers
+
+
+🛠️ Quick Fixes Priority
+
+IMMEDIATE: Remove "default_key" from openai.ts
+BLOCKING: Replace pdf-generator with real library
+CRITICAL: Add rate limiting to all routes
+HIGH: Implement CSRF protection
+HIGH: Add input validation middleware
+MEDIUM: Fix objectAcl or remove feature
+MEDIUM: Add max_tokens to OpenAI calls
+MEDIUM: Paginate analytics queries
+
+Need auth.ts, routes.ts, storage.ts to complete audit.

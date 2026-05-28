@@ -1,0 +1,55 @@
+Critical Endpoints That MUST Have Middleware:
+typescript// User endpoints - Need requireAuth
+- [ ] POST /api/properties (requireAuth)
+- [ ] PATCH /api/properties/:id (requireAuth + ownership check)
+- [ ] DELETE /api/properties/:id (requireAuth + ownership check)
+- [ ] POST /api/offers (requireAuth)
+- [ ] GET /api/offers (requireAuth)
+- [ ] POST /api/likes (requireAuth)
+- [ ] GET /api/users/:userId/liked-properties (requireAuth + check userId matches)
+
+// Partner endpoints - Need requirePartnerAuth
+- [ ] GET /partner/orders (requirePartnerAuth)
+- [ ] POST /partner/orders/:id/accept (requirePartnerAuth + requireVerified)
+- [ ] POST /partner/orders/:id/update (requirePartnerAuth + ownership check)
+- [ ] GET /partner/analytics (requirePartnerAuth)
+
+// Admin endpoints - Need requireAdmin
+- [ ] GET /api/admin/partners (requireAdmin)
+- [ ] POST /api/admin/partners/:id/approve (requireAdmin)
+- [ ] POST /api/admin/partners/:id/reject (requireAdmin)
+- [ ] PATCH /api/service-orders/:id/payout (requireAdmin)
+
+📋 IMMEDIATE ACTION CHECKLIST
+Step 1: Verify Routes Are Wrapped (5 mins)
+bash# Search for unwrapped admin routes
+grep -r "path=\"/admin" client/src/
+# Should show <RequireAdmin> wrapping each route
+Step 2: Check Database Schema (2 mins)
+sql-- Check if is_admin column exists
+SELECT column_name FROM information_schema.columns 
+WHERE table_name = 'users' AND column_name = 'is_admin';
+
+-- If missing, add it
+ALTER TABLE users ADD COLUMN is_admin BOOLEAN DEFAULT FALSE;
+Step 3: Verify Backend Endpoints (30 mins)
+Go through server/routes.ts and check EVERY protected endpoint has middleware:
+typescript// Create a checklist comment at top of routes file
+/**
+ * SECURITY CHECKLIST - All routes must have middleware:
+ * ✅ /api/properties - requireAuth
+ * ✅ /partner/orders - requirePartnerAuth
+ * ✅ /api/admin/partners - requireAdmin
+ * ❌ /api/offers - MISSING requireAuth! ← Fix this
+ */
+Step 4: Test Authentication Flow (10 mins)
+bash# Test 1: Try accessing admin API without login
+curl http://localhost:5000/api/admin/partners
+# Expected: 401 Unauthorized
+
+# Test 2: Try accessing partner orders without login  
+curl http://localhost:5000/partner/orders
+# Expected: 401 Unauthorized
+
+# Test 3: Visit /admin/partners in browser while logged out
+# Expected: See "Access Denied" page (not actual admin UI)

@@ -4,7 +4,7 @@ interface AIBrainPopupProps {
   onClick: () => void;
 }
 
-export default function AIBrainPopup({ onClick }: AIBrainPopupProps) {
+export default function AIBrainPopup({ onClick }: AIBrainPopupProps): JSX.Element {
   return (
     <motion.div
       className="fixed top-1/2 right-4 w-16 h-16 cursor-pointer z-50"

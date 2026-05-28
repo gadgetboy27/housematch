@@ -1,0 +1,266 @@
+[Violation] 'setInterval' handler took 50ms
+injected.js:204  POST https://1c4801d3-b756-4547-addf-b0b2f4dd5ffd-00-2fclfcq5sewjy.kirk.replit.dev/api/stripe/create-checkout-session 401 (Unauthorized)
+apply @ injected.js:204
+apiRequest @ queryClient.ts:58
+await in apiRequest
+processPayment @ use-stripe-payment.ts:46
+handleConfirmPayment @ reports.tsx:156
+handleEvent @ chunk-W6PG6DRF.js?v=27eee035:93
+callCallback2 @ chunk-RPCDYKBN.js?v=27eee035:3674
+invokeGuardedCallbackDev @ chunk-RPCDYKBN.js?v=27eee035:3699
+invokeGuardedCallback @ chunk-RPCDYKBN.js?v=27eee035:3733
+invokeGuardedCallbackAndCatchFirstError @ chunk-RPCDYKBN.js?v=27eee035:3736
+executeDispatch @ chunk-RPCDYKBN.js?v=27eee035:7014
+processDispatchQueueItemsInOrder @ chunk-RPCDYKBN.js?v=27eee035:7034
+processDispatchQueue @ chunk-RPCDYKBN.js?v=27eee035:7043
+dispatchEventsForPlugins @ chunk-RPCDYKBN.js?v=27eee035:7051
+(anonymous) @ chunk-RPCDYKBN.js?v=27eee035:7174
+batchedUpdates$1 @ chunk-RPCDYKBN.js?v=27eee035:18913
+batchedUpdates @ chunk-RPCDYKBN.js?v=27eee035:3579
+dispatchEventForPluginEventSystem @ chunk-RPCDYKBN.js?v=27eee035:7173
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-RPCDYKBN.js?v=27eee035:5478
+dispatchEvent @ chunk-RPCDYKBN.js?v=27eee035:5472
+dispatchDiscreteEvent @ chunk-RPCDYKBN.js?v=27eee035:5449Understand this error
+injected.js:27 ❌ Payment error: Error: 401: {"message":"Authentication required"}
+    at throwIfResNotOk (queryClient.ts:6:11)
+    at async apiRequest (queryClient.ts:65:3)
+    at async processPayment (use-stripe-payment.ts:46:24)
+    at async handleConfirmPayment (reports.tsx:156:5)
+(anonymous) @ injected.js:27
+(anonymous) @ injected.js:27
+(anonymous) @ injected.js:27
+(anonymous) @ injected.js:27
+(anonymous) @ injected.js:27
+(anonymous) @ injected.js:27
+(anonymous) @ injected.js:27
+(anonymous) @ injected.js:27
+(anonymous) @ injected.js:27
+(anonymous) @ injected.js:27
+(anonymous) @ injected.js:27
+(anonymous) @ injected.js:27
+(anonymous) @ injected.js:27
+(anonymous) @ injected.js:27
+(anonymous) @ injected.js:27
+(anonymous) @ injected.js:27
+(anonymous) @ injected.js:27
+(anonymous) @ injected.js:27
+(anonymous) @ injected.js:27
+(anonymous) @ injected.js:27
+(anonymous) @ injected.js:27
+(anonymous) @ injected.js:27
+(anonymous) @ injected.js:27
+(anonymous) @ injected.js:27
+(anonymous) @ injected.js:27
+(anonymous) @ injected.js:27
+(anonymous) @ injected.js:27
+(anonymous) @ injected.js:27
+(anonymous) @ injected.js:27
+(anonymous) @ injected.js:27
+(anonymous) @ injected.js:27
+(anonymous) @ injected.js:27
+(anonymous) @ injected.js:27
+(anonymous) @ injected.js:27
+(anonymous) @ injected.js:27
+(anonymous) @ injected.js:27
+processPayment @ use-stripe-payment.ts:59
+await in processPayment
+handleConfirmPayment @ reports.tsx:156
+handleEvent @ chunk-W6PG6DRF.js?v=27eee035:93
+callCallback2 @ chunk-RPCDYKBN.js?v=27eee035:3674
+invokeGuardedCallbackDev @ chunk-RPCDYKBN.js?v=27eee035:3699
+invokeGuardedCallback @ chunk-RPCDYKBN.js?v=27eee035:3733
+invokeGuardedCallbackAndCatchFirstError @ chunk-RPCDYKBN.js?v=27eee035:3736
+executeDispatch @ chunk-RPCDYKBN.js?v=27eee035:7014
+processDispatchQueueItemsInOrder @ chunk-RPCDYKBN.js?v=27eee035:7034
+processDispatchQueue @ chunk-RPCDYKBN.js?v=27eee035:7043
+dispatchEventsForPlugins @ chunk-RPCDYKBN.js?v=27eee035:7051
+(anonymous) @ chunk-RPCDYKBN.js?v=27eee035:7174
+batchedUpdates$1 @ chunk-RPCDYKBN.js?v=27eee035:18913
+batchedUpdates @ chunk-RPCDYKBN.js?v=27eee035:3579
+dispatchEventForPluginEventSystem @ chunk-RPCDYKBN.js?v=27eee035:7173
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-RPCDYKBN.js?v=27eee035:5478
+dispatchEvent @ chunk-RPCDYKBN.js?v=27eee035:5472
+dispatchDiscreteEvent @ chunk-RPCDYKBN.js?v=27eee035:5449Understand this error
+injected.js:27 📋 Reports Page - Query State: {userLoading: false, userId: undefined, propertiesCount: 5, propertiesLoading: false, error: null, …}
+injected.js:204 Fetch failed loading: POST "https://1c4801d3-b756-4547-addf-b0b2f4dd5ffd-00-2fclfcq5sewjy.kirk.replit.dev/api/stripe/create-checkout-session".
+apply @ injected.js:204
+apiRequest @ queryClient.ts:58
+await in apiRequest
+processPayment @ use-stripe-payment.ts:46
+handleConfirmPayment @ reports.tsx:156
+handleEvent @ chunk-W6PG6DRF.js?v=27eee035:93
+callCallback2 @ chunk-RPCDYKBN.js?v=27eee035:3674
+invokeGuardedCallbackDev @ chunk-RPCDYKBN.js?v=27eee035:3699
+invokeGuardedCallback @ chunk-RPCDYKBN.js?v=27eee035:3733
+invokeGuardedCallbackAndCatchFirstError @ chunk-RPCDYKBN.js?v=27eee035:3736
+executeDispatch @ chunk-RPCDYKBN.js?v=27eee035:7014
+processDispatchQueueItemsInOrder @ chunk-RPCDYKBN.js?v=27eee035:7034
+processDispatchQueue @ chunk-RPCDYKBN.js?v=27eee035:7043
+dispatchEventsForPlugins @ chunk-RPCDYKBN.js?v=27eee035:7051
+(anonymous) @ chunk-RPCDYKBN.js?v=27eee035:7174
+batchedUpdates$1 @ chunk-RPCDYKBN.js?v=27eee035:18913
+batchedUpdates @ chunk-RPCDYKBN.js?v=27eee035:3579
+dispatchEventForPluginEventSystem @ chunk-RPCDYKBN.js?v=27eee035:7173
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-RPCDYKBN.js?v=27eee035:5478
+dispatchEvent @ chunk-RPCDYKBN.js?v=27eee035:5472
+dispatchDiscreteEvent @ chunk-RPCDYKBN.js?v=27eee035:5449
+injected.js:27 📋 Reports Page - Query State: {userLoading: false, userId: undefined, propertiesCount: 5, propertiesLoading: false, error: null, …}
+_app-8a88d97288de9996.js:28 XHR finished loading: POST "https://stats.g.doubleclick.net/j/collect?t=dc&aip=1&_r=3&v=1&_v=j102&tid=UA-25629695-1&cid=882583717.1756260103&jid=1036627903&gjid=1282396297&_gid=2117106160.1760581066&_u=SCCAgEAjQAAAAGgCIAD~&z=1954278092".
+(anonymous) @ _app-8a88d97288de9996.js:28
+(anonymous) @ _app-8a88d97288de9996.js:28
+(anonymous) @ _app-8a88d97288de9996.js:1
+o @ _app-8a88d97288de9996.js:1
+wd @ analytics.js:46
+pe @ analytics.js:44
+(anonymous) @ analytics.js:83
+(anonymous) @ analytics.js:47
+(anonymous) @ analytics.js:87
+(anonymous) @ analytics.js:68
+(anonymous) @ analytics.js:102
+(anonymous) @ analytics.js:101
+N @ analytics.js:103
+(anonymous) @ index.js:360
+(anonymous) @ protos.js:372
+(anonymous) @ protos.js:178
+(anonymous) @ index.ts:270
+(anonymous) @ tslib.es6.js:103
+(anonymous) @ tslib.es6.js:108
+s @ tslib.es6.js:73
+Promise.then
+a @ tslib.es6.js:76
+(anonymous) @ tslib.es6.js:76
+u @ tslib.es6.js:72
+(anonymous) @ ajs-destination.bundle.8e6b895db75187c55313.js:1
+(anonymous) @ index.ts:286
+(anonymous) @ tslib.es6.js:103
+(anonymous) @ tslib.es6.js:108
+(anonymous) @ tslib.es6.js:80
+u @ tslib.es6.js:72
+(anonymous) @ ajs-destination.bundle.8e6b895db75187c55313.js:1
+(anonymous) @ delivery.js:28
+(anonymous) @ delivery.js:11
+(anonymous) @ tslib.es6.js:103
+(anonymous) @ tslib.es6.js:108
+(anonymous) @ tslib.es6.js:80
+u @ tslib.es6.js:72
+(anonymous) @ delivery.js:4
+o @ delivery.js:27
+(anonymous) @ event-queue.js:325
+(anonymous) @ event-queue.js:323
+n @ _app-8a88d97288de9996.js:28
+setTimeout
+(anonymous) @ _app-8a88d97288de9996.js:28
+(anonymous) @ event-queue.js:321
+(anonymous) @ event-queue.js:320
+(anonymous) @ tslib.es6.js:103
+(anonymous) @ tslib.es6.js:108
+s @ tslib.es6.js:73
+Promise.then
+a @ tslib.es6.js:76
+s @ tslib.es6.js:73
+Promise.then
+a @ tslib.es6.js:76
+(anonymous) @ tslib.es6.js:76
+u @ tslib.es6.js:72
+(anonymous) @ event-queue.js:273
+(anonymous) @ event-queue.js:181
+(anonymous) @ tslib.es6.js:103
+(anonymous) @ tslib.es6.js:108
+s @ tslib.es6.js:73
+Promise.then
+a @ tslib.es6.js:76
+(anonymous) @ tslib.es6.js:76
+u @ tslib.es6.js:72
+(anonymous) @ event-queue.js:169
+(anonymous) @ event-queue.js:135
+(anonymous) @ tslib.es6.js:103
+(anonymous) @ tslib.es6.js:108
+(anonymous) @ tslib.es6.js:80
+u @ tslib.es6.js:72
+(anonymous) @ event-queue.js:128
+(anonymous) @ dispatch.js:25
+(anonymous) @ tslib.es6.js:103
+(anonymous) @ tslib.es6.js:108
+(anonymous) @ tslib.es6.js:80
+u @ tslib.es6.js:72
+p @ dispatch.js:18
+(anonymous) @ index.ts:460
+(anonymous) @ tslib.es6.js:103
+(anonymous) @ tslib.es6.js:108
+(anonymous) @ tslib.es6.js:80
+u @ tslib.es6.js:72
+(anonymous) @ index.ts:454
+(anonymous) @ index.ts:253
+(anonymous) @ tslib.es6.js:103
+(anonymous) @ tslib.es6.js:108
+(anonymous) @ tslib.es6.js:80
+u @ tslib.es6.js:72
+(anonymous) @ index.ts:241
+R @ _app-8a88d97288de9996.js:1
+w @ 366-24802850cff3cd71.js:1
+onAutoAttachedLargePaste @ 6380-9910e3728a8ed6dd.js:1
+paste @ 6380-9910e3728a8ed6dd.js:1
+(anonymous) @ 275e5802-c682054b3f0d7b04.js:1
+runHandlers @ 275e5802-c682054b3f0d7b04.js:1
+handleEvent @ 275e5802-c682054b3f0d7b04.js:1
+n @ _app-8a88d97288de9996.js:28
+719-6bb91fb3fa0804da.js:1 Uncaught (in promise) Error: Cannot notify while not connected
+    at t.stage (719-6bb91fb3fa0804da.js:1:196146)
+    at e.<anonymous> (719-6bb91fb3fa0804da.js:1:167011)
+    at Object.next (main-b92c2363c6440e00.js:1:192963)
+    at n (main-b92c2363c6440e00.js:1:59305)
+    at u (main-b92c2363c6440e00.js:1:59502)
+t.stage @ 719-6bb91fb3fa0804da.js:1
+(anonymous) @ 719-6bb91fb3fa0804da.js:1
+(anonymous) @ main-b92c2363c6440e00.js:1
+n @ main-b92c2363c6440e00.js:1
+u @ main-b92c2363c6440e00.js:1
+Promise.then
+n @ main-b92c2363c6440e00.js:1
+u @ main-b92c2363c6440e00.js:1
+(anonymous) @ main-b92c2363c6440e00.js:1
+(anonymous) @ main-b92c2363c6440e00.js:1
+(anonymous) @ 719-6bb91fb3fa0804da.js:1
+(anonymous) @ 719-6bb91fb3fa0804da.js:1
+(anonymous) @ main-b92c2363c6440e00.js:1
+n @ main-b92c2363c6440e00.js:1
+u @ main-b92c2363c6440e00.js:1
+Promise.then
+n @ main-b92c2363c6440e00.js:1
+u @ main-b92c2363c6440e00.js:1
+(anonymous) @ main-b92c2363c6440e00.js:1
+(anonymous) @ main-b92c2363c6440e00.js:1
+t.run @ 719-6bb91fb3fa0804da.js:1
+t.appendEvent @ 719-6bb91fb3fa0804da.js:1
+(anonymous) @ 6380-9910e3728a8ed6dd.js:1
+(anonymous) @ main-b92c2363c6440e00.js:1
+n @ main-b92c2363c6440e00.js:1
+u @ main-b92c2363c6440e00.js:1
+(anonymous) @ main-b92c2363c6440e00.js:1
+(anonymous) @ main-b92c2363c6440e00.js:1
+(anonymous) @ 6380-9910e3728a8ed6dd.js:1
+(anonymous) @ 6380-9910e3728a8ed6dd.js:1
+(anonymous) @ 6380-9910e3728a8ed6dd.js:1
+(anonymous) @ main-b92c2363c6440e00.js:1
+n @ main-b92c2363c6440e00.js:1
+u @ main-b92c2363c6440e00.js:1
+(anonymous) @ main-b92c2363c6440e00.js:1
+(anonymous) @ main-b92c2363c6440e00.js:1
+(anonymous) @ 6380-9910e3728a8ed6dd.js:1
+(anonymous) @ 6380-9910e3728a8ed6dd.js:1
+(anonymous) @ _app-8a88d97288de9996.js:4
+(anonymous) @ _app-8a88d97288de9996.js:4
+onClick @ _app-8a88d97288de9996.js:4
+(anonymous) @ _app-8a88d97288de9996.js:4
+eB @ framework-4ca1e485f3149550.js:1
+eH @ framework-4ca1e485f3149550.js:1
+(anonymous) @ framework-4ca1e485f3149550.js:1
+re @ framework-4ca1e485f3149550.js:1
+rt @ framework-4ca1e485f3149550.js:1
+(anonymous) @ framework-4ca1e485f3149550.js:1
+uT @ framework-4ca1e485f3149550.js:1
+eM @ framework-4ca1e485f3149550.js:1
+ru @ framework-4ca1e485f3149550.js:1
+tB @ framework-4ca1e485f3149550.js:1
+tD @ framework-4ca1e485f3149550.js:1
+n @ _app-8a88d97288de9996.js:28Understand this error

@@ -165,16 +165,22 @@ export async function canAccessObject({
     return true;
   }
 
-  // Go through the ACL rules to check if the user has the required permission.
-  for (const rule of aclPolicy.aclRules || []) {
-    const accessGroup = createObjectAccessGroup(rule.group);
-    if (
-      (await accessGroup.hasMember(userId)) &&
-      isPermissionAllowed(requestedPermission, rule.permission)
-    ) {
-      return true;
-    }
-  }
+  // TODO: ACL rules are not fully implemented yet - createObjectAccessGroup throws for all types
+  // For now, we skip ACL rule checking and rely on owner + visibility checks above
+  // This prevents the system from throwing errors on every access check
+  // When implementing, add cases to createObjectAccessGroup() for each ObjectAccessGroupType
+  
+  // DISABLED: Go through the ACL rules to check if the user has the required permission.
+  // for (const rule of aclPolicy.aclRules || []) {
+  //   const accessGroup = createObjectAccessGroup(rule.group);
+  //   if (
+  //     (await accessGroup.hasMember(userId)) &&
+  //     isPermissionAllowed(requestedPermission, rule.permission)
+  //   ) {
+  //     return true;
+  //   }
+  // }
 
+  // For now, deny access if not owner and not public
   return false;
 }

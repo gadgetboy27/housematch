@@ -1,0 +1,31 @@
+04:43Claude responded: Excellent execution this round.Excellent execution this round. The H-014 transaction wrap is the right shape, the email-send placed after commit is exactly the bulkhead pattern (commit-then-notify, accept the at-most-once email), and the H-041 fakehash constant + always-generate-token are clean equalisers. Three things to flag, in decreasing order of importance:
+1. The fake-hash early-return is timed ~half right. comparePasswords runs scrypt on the supplied password and then timingSafeEqual against the fake hash. The scrypt cost is what dominates and you do pay it — good. But timingSafeEqual throws a synchronous RangeError when the two buffers differ in length (the supplied password produces a 64-byte derived buffer; '0'.repeat(128) produces a 64-byte hex-decoded buffer, so… that one matches), and .catch(() => false) will swallow whatever does throw. Worth a quick test:
+tsnode -e "const {scrypt,timingSafeEqual,randomBytes}=require('crypto');const {promisify}=require('util');const s=promisify(scrypt);(async()=>{const t=performance.now();const buf=await s('hunter2','000...repeat-32',64);try{timingSafeEqual(buf,Buffer.from('0'.repeat(128),'hex'))}catch(e){console.log('threw:',e.message)}console.log('took',performance.now()-t,'ms')})()"
+If the timing comes out close to your real-user-found path on the same machine (within ~10ms), you're done. If the fake path is consistently 30%+ faster because timingSafeEqual short-circuits on the throw, you'd want to do the scrypt derivation explicitly and skip the comparison:
+ts// in the user-not-found branch
+await scryptAsync(password, 'fixed-salt-doesnt-matter', 64);
+return done(null, false, { message: 'INVALID_CREDENTIALS' });
+The scrypt call is the ~100ms cost; the timingSafeEqual is microseconds. As long as scrypt actually runs, you're equalised. Worth a one-time benchmark to confirm.
+2. forgot-password — randomBytes is the wrong cost to equalise. randomBytes(32) is microseconds. The cost difference between the two paths is the DB write (createPasswordResetToken) plus the email send. You moved the token generation to both paths, but the DB write and email still only happen on the user-found path. Net timing tell: roughly the cost of an INSERT plus a network round-trip to your SMTP — easily 50-200ms.
+This is a harder one to equalise without doing real work for fake users. The cleanest pattern is to push email-send onto a queue/worker and respond immediately on both paths after just the DB lookup:
+tsconst user = await storage.getUserByEmail(email);
+if (user) {
+  await emailQueue.enqueue('password-reset', { userId: user.id, ... });
+}
+return res.json({ message: 'If an account with this email exists...' });
+Both paths do exactly one DB read and respond. The actual token generation, DB write, and email send happen out-of-band. This also fixes the unrelated DoS where someone hammers forgot-password with real emails to generate token churn.
+If you don't have a queue worker yet, the interim is to fire-and-forget the email work without awaiting it — set immediate response, do the rest in background:
+tsconst user = await storage.getUserByEmail(email);
+res.json({ message: 'If an account with this email exists...' });
+if (user) {
+  // Fire and forget — don't block response
+  (async () => {
+    const token = randomBytes(32).toString('hex');
+    await storage.createPasswordResetToken(user.id, token, expiresAt);
+    await sendPasswordResetEmailViaGmail({ ... });
+  })().catch(err => logger.error({ err }, 'Forgot-password background failed'));
+}
+Slightly less clean (errors logged not surfaced), but fixes the timing tell with no infra change. Just be careful that any thrown error in the background doesn't crash the process — that .catch matters.
+3. H-023 partner-credential idempotency — small wrinkle. The pre-check on partnerUsers.email makes credential creation idempotent within a single webhook, but if you ever process a different webhook that also creates partner users (e.g. a future admin-driven manual-grant flow), they'll silently skip too. That's probably fine, but if you want real exactly-once semantics, wrap that entire block in the same db.transaction(...) as the rest of the webhook side effects, and let the unique constraint on partnerUsers.email throw — caught at the transaction boundary as a no-op. The pre-SELECT works for this case; just noting that "check then write" outside a transaction is generally weaker than "write and let the constraint enforce" inside one.
+Net. 31 of 40 closed, all criticals and highs done modulo timing-oracle confirmation. Item 1 is a 5-minute benchmark. Item 2 is real but acceptable as residual if you log it and plan the queue work; the leak goes from "milliseconds of scrypt" to "tens of milliseconds of DB+SMTP" — narrower oracle, harder to weaponise reliably across the internet, still present. Item 3 is documentation, not action.
+If you only do one more thing this session, run the benchmark on H-041 to confirm your two paths are within ~10ms of each other.

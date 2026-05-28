@@ -1,0 +1,106 @@
+✅ Start With This (Week 1)
+1. Add Simple Tracking Fields
+typescript// In your existing schema.ts
+export const properties = pgTable('properties', {
+  // ... your existing fields
+  totalLikes: integer('total_likes').default(0),
+  totalViews: integer('total_views').default(0),
+  listedDate: timestamp('listed_date').defaultNow(),
+});
+
+export const userSwipes = pgTable('user_swipes', {
+  id: serial('id').primaryKey(),
+  userId: integer('user_id').references(() => users.id),
+  propertyId: integer('property_id').references(() => properties.id),
+  direction: text('direction'), // 'left' or 'right'
+  createdAt: timestamp('created_at').defaultNow(),
+});
+2. Track Swipes (Super Simple)
+typescript// In routes.ts
+app.post('/api/swipe', async (req, res) => {
+  const { propertyId, direction } = req.body;
+  
+  // Save the swipe
+  await db.insert(userSwipes).values({
+    userId: req.user!.id,
+    propertyId,
+    direction
+  });
+  
+  // Increment counters
+  if (direction === 'right') {
+    await db.update(properties)
+      .set({ totalLikes: sql`total_likes + 1` })
+      .where(eq(properties.id, propertyId));
+  }
+  
+  await db.update(properties)
+    .set({ totalViews: sql`total_views + 1` })
+    .where(eq(properties.id, propertyId));
+  
+  res.json({ success: true });
+});
+3. Simple Sorting (That's It!)
+typescriptapp.get('/api/properties', async (req, res) => {
+  const { sort = 'newest' } = req.query;
+  
+  let query = db.select().from(properties);
+  
+  // Just 3-4 simple sorts
+  switch(sort) {
+    case 'newest':
+      query = query.orderBy(desc(properties.listedDate));
+      break;
+    case 'popular':
+      query = query.orderBy(desc(properties.totalLikes));
+      break;
+    case 'most-viewed':
+      query = query.orderBy(desc(properties.totalViews));
+      break;
+    default:
+      query = query.orderBy(desc(properties.listedDate));
+  }
+  
+  const results = await query.limit(50);
+  res.json(results);
+});
+
+🚫 Skip These Until Later
+❌ Redis caching - Not needed until 1000+ concurrent users
+❌ Background score calculations - Just update on swipe
+❌ AI personalization - Not until you have swipe data from 100+ users
+❌ ELO scoring - Overcomplicated for MVP
+❌ Materialized views - PostgreSQL handles this fine at small scale
+❌ Complex algorithms - Keep it simple
+
+📈 When to Add Features
+After 100 users:
+
+Add basic filter preferences (save user's bedroom/bathroom choices)
+
+After 1,000 users:
+
+Add "For You" feed based on previous likes
+Simple: "Show me more properties like the ones I liked"
+
+After 10,000 users:
+
+Add Redis caching
+Add background jobs for score calculation
+
+After 50,000+ users:
+
+Now you need the fancy stuff I mentioned
+
+
+🎯 Your MVP Sorting Options
+Just put these 4 buttons in your UI:
+
+🆕 Just Listed (newest first)
+❤️ Most Liked (most swipes right)
+👁️ Most Viewed (most views)
+📍 Near Me (if you add location later)
+
+Done. That's it.
+
+Bottom line: Start with those 3 simple code blocks above. Add complexity only when users actually demand it or when performance becomes an issue.

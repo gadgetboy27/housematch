@@ -1,0 +1,63 @@
+I can help you debug why your liked properties aren't loading in the dropdown! Let me analyze the flow you've shared.
+Potential Issues I've Identified
+1. User ID Check (Most Likely Issue)
+typescript// Line 42-46 in reports.tsx
+queryKey: user?.id ? [`/api/users/${user.id}/liked-properties`] : ["/api/properties"],
+Problem: If user?.id is undefined or null, it falls back to /api/properties instead of the liked properties endpoint.
+Check:
+
+Is the user object properly loaded when the Reports page mounts?
+Add a console log to verify: console.log('User ID:', user?.id)
+
+2. SQL Query Bug in Backend (Critical)
+typescript// Line 563 in routes.ts
+const likedProperties = await db.select().from(properties)
+  .where(sql`${properties.id} IN (...)`);
+Problem: The SQL IN (...) clause has literal ... instead of the actual propertyIds array!
+Fix: Should be:
+typescriptconst likedProperties = await db.select()
+  .from(properties)
+  .where(inArray(properties.id, propertyIds));
+Or if using raw SQL:
+typescript.where(sql`${properties.id} IN (${propertyIds.join(',')})`)
+3. Empty PropertyIds Array
+If propertyIds is empty (no liked properties found), the query might return unexpected results or error.
+Fix: Add a guard clause:
+typescriptif (propertyIds.length === 0) {
+  return res.json([]);
+}
+Quick Debug Steps
+Add these console logs to narrow down the issue:
+Backend (server/routes.ts around line 540):
+typescriptapp.get("/api/users/:userId/liked-properties", async (req, res) => {
+  console.log('1. Fetching liked properties for user:', userId);
+  
+  const likedSwipes = await db.select().from(userSwipes)...
+  console.log('2. Found swipes:', likedSwipes.length);
+  
+  const propertyIds = likedSwipes.map(swipe => swipe.propertyId).filter(Boolean);
+  console.log('3. Property IDs:', propertyIds);
+  
+  if (propertyIds.length === 0) {
+    console.log('4. No property IDs, returning empty array');
+    return res.json([]);
+  }
+  
+  const likedProperties = await db.select().from(properties)...
+  console.log('5. Found properties:', likedProperties.length);
+  
+  res.json(likedProperties);
+});
+Frontend (client/src/pages/reports.tsx around line 42):
+typescriptconst { data: properties = [], isLoading, error } = useQuery({
+  queryKey: user?.id ? [`/api/users/${user.id}/liked-properties`] : ["/api/properties"],
+  enabled: true,
+});
+
+console.log('Query state:', { properties, isLoading, error, userId: user?.id });
+My Recommended Fix Order
+
+Fix the SQL query in server/routes.ts (the IN (...) bug is likely causing the query to fail)
+Add the empty array guard to handle zero liked properties gracefully
+Verify user authentication is working in the Reports page
+Check the Network tab to see if the API is being called and what it returns

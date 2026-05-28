@@ -1,0 +1,75 @@
+Investigated 401 error patterns and located backend file possibilities.The user is getting a 401 error when searching for properties that exist, but no error when no properties match. Looking at the queryClient.ts file, I can see:
+
+The apiRequest function handles CSRF tokens and credentials
+The throwIfResNotOk function throws an error if the response is not ok
+There's a 401 handling mechanism in getQueryFn but that's only for queries, not mutations
+
+The issue is that when there ARE properties, the backend is returning a 401 error. When there are NO properties, there's no error. This suggests:
+
+The search endpoint itself is working (no auth needed for the search)
+But when properties are found, the backend might be trying to access additional data that requires authentication
+OR the backend is checking permissions on the properties and failing
+
+The user can't find the backend API endpoint file. This is likely a backend/server-side file. I should help them locate it. It could be in:
+
+/api/ai/search-properties.ts or /api/ai/search-properties.js
+/routes/api/ai/search-properties.ts
+/server/api/ai/search-properties.ts
+Or in a framework-specific location
+
+I should ask them about their backend setup and help them find the file. I should also consider that maybe the issue is in how the authentication is being handled - perhaps the session is expiring or the auth cookies aren't being sent correctly.
+Let me help them find the backend file and also suggest some immediate debugging steps.Good! Now I can see the authentication setup. The issue is clearer now. Let me help you find the backend file and debug this.
+Finding the Backend Endpoint
+The API endpoint file could be in several locations depending on your setup. Can you check these locations?
+Common locations:
+
+/server/routes.ts or /server/index.ts (if using Express)
+/api/ai/search-properties.ts (Next.js API routes)
+/server/api/ai/search-properties.ts
+/routes/api.ts or /routes/index.ts
+Look for any file that defines POST /api/ai/search-properties
+
+Quick way to find it:
+Search your codebase for "/api/ai/search-properties" or "search-properties" - the file that handles this route should show up.
+What's Likely Happening
+Based on the 401 pattern (error when properties exist, no error when empty):
+
+The search works (no auth required initially)
+But accessing property data requires authentication - When the backend tries to fetch/join property details for the results, it's failing auth
+Empty results bypass this - No properties = no auth check needed
+
+Immediate Debugging Steps
+Let's check if the user is authenticated. Add this to your component to verify:
+typescript// Add this query to check auth status
+const { data: user } = useQuery({
+  queryKey: ["/api/user"],
+  enabled: open, // Only check when sheet is open
+});
+
+// Add this to the SheetHeader to see auth status
+console.log("Current user:", user);
+Also, add this enhanced logging to see the full error:
+typescriptconst searchMutation = useMutation({
+  mutationFn: async (query: string) => {
+    try {
+      const response = await apiRequest("POST", "/api/ai/search-properties", { query });
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error("❌ Full error:", error);
+      throw error;
+    }
+  },
+  onError: (error: Error) => {
+    console.error("❌ Error caught in mutation:", error.message);
+    handleMutationError(error, "Search Failed");
+  },
+});
+Can you:
+
+Search your project for where "/api/ai/search-properties" is defined
+Check if the user is logged in when you're testing this
+Share what you see in the console with the enhanced logging above
+Let me know what framework you're using (Express, Next.js, etc.)
+
+This will help me pinpoint exactly where the auth is failing!

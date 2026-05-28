@@ -54,13 +54,16 @@ export function ObjectUploader({
   maxFileSize = 10485760, // 10MB default
   allowedFileTypes = ['image/*'], // Default to images only
   uploadType = 'image',
-  userId = 'demo-user', // Default to demo user for development
+  userId, // REQUIRED - must be passed from parent component with authenticated user ID
   onGetUploadParameters,
   onComplete,
   onUploadProgress,
   buttonClassName,
   children,
 }: ObjectUploaderProps) {
+  if (!userId) {
+    throw new Error('ObjectUploader requires userId from authenticated session');
+  }
   const [isUploading, setIsUploading] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState<string[]>([]);
   const [showStorageModal, setShowStorageModal] = useState(false);
@@ -153,13 +156,20 @@ export function ObjectUploader({
   };
 
   const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    console.log("📸 handleFileSelect called!");
     const files = Array.from(event.target.files || []);
-    if (files.length === 0) return;
+    console.log("📸 Files from input:", files.length, files.map(f => ({ name: f.name, size: f.size, type: f.type })));
+    
+    if (files.length === 0) {
+      console.warn("⚠️ No files selected!");
+      return;
+    }
 
     console.log("🔍 Files selected:", files.length);
     
     // Check if selected files exceed the limit
     if (files.length > maxNumberOfFiles) {
+      alert(`You can only upload up to ${maxNumberOfFiles} file(s) at a time.`);
       console.error("🔍 Too many files selected");
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
@@ -168,9 +178,44 @@ export function ObjectUploader({
       return;
     }
 
+    // Check file types (for images)
+    if (uploadType === 'image') {
+      const invalidFiles = files.filter(file => {
+        const fileExtension = file.name.split('.').pop()?.toLowerCase();
+        const validExtensions = ['jpg', 'jpeg', 'png', 'heic', 'heif', 'jfif', 'tiff', 'tif', 'webp'];
+        const validMimeTypes = [
+          'image/jpeg',
+          'image/jpg', 
+          'image/png',
+          'image/heic',
+          'image/heif',
+          'image/tiff',
+          'image/webp'
+        ];
+        
+        const hasValidExtension = fileExtension && validExtensions.includes(fileExtension);
+        const hasValidMimeType = validMimeTypes.includes(file.type);
+        
+        return !hasValidExtension && !hasValidMimeType;
+      });
+
+      if (invalidFiles.length > 0) {
+        const invalidNames = invalidFiles.map(f => f.name).join(', ');
+        alert(`Invalid file type(s): ${invalidNames}\n\nSupported formats: JPG, JPEG, PNG, HEIC, JFIF, TIFF, WebP`);
+        console.error("🔍 Invalid file types:", invalidFiles.map(f => f.name));
+        if (fileInputRef.current) {
+          fileInputRef.current.value = '';
+        }
+        onComplete?.([]);
+        return;
+      }
+    }
+
     // Check file sizes
     const oversizedFiles = files.filter(file => file.size > maxFileSize);
     if (oversizedFiles.length > 0) {
+      const maxSizeMB = (maxFileSize / (1024 * 1024)).toFixed(1);
+      alert(`File(s) too large. Maximum size is ${maxSizeMB}MB per file.`);
       console.error("🔍 Files too large:", oversizedFiles.map(f => f.name));
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
@@ -197,12 +242,15 @@ export function ObjectUploader({
       let totalUploadSize = 0;
 
       for (const file of files) {
-        console.log("🔍 Uploading file:", file.name);
+        console.log(`📤 [${files.indexOf(file) + 1}/${files.length}] Uploading:`, file.name);
         
         // Get upload parameters
+        console.log("🔑 Getting upload URL...");
         const { url } = await onGetUploadParameters();
+        console.log("✅ Got URL:", url.substring(0, 100) + "...");
         
         // Upload file directly
+        console.log("📤 PUT request to GCS...");
         const response = await fetch(url, {
           method: 'PUT',
           body: file,
@@ -211,30 +259,54 @@ export function ObjectUploader({
           },
         });
 
+        console.log("📡 Upload response:", response.status, response.statusText);
+
         if (response.ok) {
-          uploadedUrls.push(url.split('?')[0]);
+          const cleanUrl = url.split('?')[0];
+          uploadedUrls.push(cleanUrl);
           totalUploadSize += file.size;
-          console.log("🔍 File uploaded successfully:", file.name);
+          console.log("✅ SUCCESS! File uploaded:", file.name, "→", cleanUrl);
         } else {
-          console.error("🔍 Upload failed for:", file.name);
+          console.error("❌ FAILED! Upload error:", file.name, response.status);
         }
       }
+
+      console.log("📊 Upload summary:", { uploaded: uploadedUrls.length, urls: uploadedUrls });
 
       if (uploadedUrls.length > 0) {
         const newFiles = [...uploadedFiles, ...uploadedUrls];
         setUploadedFiles(newFiles);
-        onUploadProgress?.(newFiles);
-        onComplete?.(uploadedUrls);
+        console.log("💾 Calling callbacks with", newFiles.length, "files");
+        
+        console.log("📞 Calling onUploadProgress...");
+        try {
+          onUploadProgress?.(newFiles);
+          console.log("✅ onUploadProgress completed");
+        } catch (err) {
+          console.error("❌ onUploadProgress error:", err);
+        }
+        
+        console.log("📞 Calling onComplete with:", uploadedUrls);
+        try {
+          onComplete?.(uploadedUrls);
+          console.log("✅ onComplete completed");
+        } catch (err) {
+          console.error("❌ onComplete error:", err);
+        }
         
         // Update user storage for video/audio uploads
         if (totalUploadSize > 0) {
           await updateUserStorage(totalUploadSize);
         }
+      } else {
+        console.error("❌ No files uploaded successfully!");
       }
     } catch (error) {
-      console.error("🔍 Upload error:", error);
+      console.error("❌ Upload error:", error);
+      alert(`Upload failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
       setIsUploading(false);
+      console.log("🏁 Upload complete, isUploading=false");
     }
   };
 
@@ -244,7 +316,9 @@ export function ObjectUploader({
       <input
         ref={fileInputRef}
         type="file"
-        accept={allowedFileTypes.join(',')}
+        accept={uploadType === 'image' 
+          ? '.jpg,.jpeg,.png,.heic,.heif,.jfif,.tiff,.tif,.webp,image/jpeg,image/jpg,image/png,image/heic,image/heif,image/tiff,image/webp'
+          : allowedFileTypes.join(',')}
         multiple={maxNumberOfFiles > 1}
         onChange={handleFileSelect}
         className="hidden"

@@ -1,0 +1,19 @@
+Solid progress — that's 27 of 40 closed in just over a session, and you've cleared every critical and most highs. The four most meaningful items you called out (H-010 enumeration, H-023 atomic idempotency, H-029 PII redaction, H-031 fail-loud webhook secret) are exactly the ones I'd have prioritised if I were doing this myself.
+A few things I'd want to verify with eyes on code, since I'm working from your summary:
+H-010 — did the same fix land on customer login? The original finding covered both auth.ts and partner-auth.ts. Your note specifically calls out partner. Customer login also had EMAIL_NOT_FOUND, EMAIL_NOT_VERIFIED, and PARTNER_ACCOUNT_DETECTED branches that leaked enumeration. Worth a quick grep to confirm both got the INVALID_CREDENTIALS treatment.
+H-013 — auth or read-only? Adding requireAuth closes the unauthenticated-trigger issue, but the race in H-014 (both webhook and success URL writing) only goes away if the success URL is also made read-only. If payment-success still mutates state — creating purchase orders, inserting transactions, sending emails — you still have a race between an authenticated user landing on the page and the webhook firing in parallel. The webhook should be the only writer.
+H-001 + H-023 cross-check. Both touch the webhook handler. Worth confirming the raw-body fix didn't get re-broken by the transaction restructuring, and that onConflictDoNothing() is on a unique constraint on stripe_event_id (not the auto PK). One Stripe CLI replay against a known event ID is the test.
+Items not in your closure list that I want to confirm status on:
+
+H-014 — payment-success race (per above)
+H-015 — PUT /api/property-images and POST /api/service-providers missing auth/CSRF
+H-017 — upload signed URL still has no MIME/size constraints
+H-030 — likely closed by H-004 (PDFs moved off local disk), but confirm the app.use('/generated_pdfs', express.static(...)) mount was actually removed, not just gated
+H-037 — dangerouslySetInnerHTML audit pass
+
+H-027 (admin 2FA) and H-028 (PII at rest) I'm not surprised aren't done — those are real projects, not patches.
+On your remaining-open justifications:
+H-024 and H-026 — fair calls. The risk profile is much lower once publicUser() is the standard everywhere and ADMIN_SETUP_TOKEN gates the backend. The one residual on H-024 is regression: someone adds a new endpoint six months from now and forgets the helper. If you want a belt-and-braces, define PublicUser = Omit<User, 'password' | ...> as the type and have getUser return that — then any leak becomes a TypeScript error, not a runtime one.
+H-034 — I'd push back gently on "nice-to-have." For a platform handling property offers and partner verifications, an audit log isn't compliance theatre, it's how you answer "who approved this partner?" or "when was this offer modified?" six months later when something is disputed. It's also how you investigate the next incident. Doesn't need to be done now, but I'd put it ahead of the routes.ts refactor.
+H-036 — agreed, build it before you have enough users that manual data-export becomes a support load.
+Happy to do a code-level verification pass on any of the closed items if you want to share the updated files — particularly the webhook handler, since H-001/H-023/H-031 all touch it and the interaction is subtle enough to want a second pair of eyes on.

@@ -1,0 +1,86 @@
+VM19 injected.js:204  GET https://1c4801d3-b756-4547-addf-b0b2f4dd5ffd-00-2fclfcq5sewjy.kirk.replit.dev/api/auth/user 401 (Unauthorized)
+apply @ VM19 injected.js:204
+apiRequest @ VM38 queryClient.ts:41
+queryFn @ VM64 profile.tsx:91
+fetchFn @ VM33 @tanstack_react-query.js:840
+run @ VM33 @tanstack_react-query.js:494
+start @ VM33 @tanstack_react-query.js:536
+fetch @ VM33 @tanstack_react-query.js:926
+executeFetch_fn @ VM33 @tanstack_react-query.js:2211
+onSubscribe @ VM33 @tanstack_react-query.js:1898
+subscribe @ VM33 @tanstack_react-query.js:24
+(anonymous) @ VM33 @tanstack_react-query.js:3022
+subscribeToStore @ VM28 chunk-RPCDYKBN.js:11984
+commitHookEffectListMount @ VM28 chunk-RPCDYKBN.js:16915
+commitPassiveMountOnFiber @ VM28 chunk-RPCDYKBN.js:18156
+commitPassiveMountEffects_complete @ VM28 chunk-RPCDYKBN.js:18129
+commitPassiveMountEffects_begin @ VM28 chunk-RPCDYKBN.js:18119
+commitPassiveMountEffects @ VM28 chunk-RPCDYKBN.js:18109
+flushPassiveEffectsImpl @ VM28 chunk-RPCDYKBN.js:19490
+flushPassiveEffects @ VM28 chunk-RPCDYKBN.js:19447
+commitRootImpl @ VM28 chunk-RPCDYKBN.js:19416
+commitRoot @ VM28 chunk-RPCDYKBN.js:19277
+performSyncWorkOnRoot @ VM28 chunk-RPCDYKBN.js:18895
+flushSyncCallbacks @ VM28 chunk-RPCDYKBN.js:9119
+(anonymous) @ VM28 chunk-RPCDYKBN.js:18627
+_app-25b3b267c9954083.js:1 [Violation] 'setInterval' handler took 52ms
+VM19 injected.js:27 🔐 LOGIN ATTEMPT: {email: 'fairladysman@gmail.com', timestamp: '2025-10-27T01:30:10.620Z'}
+VM19 injected.js:27 🔐 LOGIN RESPONSE: {status: 200, success: true, hasUser: true, message: undefined, code: undefined}
+VM19 injected.js:27 ✅ LOGIN SUCCESS: {success: true, user: {…}}
+VM19 injected.js:204  GET https://1c4801d3-b756-4547-addf-b0b2f4dd5ffd-00-2fclfcq5sewjy.kirk.replit.dev/api/user/offers 500 (Internal Server Error)
+apply @ VM19 injected.js:204
+(anonymous) @ VM38 queryClient.ts:51
+fetchFn @ VM33 @tanstack_react-query.js:840
+run @ VM33 @tanstack_react-query.js:494
+start @ VM33 @tanstack_react-query.js:536
+fetch @ VM33 @tanstack_react-query.js:926
+executeFetch_fn @ VM33 @tanstack_react-query.js:2211
+onSubscribe @ VM33 @tanstack_react-query.js:1898
+subscribe @ VM33 @tanstack_react-query.js:24
+(anonymous) @ VM33 @tanstack_react-query.js:3022
+subscribeToStore @ VM28 chunk-RPCDYKBN.js:11984
+commitHookEffectListMount @ VM28 chunk-RPCDYKBN.js:16915
+commitPassiveMountOnFiber @ VM28 chunk-RPCDYKBN.js:18156
+commitPassiveMountEffects_complete @ VM28 chunk-RPCDYKBN.js:18129
+commitPassiveMountEffects_begin @ VM28 chunk-RPCDYKBN.js:18119
+commitPassiveMountEffects @ VM28 chunk-RPCDYKBN.js:18109
+flushPassiveEffectsImpl @ VM28 chunk-RPCDYKBN.js:19490
+flushPassiveEffects @ VM28 chunk-RPCDYKBN.js:19447
+commitRootImpl @ VM28 chunk-RPCDYKBN.js:19416
+commitRoot @ VM28 chunk-RPCDYKBN.js:19277
+performSyncWorkOnRoot @ VM28 chunk-RPCDYKBN.js:18895
+flushSyncCallbacks @ VM28 chunk-RPCDYKBN.js:9119
+(anonymous) @ VM28 chunk-RPCDYKBN.js:18627
+setTimeout
+scheduleFn @ VM33 @tanstack_react-query.js:555
+flush @ VM33 @tanstack_react-query.js:569
+batch @ VM33 @tanstack_react-query.js:587
+dispatch_fn @ VM33 @tanstack_react-query.js:996
+setData @ VM33 @tanstack_react-query.js:696
+setQueryData @ VM33 @tanstack_react-query.js:1661
+onSuccess @ VM106 auth-modal.tsx:66
+execute @ VM33 @tanstack_react-query.js:1233
+await in execute
+mutate @ VM33 @tanstack_react-query.js:2630
+(anonymous) @ VM33 @tanstack_react-query.js:3295
+handleSubmit @ VM106 auth-modal.tsx:218
+callCallback2 @ VM28 chunk-RPCDYKBN.js:3674
+invokeGuardedCallbackDev @ VM28 chunk-RPCDYKBN.js:3699
+invokeGuardedCallback @ VM28 chunk-RPCDYKBN.js:3733
+invokeGuardedCallbackAndCatchFirstError @ VM28 chunk-RPCDYKBN.js:3736
+executeDispatch @ VM28 chunk-RPCDYKBN.js:7014
+processDispatchQueueItemsInOrder @ VM28 chunk-RPCDYKBN.js:7034
+processDispatchQueue @ VM28 chunk-RPCDYKBN.js:7043
+dispatchEventsForPlugins @ VM28 chunk-RPCDYKBN.js:7051
+(anonymous) @ VM28 chunk-RPCDYKBN.js:7174
+batchedUpdates$1 @ VM28 chunk-RPCDYKBN.js:18913
+batchedUpdates @ VM28 chunk-RPCDYKBN.js:3579
+dispatchEventForPluginEventSystem @ VM28 chunk-RPCDYKBN.js:7173
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ VM28 chunk-RPCDYKBN.js:5478
+dispatchEvent @ VM28 chunk-RPCDYKBN.js:5472
+dispatchDiscreteEvent @ VM28 chunk-RPCDYKBN.js:5449
+VM19 injected.js:27 ✅ Synced localStorage likes to server
+injected.js:27 [vite] connecting...
+injected.js:27 [vite] connected.
+injected.js:27 Google Analytics not configured. Add VITE_GA_TRACKING_ID to your environment variables.
+[Violation] 'requestIdleCallback' handler took 57ms

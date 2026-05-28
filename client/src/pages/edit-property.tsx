@@ -376,13 +376,16 @@ export default function EditProperty() {
         </Card>
 
         {/* Image Management */}
-        <ImageManager
-          mainImage={formData.imageUrl}
-          additionalImages={formData.additionalImages}
-          onMainImageChange={handleMainImageChange}
-          onAdditionalImagesChange={handleAdditionalImagesChange}
-          maxAdditionalImages={10}
-        />
+        {user?.id && (
+          <ImageManager
+            userId={user.id}
+            mainImage={formData.imageUrl}
+            additionalImages={formData.additionalImages}
+            onMainImageChange={handleMainImageChange}
+            onAdditionalImagesChange={handleAdditionalImagesChange}
+            isPremium={user.subscriptionTier === 'premium'}
+          />
+        )}
 
         <Card>
           <CardContent className="pt-6">

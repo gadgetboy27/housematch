@@ -1,4 +1,5 @@
 import { Property } from "@shared/schema";
+import { apiRequest } from "./queryClient";
 
 const LIKED_PROPERTIES_KEY = "liked_properties";
 const USER_SESSION_KEY = "user_session";
@@ -6,7 +7,7 @@ const USER_SESSION_KEY = "user_session";
 export interface LikedProperty {
   property: Property;
   likedAt: Date;
-  action: "like" | "super_like";
+  action: "like";
 }
 
 export interface UserSession {
@@ -33,7 +34,7 @@ export class LocalStorageService {
     }
   }
 
-  static addLikedProperty(property: Property, action: "like" | "super_like" = "like"): void {
+  static addLikedProperty(property: Property, action: "like" = "like"): void {
     try {
       const likedProperties = this.getLikedProperties();
       
@@ -113,18 +114,17 @@ export class LocalStorageService {
       const likedProperties = this.getLikedProperties();
       
       for (const likedItem of likedProperties) {
-        // Send each liked property to server
-        await fetch("/api/swipes", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({
+        // Send each liked property to server using apiRequest (includes CSRF tokens)
+        try {
+          await apiRequest("POST", "/api/swipes", {
             userId,
             propertyId: likedItem.property.id,
             action: likedItem.action
-          })
-        });
+          });
+        } catch (error) {
+          console.warn(`Failed to sync like for property ${likedItem.property.id}:`, error);
+          // Continue with other properties even if one fails
+        }
       }
     } catch (error) {
       throw error;
@@ -138,31 +138,50 @@ export class LocalStorageService {
       
       const serverSwipes = await response.json();
       const likedSwipes = serverSwipes.filter((swipe: any) => 
-        swipe.action === 'like' || swipe.action === 'super_like'
+        swipe.action === 'like'
       );
 
-      // Get property details for each swipe
-      const likedProperties: LikedProperty[] = [];
+      // Get current local likes
+      const currentLocalLikes = this.getLikedProperties();
+      
+      // Get property details for each server swipe
+      const serverLikedProperties: LikedProperty[] = [];
       
       for (const swipe of likedSwipes) {
         try {
           const propResponse = await fetch(`/api/properties/${swipe.propertyId}`);
           if (propResponse.ok) {
             const property = await propResponse.json();
-            likedProperties.push({
+            serverLikedProperties.push({
               property,
               likedAt: new Date(swipe.createdAt),
               action: swipe.action
             });
           }
         } catch (error) {
+          console.warn(`Failed to fetch property ${swipe.propertyId} for sync`);
         }
       }
 
-      // Merge with local storage (server data takes precedence)
-      localStorage.setItem(LIKED_PROPERTIES_KEY, JSON.stringify(likedProperties));
+      // Merge local and server data (avoid duplicates, prefer server timestamps)
+      const mergedProperties: LikedProperty[] = [...serverLikedProperties];
+      
+      // Add local properties that aren't on server yet
+      for (const localLike of currentLocalLikes) {
+        const existsOnServer = serverLikedProperties.some(
+          serverLike => serverLike.property.id === localLike.property.id
+        );
+        
+        if (!existsOnServer) {
+          mergedProperties.push(localLike);
+        }
+      }
+
+      // Save merged data
+      localStorage.setItem(LIKED_PROPERTIES_KEY, JSON.stringify(mergedProperties));
     } catch (error) {
-      throw error;
+      console.error("Failed to sync from server:", error);
+      // Don't throw - preserve local data if server sync fails
     }
   }
 }

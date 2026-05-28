@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { fbTrackLead } from "@/components/FacebookPixel";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -30,7 +31,9 @@ import {
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
 import DraftViewerModal from "./draft-viewer-modal";
+import { formatNZD } from "@/lib/format";
 
 const offerFormSchema = z.object({
   // Buyer Information
@@ -113,36 +116,34 @@ export default function OfferModal({ isOpen, onClose, property }: OfferModalProp
       console.log("📝 Offer details:", data);
 
       // Call backend API to create offer and generate draft
-      const response = await fetch('/api/offers', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          propertyId: property.id,
-          buyerName: data.buyerName,
-          buyerEmail: data.buyerEmail,
-          buyerPhone: data.buyerPhone,
-          offerPrice: data.offerPrice,
-          settlementPeriod: data.settlementPeriod,
-          financeCondition: data.financeCondition,
-          buildingInspectionCondition: data.buildingInspectionCondition,
-          limCondition: data.limCondition,
-          additionalConditions: data.additionalConditions,
-          additionalComments: data.additionalComments,
-        }),
+      const response = await apiRequest('POST', '/api/offers', {
+        propertyId: property.id,
+        buyerName: data.buyerName,
+        buyerEmail: data.buyerEmail,
+        buyerPhone: data.buyerPhone,
+        offerPrice: data.offerPrice,
+        settlementPeriod: data.settlementPeriod,
+        financeCondition: data.financeCondition,
+        buildingInspectionCondition: data.buildingInspectionCondition,
+        limCondition: data.limCondition,
+        additionalConditions: data.additionalConditions,
+        additionalComments: data.additionalComments,
       });
-
-      if (!response.ok) {
-        throw new Error('Failed to submit offer');
-      }
 
       const result = await response.json();
       console.log("✅ Offer submitted successfully:", result);
 
+      // FB: Track lead (express interest = high-intent buyer signal)
+      fbTrackLead({
+        id: property.id,
+        address: property.address,
+        price: property.price ?? undefined,
+        suburb: property.suburb ?? undefined,
+      });
+
       toast({
-        title: "Draft Agreement Generated! 📄",
-        description: `Offer ID: ${result.offer.id}. Opening draft document...`,
+        title: "Express Interest Sent Successfully! 📧",
+        description: "Your expression of interest has been sent to the property owner. They'll be in touch soon!",
         variant: "default",
       });
 
@@ -169,11 +170,17 @@ export default function OfferModal({ isOpen, onClose, property }: OfferModalProp
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <i className="fas fa-handshake text-green-600"></i>
-            Make an Offer - {property.title}
+            <i className="fas fa-envelope text-purple-600"></i>
+            Express Interest - {property.title}
           </DialogTitle>
           <DialogDescription>
-            Fill in your offer details below. We'll generate a draft Purchase & Sale Agreement for your review.
+            <div className="space-y-2">
+              <p>Submit a quick interest form to the seller. This is a non-binding expression of interest.</p>
+              <div className="bg-blue-50 border border-blue-200 rounded p-2 text-sm text-blue-800">
+                <i className="fas fa-info-circle mr-1"></i>
+                <strong>Looking for a legally binding offer?</strong> Find this property in your "Liked" section to access the Official Offer Wizard with ADLS-compliant forms.
+              </div>
+            </div>
           </DialogDescription>
         </DialogHeader>
 
@@ -184,7 +191,7 @@ export default function OfferModal({ isOpen, onClose, property }: OfferModalProp
               <h3 className="font-semibold text-gray-800 mb-2">Property Details</h3>
               <div className="text-sm text-gray-600 space-y-1">
                 <div><strong>Address:</strong> {property.address}, {property.suburb}</div>
-                <div><strong>Asking Price:</strong> {property.price}</div>
+                <div><strong>Asking Price:</strong> {formatNZD(property.price)}</div>
                 <div><strong>Property Type:</strong> {property.propertyType}</div>
                 {property.bedrooms && <div><strong>Bedrooms:</strong> {property.bedrooms}</div>}
                 {property.bathrooms && <div><strong>Bathrooms:</strong> {property.bathrooms}</div>}
@@ -431,7 +438,7 @@ export default function OfferModal({ isOpen, onClose, property }: OfferModalProp
                   <h4 className="font-medium text-yellow-800">Legal Disclaimer</h4>
                   <p className="text-sm text-yellow-700 mt-1">
                     This tool generates a draft agreement for your review. Please have a qualified lawyer 
-                    review all legal documents before signing. Cribsy is not responsible for legal advice 
+                    review all legal documents before signing. HouseMatch NZ is not responsible for legal advice 
                     or the enforceability of generated documents.
                   </p>
                 </div>

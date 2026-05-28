@@ -1,0 +1,46 @@
+Building this as a "sidecar" service is actually the most efficient way to scale. It ensures your core platform stays "lean" and fast, while the heavy lifting of AI matching happens in the background.
+
+Regarding your "stock" (inventory) concern—you are actually in the ideal position to launch. In a "feeble" or slow market like the one we are seeing in March 2026, the problem isn't a lack of houses; it's a lack of liquidity (people are "stuck" in chains).
+
+1. The "Zero Inventory" Strategy
+You don't need 1,000 listings to start. You only need two people who want what the other has.
+
+The "Waitlist" MVP: Use your sign-up flow to build a "Shadow Inventory." Users "list" their home privately (Incognito Mode) just to see if a match exists.
+
+The "Scout" phase: Your AI agents (Clawbots) can look at external listings (with user permission) to find potential swap partners who aren't on HouseMatch yet. You then invite those external sellers to "Match" for free.
+
+The "Chicken and Egg" Solution: By focusing on the Lifestyle Paradox (City-to-Rural), you attract the most motivated users first. These people don't want to list on TradeMe and wait 56 days; they want a direct answer.
+
+2. The FastAPI "Agent Router" (Technical Blueprint)
+To keep this from causing "new tech problems," implement the Model Context Protocol (MCP). This is a 2026 standard that allows AI agents to "talk" to your database safely.
+
+Python
+# A simple, isolated FastAPI router for your AI Agents
+from fastapi import APIRouter, Depends
+from pydantic import BaseModel
+
+router = APIRouter(prefix="/v1/agent-scout", tags=["AI Agents"])
+
+class ScoutCriteria(BaseModel):
+    current_home_value: float
+    target_suburb: str
+    max_top_up: float
+    move_by_date: str
+
+@router.post("/find-matches")
+async def find_agent_matches(criteria: ScoutCriteria):
+    # This logic stays separate from your main website search
+    # It "queries" the DB and returns 'Structural Matches' only
+    match_results = await run_triple_match_logic(criteria)
+    return {"status": "success", "matches": match_results}
+3. Why this is "Safe" to Build Now
+No Overhead: Since you aren't buying the houses, your "stock" is just data.
+
+Scalable Architecture: By using a separate /agent-scout endpoint, if the AI service gets "hammered" by 1,000 clawbots at once, your main website (www.housematch.co.nz) stays fast and responsive for human browsers.
+
+User Experience: For the customer, it feels like magic. They fill out one form, and their personal "Claw" goes to work.
+
+4. How to explain the "Low Stock" to early users
+Be honest about the "Beta" nature of the matching engine. Frame it as an Exclusive Founder’s Club:
+
+"We are currently in the 'Seeding Phase.' We are hand-matching our first 50 Auckland-to-Rural transitions. By joining now, you aren't just 'listing' a house; you are deploying an AI Scout that will find your match before the general public even sees it."

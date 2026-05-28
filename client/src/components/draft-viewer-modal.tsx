@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   Dialog,
   DialogContent,
@@ -7,13 +7,16 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
+import { sanitizeLegalDocument } from "@/lib/sanitize";
+import { handleQueryError } from "@/lib/errorHandler";
+
 // Note: Using a simple Badge component since we don't have it in UI kit
 const Badge = ({ children, className }: { children: React.ReactNode; className?: string }) => (
   <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${className}`}>
     {children}
   </span>
 );
-import { Separator } from "@/components/ui/separator";
 
 interface DraftDocument {
   id: string;
@@ -34,40 +37,42 @@ export default function DraftViewerModal({ isOpen, onClose, draftId }: DraftView
   const [draft, setDraft] = useState<DraftDocument | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  useEffect(() => {
-    if (isOpen && draftId) {
-      fetchDraftDocument();
-    }
-  }, [isOpen, draftId]);
-
-  const fetchDraftDocument = async () => {
+  const fetchDraftDocument = useCallback(async () => {
     setIsLoading(true);
     try {
       const response = await fetch(`/api/draft-documents/${draftId}`);
       if (response.ok) {
         const result = await response.json();
         setDraft(result.draftDocument);
+      } else {
+        throw new Error("Failed to load document");
       }
     } catch (error) {
-      console.error("Failed to fetch draft document:", error);
+      handleQueryError(error as Error, "Failed to Load Document");
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [draftId]);
+
+  useEffect(() => {
+    if (isOpen && draftId) {
+      fetchDraftDocument();
+    }
+  }, [isOpen, draftId, fetchDraftDocument]);
 
   const downloadAsPDF = () => {
-    // TODO: Implement PDF generation
-    console.log("Downloading PDF for draft:", draftId);
+    // Feature not yet implemented - download as PDF
+    alert("PDF download feature coming soon. Please use the document preview for now.");
   };
 
   const downloadAsWord = () => {
-    // TODO: Implement DOCX generation
-    console.log("Downloading Word document for draft:", draftId);
+    // Feature not yet implemented - download as Word document
+    alert("Word document download coming soon. Please use the document preview for now.");
   };
 
   const requestLawyerReview = () => {
-    // TODO: Implement lawyer review request
-    console.log("Requesting lawyer review for draft:", draftId);
+    // Feature not yet implemented - request lawyer review
+    alert("Lawyer review request feature coming soon. Please consult with your lawyer directly for now.");
   };
 
   const getStatusColor = (status: string) => {
@@ -132,9 +137,10 @@ export default function DraftViewerModal({ isOpen, onClose, draftId }: DraftView
             {/* Document Content */}
             <div className="space-y-4">
               <h3 className="font-semibold">Document Preview</h3>
-              <div className="bg-white border rounded-lg p-6 font-mono text-sm whitespace-pre-wrap max-h-96 overflow-y-auto">
-                {draft.documentContent}
-              </div>
+              <div 
+                className="bg-white border rounded-lg p-6 font-mono text-sm whitespace-pre-wrap max-h-96 overflow-y-auto"
+                dangerouslySetInnerHTML={{ __html: sanitizeLegalDocument(draft.documentContent) }}
+              />
             </div>
 
             {/* Legal Warning */}

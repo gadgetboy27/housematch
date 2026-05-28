@@ -1,0 +1,83 @@
+✅ What You've Built (Impressive Scope!)
+Your partner ecosystem is comprehensive:
+
+Authentication system with proper scrypt hashing
+Role-based access (partners vs admins)
+Verification workflow preventing unverified partners from accepting work
+Payout tracking for manual bank transfers
+Complete UI for partners and admins
+
+🎯 About the Password Hash Issue
+Based on your original question, you were stuck on a login error. The manual testing approach is the right call here. Here's why:
+Your two options were:
+
+Generate a valid hash for TestPass123!
+Use OIDC bypass
+
+For MVP manual testing, I recommend:
+
+Use Option 1 (proper password hash) because it tests your actual authentication flow
+Save OIDC bypass for automated testing later
+
+To generate the hash, run this in your Node environment:
+javascriptconst crypto = require('crypto');
+const { promisify } = require('util');
+const scryptAsync = promisify(crypto.scrypt);
+
+async function hashPassword(password) {
+  const salt = crypto.randomBytes(16).toString('hex');
+  const buf = await scryptAsync(password, salt, 64);
+  return `${buf.toString('hex')}.${salt}`;
+}
+
+hashPassword('TestPass123!').then(hash => {
+  console.log('UPDATE partner_users SET password = \'' + hash + '\' WHERE email = \'partner-8pVd78@example.com\';');
+});
+Then run that SQL against your database.
+📋 Manual QA Priority Order
+Given your checklist, here's what I'd test first:
+Critical Path (30 minutes):
+
+✅ Partner Registration → Login (tests password hashing end-to-end)
+✅ Admin verification approval (tests authorization)
+✅ Verified partner accepts order (tests business logic)
+✅ Unverified partner blocked from orders (tests security guard)
+
+Secondary Path (15 minutes):
+
+Partner updates order with photo
+Admin marks payout as paid
+Partner views earnings/metrics
+
+🚨 Post-Launch Priorities (Based on Your List)
+Your post-launch backlog is solid. I'd reorder slightly:
+Week 1 After Launch:
+
+🔑 Partner password reset (currently a support burden)
+📧 Email notifications (reduces admin manual work)
+🔒 Session rotation (security, but lower priority than UX)
+
+Month 1:
+
+💳 Stripe Connect (only if 10+ partners onboarded)
+🤖 E2E tests (after workflows stabilize)
+
+🤔 One Question Before You Ship
+What's your manual payout process? You mentioned:
+
+Admin payout tracking (manual bank transfers)
+
+Do you have:
+
+Partner bank account collection form? ✅ (Seems like yes from your profile page)
+Verification of bank details before first payout?
+How will you handle GST/tax reporting in NZ?
+
+This might be worth documenting in your QA checklist if not already covered.
+💡 What I Can Help With Now
+Would you like me to:
+
+Generate that password hash using a proper script?
+Review your QA checklist for any gaps?
+Create a partner onboarding guide (for your first 2-3 partners)?
+Build the password reset flow (so it's ready for launch)?

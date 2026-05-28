@@ -1,0 +1,121 @@
+💰 Processing payment for: Property Title Search
+injected.js:27 📤 Request payload being sent to backend: {
+  "planId": "title_search",
+  "planType": "report",
+  "metadata": {
+    "price": 1500,
+    "name": "Property Title Search",
+    "description": "Official property ownership and encumbrance details",
+    "propertyId": "prop-004-investment-rental",
+    "provider": "linz",
+    "estimatedDays": 0
+  }
+}
+injected.js:27 ❌ Payment cancelled by user
+injected.js:27 📋 Reports Page - Query State: {userLoading: false, userId: undefined, propertiesCount: 5, propertiesLoading: false, error: null, …}
+injected.js:204  POST https://1c4801d3-b756-4547-addf-b0b2f4dd5ffd-00-2fclfcq5sewjy.kirk.replit.dev/api/stripe/create-checkout-session 401 (Unauthorized)
+apply @ injected.js:204
+apiRequest @ queryClient.ts:58
+await in apiRequest
+processPayment @ use-stripe-payment.ts:46
+handleConfirmPayment @ reports.tsx:156
+handleEvent @ chunk-W6PG6DRF.js?v=27eee035:93
+callCallback2 @ chunk-RPCDYKBN.js?v=27eee035:3674
+invokeGuardedCallbackDev @ chunk-RPCDYKBN.js?v=27eee035:3699
+invokeGuardedCallback @ chunk-RPCDYKBN.js?v=27eee035:3733
+invokeGuardedCallbackAndCatchFirstError @ chunk-RPCDYKBN.js?v=27eee035:3736
+executeDispatch @ chunk-RPCDYKBN.js?v=27eee035:7014
+processDispatchQueueItemsInOrder @ chunk-RPCDYKBN.js?v=27eee035:7034
+processDispatchQueue @ chunk-RPCDYKBN.js?v=27eee035:7043
+dispatchEventsForPlugins @ chunk-RPCDYKBN.js?v=27eee035:7051
+(anonymous) @ chunk-RPCDYKBN.js?v=27eee035:7174
+batchedUpdates$1 @ chunk-RPCDYKBN.js?v=27eee035:18913
+batchedUpdates @ chunk-RPCDYKBN.js?v=27eee035:3579
+dispatchEventForPluginEventSystem @ chunk-RPCDYKBN.js?v=27eee035:7173
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-RPCDYKBN.js?v=27eee035:5478
+dispatchEvent @ chunk-RPCDYKBN.js?v=27eee035:5472
+dispatchDiscreteEvent @ chunk-RPCDYKBN.js?v=27eee035:5449Understand this error
+injected.js:204 Fetch failed loading: POST "https://1c4801d3-b756-4547-addf-b0b2f4dd5ffd-00-2fclfcq5sewjy.kirk.replit.dev/api/stripe/create-checkout-session".
+apply @ injected.js:204
+apiRequest @ queryClient.ts:58
+await in apiRequest
+processPayment @ use-stripe-payment.ts:46
+handleConfirmPayment @ reports.tsx:156
+handleEvent @ chunk-W6PG6DRF.js?v=27eee035:93
+callCallback2 @ chunk-RPCDYKBN.js?v=27eee035:3674
+invokeGuardedCallbackDev @ chunk-RPCDYKBN.js?v=27eee035:3699
+invokeGuardedCallback @ chunk-RPCDYKBN.js?v=27eee035:3733
+invokeGuardedCallbackAndCatchFirstError @ chunk-RPCDYKBN.js?v=27eee035:3736
+executeDispatch @ chunk-RPCDYKBN.js?v=27eee035:7014
+processDispatchQueueItemsInOrder @ chunk-RPCDYKBN.js?v=27eee035:7034
+processDispatchQueue @ chunk-RPCDYKBN.js?v=27eee035:7043
+dispatchEventsForPlugins @ chunk-RPCDYKBN.js?v=27eee035:7051
+(anonymous) @ chunk-RPCDYKBN.js?v=27eee035:7174
+batchedUpdates$1 @ chunk-RPCDYKBN.js?v=27eee035:18913
+batchedUpdates @ chunk-RPCDYKBN.js?v=27eee035:3579
+dispatchEventForPluginEventSystem @ chunk-RPCDYKBN.js?v=27eee035:7173
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-RPCDYKBN.js?v=27eee035:5478
+dispatchEvent @ chunk-RPCDYKBN.js?v=27eee035:5472
+dispatchDiscreteEvent @ chunk-RPCDYKBN.js?v=27eee035:5449
+injected.js:27 ❌ Payment error: Error: 401: {"message":"Authentication required"}
+    at throwIfResNotOk (queryClient.ts:6:11)
+    at async apiRequest (queryClient.ts:65:3)
+    at async processPayment (use-stripe-payment.ts:46:24)
+    at async handleConfirmPayment (reports.tsx:156:5)
+(anonymous) @ injected.js:27
+(anonymous) @ injected.js:27
+(anonymous) @ injected.js:27
+(anonymous) @ injected.js:27
+(anonymous) @ injected.js:27
+(anonymous) @ injected.js:27
+(anonymous) @ injected.js:27
+(anonymous) @ injected.js:27
+(anonymous) @ injected.js:27
+(anonymous) @ injected.js:27
+(anonymous) @ injected.js:27
+(anonymous) @ injected.js:27
+(anonymous) @ injected.js:27
+(anonymous) @ injected.js:27
+(anonymous) @ injected.js:27
+(anonymous) @ injected.js:27
+(anonymous) @ injected.js:27
+(anonymous) @ injected.js:27
+(anonymous) @ injected.js:27
+(anonymous) @ injected.js:27
+(anonymous) @ injected.js:27
+(anonymous) @ injected.js:27
+(anonymous) @ injected.js:27
+(anonymous) @ injected.js:27
+(anonymous) @ injected.js:27
+(anonymous) @ injected.js:27
+(anonymous) @ injected.js:27
+(anonymous) @ injected.js:27
+(anonymous) @ injected.js:27
+(anonymous) @ injected.js:27
+(anonymous) @ injected.js:27
+(anonymous) @ injected.js:27
+(anonymous) @ injected.js:27
+(anonymous) @ injected.js:27
+(anonymous) @ injected.js:27
+(anonymous) @ injected.js:27
+processPayment @ use-stripe-payment.ts:59
+await in processPayment
+handleConfirmPayment @ reports.tsx:156
+handleEvent @ chunk-W6PG6DRF.js?v=27eee035:93
+callCallback2 @ chunk-RPCDYKBN.js?v=27eee035:3674
+invokeGuardedCallbackDev @ chunk-RPCDYKBN.js?v=27eee035:3699
+invokeGuardedCallback @ chunk-RPCDYKBN.js?v=27eee035:3733
+invokeGuardedCallbackAndCatchFirstError @ chunk-RPCDYKBN.js?v=27eee035:3736
+executeDispatch @ chunk-RPCDYKBN.js?v=27eee035:7014
+processDispatchQueueItemsInOrder @ chunk-RPCDYKBN.js?v=27eee035:7034
+processDispatchQueue @ chunk-RPCDYKBN.js?v=27eee035:7043
+dispatchEventsForPlugins @ chunk-RPCDYKBN.js?v=27eee035:7051
+(anonymous) @ chunk-RPCDYKBN.js?v=27eee035:7174
+batchedUpdates$1 @ chunk-RPCDYKBN.js?v=27eee035:18913
+batchedUpdates @ chunk-RPCDYKBN.js?v=27eee035:3579
+dispatchEventForPluginEventSystem @ chunk-RPCDYKBN.js?v=27eee035:7173
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-RPCDYKBN.js?v=27eee035:5478
+dispatchEvent @ chunk-RPCDYKBN.js?v=27eee035:5472
+dispatchDiscreteEvent @ chunk-RPCDYKBN.js?v=27eee035:5449Understand this error
+injected.js:27 📋 Reports Page - Query State: {userLoading: false, userId: undefined, propertiesCount: 5, propertiesLoading: false, error: null, …}
+injected.js:27 📋 Reports Page - Query State: {userLoading: false, userId: undefined, propertiesCount: 5, propertiesLoading: false, error: null, …}

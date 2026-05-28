@@ -1,26 +1,44 @@
 import { useState, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import BottomNavigation from "@/components/bottom-navigation";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { LocalStorageService, LikedProperty } from "@/lib/local-storage";
+import { OfferWizard } from "@/components/OfferWizard";
+import { PropertyDetailsDialog } from "@/components/property-details-dialog";
+import { formatNZD } from "@/lib/format";
 
 export default function Liked() {
   const [likedProperties, setLikedProperties] = useState<LikedProperty[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [offerPropertyId, setOfferPropertyId] = useState<string | null>(null);
+  const [selectedProperty, setSelectedProperty] = useState<any | null>(null);
   const { toast } = useToast();
+
+  // Get current user for auth check
+  const { data: user } = useQuery<{ id: string; name: string; email: string } | null>({
+    queryKey: ["/api/auth/user"],
+    retry: false,
+  });
 
   useEffect(() => {
     // Load liked properties from local storage
     const loadLikedProperties = () => {
       try {
         const properties = LocalStorageService.getLikedProperties();
-        // Sort by action priority (super_like first), then by date within each group
-        const sortedProperties = properties.sort((a, b) => {
-          // Super likes come first
-          if (a.action === 'super_like' && b.action !== 'super_like') return -1;
-          if (a.action !== 'super_like' && b.action === 'super_like') return 1;
-          // Within same action type, sort by newest first
+        // Remove duplicates based on property.id (keep only the most recent)
+        const uniqueProperties = properties.reduce((acc, current) => {
+          const existingIndex = acc.findIndex(item => item.property.id === current.property.id);
+          if (existingIndex === -1) {
+            acc.push(current);
+          } else if (current.likedAt > acc[existingIndex].likedAt) {
+            acc[existingIndex] = current;
+          }
+          return acc;
+        }, [] as LikedProperty[]);
+        // Sort by date, newest first
+        const sortedProperties = uniqueProperties.sort((a, b) => {
           return b.likedAt.getTime() - a.likedAt.getTime();
         });
         setLikedProperties(sortedProperties);
@@ -106,63 +124,24 @@ export default function Liked() {
           </div>
         ) : (
           <div className="space-y-6">
-            {/* Render properties with section headers */}
-            {(() => {
-              const superLiked = likedProperties.filter(item => item.action === 'super_like');
-              const regularLiked = likedProperties.filter(item => item.action === 'like');
-              
-              return (
-                <>
-                  {/* Super Liked Section */}
-                  {superLiked.length > 0 && (
-                    <div>
-                      <div className="flex items-center mb-4">
-                        <div className="flex items-center space-x-2">
-                          <div className="w-6 h-6 bg-gradient-to-r from-yellow-500 to-orange-500 rounded-full flex items-center justify-center">
-                            <i className="fas fa-star text-white text-xs"></i>
-                          </div>
-                          <h3 className="font-semibold text-secondary">Super Liked</h3>
-                          <span className="text-sm text-muted-foreground">({superLiked.length})</span>
-                        </div>
-                      </div>
-                      <div className="space-y-3">
-                        {superLiked.map((likedItem) => {
-                          const { property, likedAt, action } = likedItem;
-                          return (
-                            <PropertyCard key={property.id} property={property} likedAt={likedAt} action={action} onRemove={handleRemoveProperty} />
-                          );
-                        })}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Regular Liked Section */}
-                  {regularLiked.length > 0 && (
-                    <div>
-                      {superLiked.length > 0 && (
-                        <div className="flex items-center mb-4">
-                          <div className="flex items-center space-x-2">
-                            <div className="w-6 h-6 bg-gradient-to-r from-pink-500 to-red-500 rounded-full flex items-center justify-center">
-                              <i className="fas fa-heart text-white text-xs"></i>
-                            </div>
-                            <h3 className="font-semibold text-secondary">Liked</h3>
-                            <span className="text-sm text-muted-foreground">({regularLiked.length})</span>
-                          </div>
-                        </div>
-                      )}
-                      <div className="space-y-3">
-                        {regularLiked.map((likedItem) => {
-                          const { property, likedAt, action } = likedItem;
-                          return (
-                            <PropertyCard key={property.id} property={property} likedAt={likedAt} action={action} onRemove={handleRemoveProperty} />
-                          );
-                        })}
-                      </div>
-                    </div>
-                  )}
-                </>
-              );
-            })()}
+            {/* Liked Properties */}
+            <div className="space-y-3">
+              {likedProperties.map((likedItem) => {
+                const { property, likedAt, action } = likedItem;
+                return (
+                  <PropertyCard 
+                    key={property.id} 
+                    property={property} 
+                    likedAt={likedAt} 
+                    action={action} 
+                    onRemove={handleRemoveProperty}
+                    isLoggedIn={!!user}
+                    onMakeOffer={(propertyId) => setOfferPropertyId(propertyId)}
+                    onViewDetails={(property) => setSelectedProperty(property)}
+                  />
+                );
+              })}
+            </div>
             
             {/* Info about local storage */}
             <div className="mt-8 p-4 bg-blue-50 rounded-lg border border-blue-200">
@@ -185,6 +164,35 @@ export default function Liked() {
       </div>
 
       <BottomNavigation />
+
+      {/* Property Details Dialog */}
+      <PropertyDetailsDialog
+        property={selectedProperty}
+        open={!!selectedProperty}
+        onOpenChange={(open) => !open && setSelectedProperty(null)}
+        isLoggedIn={!!user}
+        onOpenOfferWizard={(propertyId) => {
+          console.log('🎯 Liked: onOpenOfferWizard callback called');
+          console.log('📍 Property ID received:', propertyId);
+          setOfferPropertyId(propertyId);
+          console.log('✅ State updated - wizard should open');
+          setSelectedProperty(null); // Close the dialog
+        }}
+      />
+
+      {/* Offer Wizard */}
+      {offerPropertyId && (
+        <>
+          {console.log('🎨 Rendering OfferWizard on Liked page')}
+          <OfferWizard
+            propertyId={offerPropertyId}
+            onClose={() => {
+              console.log('🚪 Wizard closed');
+              setOfferPropertyId(null);
+            }}
+          />
+        </>
+      )}
     </div>
   );
 }
@@ -195,9 +203,13 @@ interface PropertyCardProps {
   likedAt: Date;
   action: string;
   onRemove: (propertyId: string) => void;
+  isLoggedIn: boolean;
+  onMakeOffer: (propertyId: string) => void;
+  onViewDetails: (property: any) => void;
 }
 
-function PropertyCard({ property, likedAt, action, onRemove }: PropertyCardProps) {
+function PropertyCard({ property, likedAt, action, onRemove, isLoggedIn, onMakeOffer, onViewDetails }: PropertyCardProps) {
+  const { toast } = useToast();
   const formatDate = (date: Date) => {
     const now = new Date();
     const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60));
@@ -209,7 +221,11 @@ function PropertyCard({ property, likedAt, action, onRemove }: PropertyCardProps
   };
 
   return (
-    <Card className={`overflow-hidden hover:shadow-lg transition-all duration-300 ${action === 'super_like' ? 'ring-2 ring-yellow-200 bg-gradient-to-r from-yellow-50 to-orange-50' : 'hover:shadow-lg'}`} data-testid={`card-liked-${property.id}`}>
+    <Card 
+      className="overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer" 
+      data-testid={`card-liked-${property.id}`}
+      onClick={() => onViewDetails(property)}
+    >
       <CardContent className="p-0">
         <div className="flex">
           {/* Property Image */}
@@ -221,15 +237,9 @@ function PropertyCard({ property, likedAt, action, onRemove }: PropertyCardProps
               data-testid="img-liked-property"
             />
             <div className="absolute top-1 right-1">
-              {action === 'super_like' ? (
-                <div className="w-6 h-6 bg-gradient-to-r from-yellow-500 to-orange-500 rounded-full flex items-center justify-center shadow-lg">
-                  <i className="fas fa-star text-white text-xs"></i>
-                </div>
-              ) : (
-                <div className="w-5 h-5 bg-gradient-to-r from-pink-500 to-red-500 rounded-full flex items-center justify-center">
-                  <i className="fas fa-heart text-white text-xs"></i>
-                </div>
-              )}
+              <div className="w-5 h-5 bg-gradient-to-r from-pink-500 to-red-500 rounded-full flex items-center justify-center">
+                <i className="fas fa-heart text-white text-xs"></i>
+              </div>
             </div>
           </div>
           
@@ -243,7 +253,7 @@ function PropertyCard({ property, likedAt, action, onRemove }: PropertyCardProps
                 {property.address}
               </p>
               <p className="text-sm font-bold text-primary" data-testid="text-property-price">
-                {property.price}
+                {formatNZD(property.price)}
               </p>
             </div>
             
@@ -272,7 +282,10 @@ function PropertyCard({ property, likedAt, action, onRemove }: PropertyCardProps
               <Button 
                 variant="ghost" 
                 size="sm"
-                onClick={() => onRemove(property.id)}
+                onClick={(e) => {
+                  e.stopPropagation(); // Prevent opening details dialog
+                  onRemove(property.id);
+                }}
                 className="text-red-500 hover:text-red-700 hover:bg-red-50 p-1"
                 data-testid={`button-remove-${property.id}`}
               >
@@ -280,19 +293,20 @@ function PropertyCard({ property, likedAt, action, onRemove }: PropertyCardProps
               </Button>
             </div>
             
+            {/* Tap to View Details Hint */}
+            <div className="mt-2 text-center">
+              <p className="text-xs text-muted-foreground">
+                <i className="fas fa-hand-pointer text-xs mr-1"></i>
+                Tap to view full details &amp; make offers
+              </p>
+            </div>
+            
             <div className="flex items-center justify-between mt-1">
               <p className="text-xs font-medium" data-testid="text-swipe-action">
-                {action === 'super_like' ? (
-                  <span className="text-orange-600 flex items-center space-x-1">
-                    <i className="fas fa-star text-xs"></i>
-                    <span>Super Liked</span>
-                  </span>
-                ) : (
-                  <span className="text-pink-600 flex items-center space-x-1">
-                    <i className="fas fa-heart text-xs"></i>
-                    <span>Liked</span>
-                  </span>
-                )}
+                <span className="text-pink-600 flex items-center space-x-1">
+                  <i className="fas fa-heart text-xs"></i>
+                  <span>Liked</span>
+                </span>
               </p>
               <p className="text-xs text-muted-foreground" data-testid="text-swipe-date">
                 {formatDate(likedAt)}

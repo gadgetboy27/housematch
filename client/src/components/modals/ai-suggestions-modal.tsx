@@ -17,8 +17,13 @@ export default function AISuggestionsModal({ isOpen, onClose }: AISuggestionsMod
   const [insights, setInsights] = useState<any>(null);
   const { toast } = useToast();
 
-  // Mock user ID for demo - in real app this would come from auth
-  const userId = "demo-user";
+  // Get authenticated user
+  const { data: user } = useQuery({
+    queryKey: ["/api/auth/user"],
+    retry: false,
+  });
+
+  const userId = user?.id;
 
   const { data: marketInsights = [] } = useQuery({
     queryKey: ["/api/ai/market-insights"],

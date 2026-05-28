@@ -1,21 +1,26 @@
 // src/components/property-card.tsx
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Property } from "@shared/schema";
-import PropertyMetrics from "./property-metrics";
 import PropertyTypeDropdown from "./property-type-dropdown";
 import ImageSwipeTutorial from "./image-swipe-tutorial";
 import OfferModal from "./offer-modal";
+import ShareModal from "./modals/share-modal";
+import { PropertyDetailsDialog } from "./property-details-dialog";
 import { motion } from "framer-motion";
 import { apiRequest } from "@/lib/queryClient";
-import { TrendingUp, TrendingDown, Minus } from "lucide-react";
+import { TrendingUp, TrendingDown, Minus, Eye, Heart, Bookmark, Share2 } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { formatNZD, formatLocation } from "@/lib/format";
 
 interface PropertyCardProps {
   property: Property;
   isBackground?: boolean;
   onPropertyTypeFilter?: (type: string) => void;
   selectedPropertyType?: string;
+  user?: { id: string; name: string; email: string } | null;
+  onOpenAuth?: () => void;
 }
 
 const propertyTypeColors = {
@@ -25,17 +30,110 @@ const propertyTypeColors = {
   lease: "border-purple-500 bg-purple-50 text-purple-700",
 };
 
-export default function PropertyCard({ property, isBackground = false, onPropertyTypeFilter, selectedPropertyType }: PropertyCardProps) {
+export default function PropertyCard({ property, isBackground = false, onPropertyTypeFilter, selectedPropertyType, user: userProp, onOpenAuth }: PropertyCardProps) {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [showTutorial, setShowTutorial] = useState(false);
   const [isFlipped, setIsFlipped] = useState(false);
   const [showOfferModal, setShowOfferModal] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [showDetailsDialog, setShowDetailsDialog] = useState(false);
+  const [isSaved, setIsSaved] = useState(false);
   const [, setLocation] = useLocation();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  // Get current user
+  const { data: user } = useQuery<{ id: string; name: string; email: string } | null>({
+    queryKey: ["/api/auth/user"],
+    retry: false,
+  });
+
+  // Check if property is saved by current user
+  const { data: savedStatus } = useQuery<{ isSaved: boolean }>({
+    queryKey: [`/api/properties/${property.id}/is-saved`],
+    enabled: !!user, // Only check if user is logged in
+    retry: false,
+  });
+
+  // Update isSaved state when savedStatus changes
+  useEffect(() => {
+    if (savedStatus?.isSaved !== undefined) {
+      setIsSaved(savedStatus.isSaved);
+    } else if (!user) {
+      // Reset saved state when user logs out
+      setIsSaved(false);
+    }
+  }, [savedStatus, user]);
 
   // Track view when property card becomes visible (only for main cards, not background cards)
   const viewMutation = useMutation({
     mutationFn: async (propertyId: string) => {
       return await apiRequest("POST", `/api/properties/${propertyId}/view`);
+    },
+  });
+
+  // Like property mutation
+  const [isLiked, setIsLiked] = useState(false);
+  const likeMutation = useMutation({
+    mutationFn: async () => {
+      await apiRequest("POST", `/api/properties/${property.id}/like`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/properties'] });
+      queryClient.invalidateQueries({ queryKey: user?.id ? [`/api/users/${user.id}/liked-properties`] : [] });
+      setIsLiked(!isLiked);
+      toast({
+        title: "Property liked!",
+        description: "Added to your liked properties",
+      });
+    },
+    onError: (error: Error) => {
+      if (error.message.includes("401") || error.message.includes("Unauthorized")) {
+        toast({
+          title: "Login required",
+          description: "Please login to like properties",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Failed to like",
+          description: "Please try again",
+          variant: "destructive",
+        });
+      }
+    },
+  });
+
+  // Save property mutation
+  const saveMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest("POST", `/api/properties/${property.id}/save`);
+      return response.json();
+    },
+    onSuccess: (data: { success: boolean; isSaved: boolean }) => {
+      queryClient.invalidateQueries({ queryKey: ['/api/properties'] });
+      queryClient.invalidateQueries({ queryKey: [`/api/properties/${property.id}/is-saved`] });
+      setIsSaved(data.isSaved);
+      toast({
+        title: data.isSaved ? "Saved to favorites" : "Removed from favorites",
+        description: data.isSaved ? "Property added to your saved list" : "Property removed from your saved list",
+      });
+    },
+    onError: (error: Error) => {
+      // Handle not logged in error
+      if (error.message.includes("401") || error.message.includes("Unauthorized")) {
+        toast({
+          title: "Login required",
+          description: "Please login to save properties",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Failed to save",
+          description: "Please try again",
+          variant: "destructive",
+        });
+      }
     },
   });
 
@@ -156,14 +254,15 @@ export default function PropertyCard({ property, isBackground = false, onPropert
     }
   };
 
-  // Handle double-tap for both mouse and touch
+  // Handle double-tap for both mouse and touch - Opens PropertyDetailsDialog
   let tapCount = 0;
   let tapTimer: NodeJS.Timeout;
 
   const handleCardDoubleTap = (e: React.MouseEvent | React.TouchEvent) => {
     const target = e.target as HTMLElement;
     if (!target.closest('[data-testid^="tap-zone-"]') && !target.closest('.z-50')) {
-      setIsFlipped(!isFlipped);
+      // Open PropertyDetailsDialog instead of flipping the card
+      setShowDetailsDialog(true);
     }
   };
 
@@ -178,7 +277,8 @@ export default function PropertyCard({ property, isBackground = false, onPropert
       } else if (tapCount === 2) {
         clearTimeout(tapTimer);
         tapCount = 0;
-        setIsFlipped(!isFlipped);
+        // Open PropertyDetailsDialog instead of flipping the card
+        setShowDetailsDialog(true);
       }
     }
   };
@@ -261,10 +361,16 @@ export default function PropertyCard({ property, isBackground = false, onPropert
         <>
           {/* Left tap zone */}
           <div 
-            className="absolute top-0 left-0 w-[20%] h-full z-10 cursor-pointer"
+            className="absolute top-0 left-0 w-[20%] h-full z-40 cursor-pointer"
+            onPointerDown={(e) => {
+              e.stopPropagation();
+            }}
             onClick={(e) => {
               e.stopPropagation();
               handlePreviousImage(e);
+            }}
+            onTouchStart={(e) => {
+              e.stopPropagation();
             }}
             onTouchEnd={(e) => {
               e.stopPropagation();
@@ -275,10 +381,16 @@ export default function PropertyCard({ property, isBackground = false, onPropert
           
           {/* Right tap zone */}
           <div 
-            className="absolute top-0 right-0 w-[20%] h-full z-10 cursor-pointer"
+            className="absolute top-0 right-0 w-[20%] h-full z-40 cursor-pointer"
+            onPointerDown={(e) => {
+              e.stopPropagation();
+            }}
             onClick={(e) => {
               e.stopPropagation();
               handleNextImage(e);
+            }}
+            onTouchStart={(e) => {
+              e.stopPropagation();
             }}
             onTouchEnd={(e) => {
               e.stopPropagation();
@@ -320,9 +432,63 @@ export default function PropertyCard({ property, isBackground = false, onPropert
 
           {!isBackground && (
             <>
-              {/* metrics only */}
-              <div className="absolute top-4 right-4 flex items-center gap-2">
-                <PropertyMetrics propertyId={property.id} views={property.views || 0} likes={property.likes || 0} saves={property.saves || 0} />
+              {/* All Buttons Inline - Top Right (TikTok Style) */}
+              <div className="absolute top-4 right-4 z-50 flex flex-col gap-4 items-center">
+                
+                {/* Likes */}
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    likeMutation.mutate();
+                  }}
+                  className="flex flex-col items-center gap-0.5 transition-transform active:scale-95"
+                  data-testid="button-like-property"
+                >
+                  <Heart 
+                    className={`h-7 w-7 drop-shadow-[0_3px_6px_rgba(0,0,0,0.9)] transition-all ${
+                      isLiked 
+                        ? 'text-red-500 fill-red-500 animate-pulse' 
+                        : 'text-white'
+                    }`} 
+                  />
+                  <span className="text-white text-xs font-bold drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]" data-testid="text-metric-likes">
+                    {property.likes || 0}
+                  </span>
+                </button>
+                
+                {/* Saves */}
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    saveMutation.mutate();
+                  }}
+                  className="flex flex-col items-center gap-0.5 transition-transform active:scale-95"
+                  data-testid="button-save-property"
+                >
+                  <Bookmark 
+                    className={`h-7 w-7 drop-shadow-[0_3px_6px_rgba(0,0,0,0.9)] transition-all ${
+                      isSaved 
+                        ? 'text-amber-400 fill-amber-400 animate-pulse' 
+                        : 'text-white'
+                    }`} 
+                  />
+                  <span className="text-white text-xs font-bold drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]" data-testid="text-metric-saves">
+                    {property.saves || 0}
+                  </span>
+                </button>
+                
+                {/* Share */}
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShowShareModal(true);
+                  }}
+                  className="flex flex-col items-center gap-0.5 transition-transform active:scale-95"
+                  data-testid="button-share-property"
+                >
+                  <Share2 className="h-7 w-7 text-white drop-shadow-[0_3px_6px_rgba(0,0,0,0.9)]" />
+                </button>
+                
               </div>
 
             {/* type filter */}
@@ -360,7 +526,35 @@ export default function PropertyCard({ property, isBackground = false, onPropert
 
             <div className="flex items-center justify-between mt-2">
               <div className="flex flex-col">
-                <span className="text-xl font-bold">{property.price}</span>
+                <span className="text-2xl font-bold">{formatNZD(property.price)}</span>
+                
+                {/* ⭐ AUTOMATIC STAR RATINGS - Based on Like Count (10 likes per star) */}
+                {property.averageRating && property.totalRatings && property.totalRatings > 0 ? (
+                  <div
+                    className="flex items-center gap-1 mt-1"
+                    data-testid="property-rating-display"
+                  >
+                    <div className="flex items-center">
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <svg
+                          key={star}
+                          className={`w-3 h-3 ${
+                            star <= Math.round(parseFloat(property.averageRating || '0'))
+                              ? 'text-yellow-400 fill-yellow-400'
+                              : 'text-gray-400 fill-gray-400'
+                          }`}
+                          viewBox="0 0 24 24"
+                        >
+                          <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                        </svg>
+                      ))}
+                    </div>
+                    <span className="text-xs text-white/70 ml-1">
+                      {parseFloat(property.averageRating).toFixed(0)} ⭐ ({property.likes} likes)
+                    </span>
+                  </div>
+                ) : null}
+                
                 {/* Price Comparison Indicator */}
                 {priceComparison && (
                   <div className="flex items-center gap-1 mt-1">
@@ -387,27 +581,27 @@ export default function PropertyCard({ property, isBackground = false, onPropert
                   </div>
                 )}
               </div>
-              <div className="flex items-center space-x-4 text-sm">
+              <div className="flex items-center gap-5 text-sm">
                 {property.bedrooms ? (
-                  <span className="flex items-center space-x-1">
+                  <span className="flex items-center gap-1.5">
                     <i className="fas fa-bed text-blue-200" />
                     <span>{property.bedrooms}</span>
                   </span>
                 ) : null}
                 {property.bathrooms ? (
-                  <span className="flex items-center space-x-1">
+                  <span className="flex items-center gap-1.5">
                     <i className="fas fa-shower text-cyan-200" />
                     <span>{property.bathrooms}</span>
                   </span>
                 ) : null}
                 {property.carSpaces ? (
-                  <span className="flex items-center space-x-1">
+                  <span className="flex items-center gap-1.5">
                     <i className="fas fa-car text-green-200" />
                     <span>{property.carSpaces}</span>
                   </span>
                 ) : null}
                 {property.floorArea ? (
-                  <span className="flex items-center space-x-1">
+                  <span className="flex items-center gap-1.5">
                     <i className="fas fa-home text-yellow-200" />
                     <span>{property.floorArea}m²</span>
                   </span>
@@ -415,22 +609,29 @@ export default function PropertyCard({ property, isBackground = false, onPropert
               </div>
             </div>
 
-            <div className="flex items-center justify-between text-xs text-white/70 mt-2 mb-1">
-              <span>{property.suburb}</span>
-              {property.lotNumber && <span>{property.lotNumber}</span>}
+            <div className="flex items-center text-xs text-white/70 mt-2 mb-1">
+              <span>{formatLocation(property.suburb, property.city)}</span>
             </div>
 
-            {/* Make an Offer Button */}
+            {/* Auth-aware CTA: "Get Started" for non-logged-in, "Express Interest" for logged-in */}
             <button
-              className="w-full mt-4 bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600 text-white font-bold py-3 px-6 rounded-xl shadow-lg transform transition-all duration-200 hover:scale-105 active:scale-95 flex items-center justify-center gap-2"
+              className="w-full mt-4 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-bold py-3 px-6 rounded-xl shadow-lg transform transition-all duration-200 hover:scale-105 active:scale-95 flex items-center justify-center gap-2"
               onClick={(e) => {
                 e.stopPropagation();
-                console.log("Make an Offer clicked for property:", property.id);
-                setShowOfferModal(true);
+                if (userProp || user) {
+                  // Logged in: Open Express Interest modal
+                  console.log('Express Interest clicked for property:', property.id);
+                  setShowOfferModal(true);
+                } else {
+                  // Not logged in: Open auth modal
+                  console.log('Get Started clicked - opening auth modal');
+                  onOpenAuth?.();
+                }
               }}
+              data-testid={(userProp || user) ? "button-express-interest" : "button-get-started"}
             >
-              <i className="fas fa-handshake text-lg"></i>
-              <span>Make an Offer</span>
+              <i className={`fas ${(userProp || user) ? 'fa-envelope' : 'fa-rocket'} text-lg`}></i>
+              <span>{(userProp || user) ? 'Express Interest' : 'Get Started'}</span>
             </button>
           </div>
 
@@ -494,7 +695,7 @@ export default function PropertyCard({ property, isBackground = false, onPropert
               {/* Price */}
               <div className="bg-gray-800/50 rounded-lg p-3">
                 <div className="text-gray-400 text-xs uppercase tracking-wide mb-1">Price</div>
-                <div className="text-2xl font-bold text-green-400">{property.price}</div>
+                <div className="text-2xl font-bold text-green-400">{formatNZD(property.price)}</div>
               </div>
 
               {/* Key Features */}
@@ -578,11 +779,28 @@ export default function PropertyCard({ property, isBackground = false, onPropert
         </motion.div>
       </motion.div>
 
-      {/* Offer Modal */}
-      <OfferModal
-        isOpen={showOfferModal}
-        onClose={() => setShowOfferModal(false)}
+      {/* Express Interest Modal - Simple Offer Form */}
+      {showOfferModal && (
+        <OfferModal
+          isOpen={showOfferModal}
+          onClose={() => setShowOfferModal(false)}
+          property={property}
+        />
+      )}
+
+      {/* Share Modal */}
+      <ShareModal
+        isOpen={showShareModal}
+        onClose={() => setShowShareModal(false)}
         property={property}
+      />
+
+      {/* Property Details Dialog - Unified across home and liked pages */}
+      <PropertyDetailsDialog
+        property={property}
+        open={showDetailsDialog}
+        onOpenChange={setShowDetailsDialog}
+        isLoggedIn={!!user}
       />
     </div>
   );

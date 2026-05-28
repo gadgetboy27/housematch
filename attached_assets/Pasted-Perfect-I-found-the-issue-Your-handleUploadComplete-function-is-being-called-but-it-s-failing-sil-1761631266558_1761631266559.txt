@@ -1,0 +1,193 @@
+Perfect! I found the issue. Your handleUploadComplete function is being called, but it's failing silently. Here's what's happening:
+🔴 The Problem
+Looking at lines 665-721 of your code, the handleUploadComplete function does additional processing after the GCS upload succeeds:
+typescriptconst handleUploadComplete = async (uploadedUrls: string[]) => {
+  // Line 667-683: Validation checks
+  if (uploadedUrls.length === 0 && uploadedImages.length >= 4) {
+    toast(...); // Photo limit error
+    return;
+  }
+  
+  if (uploadedUrls.length === 0) {
+    toast(...); // Upload error
+    return; // ← LIKELY FAILING HERE
+  }
+
+  // Line 685-698: API processing
+  for (const imageURL of uploadedUrls) {
+    const response = await apiRequest("PUT", "/api/property-images", { imageURL });
+    // ← OR FAILING HERE
+  }
+}
+Why you don't see images:
+
+✅ Upload to GCS succeeds (200 OK)
+✅ ObjectUploader calls onComplete(urls)
+❌ handleUploadComplete receives URLs but hits validation checks
+❌ No console.log at the start - so you never see evidence it was called
+❌ Images never get added to uploadedImages state
+
+🔧 The Fix
+Add comprehensive logging and fix the validation logic:
+typescript// Handle upload completion
+const handleUploadComplete = async (uploadedUrls: string[]) => {
+  console.log('📸 onComplete called with files:', uploadedUrls);
+  console.log('📸 Current uploadedImages state:', uploadedImages);
+  
+  // FIXED: Check if we have URLs to process
+  if (!uploadedUrls || uploadedUrls.length === 0) {
+    console.error('❌ No URLs received from upload');
+    toast({
+      title: "Upload Error",
+      description: "No files were uploaded. Please try again.",
+      variant: "destructive",
+    });
+    return;
+  }
+
+  // Check photo limit BEFORE processing
+  if (uploadedImages.length + uploadedUrls.length > 4) {
+    console.warn('⚠️ Photo limit would be exceeded');
+    toast({
+      title: "Photo Limit Reached",
+      description: "You can only upload 4 photos maximum. Upgrade to Premium for more photos.",
+      variant: "destructive",
+    });
+    return;
+  }
+
+  console.log(`📤 Processing ${uploadedUrls.length} uploaded files...`);
+
+  try {
+    const newImagePaths: string[] = [];
+    
+    // Process all uploaded files
+    for (let i = 0; i < uploadedUrls.length; i++) {
+      const imageURL = uploadedUrls[i];
+      console.log(`🔄 [${i+1}/${uploadedUrls.length}] Processing image:`, imageURL);
+      
+      try {
+        // Normalize the path on the backend
+        const response = await apiRequest("PUT", "/api/property-images", { imageURL });
+        
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error(`❌ Backend processing failed for image ${i+1}:`, errorText);
+          throw new Error(`Backend returned ${response.status}`);
+        }
+        
+        const data = await response.json();
+        console.log(`✅ [${i+1}/${uploadedUrls.length}] Processed:`, data.objectPath);
+        newImagePaths.push(data.objectPath);
+      } catch (error) {
+        console.error(`❌ Failed to process image ${i+1}:`, error);
+        // Continue processing other images
+      }
+    }
+    
+    if (newImagePaths.length > 0) {
+      console.log('📸 Set additionalImages:', newImagePaths);
+      setUploadedImages(prev => {
+        const updated = [...prev, ...newImagePaths];
+        console.log('📸 Updated uploadedImages state:', updated);
+        return updated;
+      });
+      
+      // Reset upload progress
+      setUploadProgress(prev => ({
+        ...prev,
+        images: { uploading: false, current: 0, total: 0 }
+      }));
+      
+      toast({
+        title: "Success",
+        description: `${newImagePaths.length} image${newImagePaths.length > 1 ? 's' : ''} uploaded successfully!`,
+      });
+    } else {
+      console.error('❌ No images were successfully processed');
+      toast({
+        title: "Processing Error", 
+        description: "Failed to process uploaded images. Please check the console for details.",
+        variant: "destructive",
+      });
+    }
+  } catch (error) {
+    console.error('❌ Upload completion error:', error);
+    toast({
+      title: "Error",
+      description: error instanceof Error ? error.message : "Failed to complete upload",
+      variant: "destructive",
+    });
+  }
+};
+🎯 Quick Diagnostic Steps
+Run this in your browser console after uploading:
+javascript// Check what URL format you're receiving
+console.log('Test URL format:', uploadedUrls[0]);
+
+// Expected format from your logs:
+// "https://storage.googleapis.com/replit-objstore-.../uploads/d334c305-..."
+
+// Test the backend API manually
+fetch('/api/property-images', {
+  method: 'PUT',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    imageURL: "https://storage.googleapis.com/replit-objstore-1c5b357a-6d28-4f45-93e6-a932f4c75e87/.private/uploads/d334c305-151b-4963-86cd-c6b97bdaddbc"
+  })
+})
+.then(r => r.json())
+.then(d => console.log('API Response:', d))
+.catch(e => console.error('API Error:', e));
+🔍 Most Likely Issues
+
+Backend API failure - /api/property-images endpoint might be:
+
+Not accepting the URL format from GCS
+Returning an error (500, 400, etc.)
+Timing out
+
+
+Validation logic bug - The condition uploadedUrls.length === 0 at line 676 returns early even when you DO have URLs
+Type mismatch - ObjectUploader might be passing URLs in a different format than expected
+
+📝 Additional Improvements
+Also update handleUploadProgress with logs:
+typescriptconst handleUploadProgress = (files: any[]) => {
+  console.log(`📊 Upload progress callback: ${files.length} files`, files);
+  
+  const totalFiles = files.length;
+  const uploadedFiles = files.filter((file: any) => file.progress?.uploadComplete).length;
+  
+  console.log(`📊 Progress: ${uploadedFiles}/${totalFiles} complete`);
+  
+  setUploadProgress(prev => ({
+    ...prev,
+    images: {
+      uploading: uploadedFiles < totalFiles,
+      current: uploadedFiles,
+      total: totalFiles,
+    }
+  }));
+};
+```
+
+## ✅ **What to Look For After the Fix**
+
+After uploading, you should now see this sequence in the console:
+```
+🔍 Upload button clicked!
+📸 handleFileSelect called!
+📸 Files from input: 1
+✅ SUCCESS! File uploaded: foreal.jpg → https://...
+📊 Upload summary: {uploaded: 1, urls: Array(1)}
+💾 Calling callbacks with 1 files
+📞 Calling onComplete with: [...]
+📸 onComplete called with files: ["https://..."]  ← NEW LOG
+📸 Current uploadedImages state: []
+📤 Processing 1 uploaded files...
+🔄 [1/1] Processing image: https://...
+✅ [1/1] Processed: /uploads/xxx
+📸 Set additionalImages: ["/uploads/xxx"]
+📸 Updated uploadedImages state: ["/uploads/xxx"]
+If you still don't see 📸 onComplete called with files:, then the issue is in the ObjectUploader component not calling the callback at all.

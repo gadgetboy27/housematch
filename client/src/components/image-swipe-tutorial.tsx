@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
 interface ImageSwipeTutorialProps {
@@ -11,23 +11,24 @@ export default function ImageSwipeTutorial({ isVisible, onComplete, imageCount }
   const [step, setStep] = useState(0);
   const [showHandAnimation, setShowHandAnimation] = useState(true);
 
-  const steps = [
+  // Memoize steps array to prevent recreation on every render
+  const steps = useMemo(() => [
     {
       title: "Tap to explore images",
       description: `This property has ${imageCount} photos`,
-      highlight: "left", // highlight left side first
+      highlight: "left" as const,
     },
     {
       title: "Tap right side for next",
       description: "Tap left side for previous",
-      highlight: "both",
+      highlight: "both" as const,
     },
     {
       title: "Dots show your progress",
       description: "Each dot represents a photo",
-      highlight: "dots",
+      highlight: "dots" as const,
     }
-  ];
+  ], [imageCount]);
 
   const currentStep = steps[step];
 
@@ -80,7 +81,7 @@ export default function ImageSwipeTutorial({ isVisible, onComplete, imageCount }
 
         {/* Right highlight zone */}
         <AnimatePresence>
-          {(currentStep.highlight === "right" || currentStep.highlight === "both") && (
+          {currentStep.highlight === "both" && (
             <motion.div
               className="absolute top-0 right-0 w-[30%] h-full bg-white/20 border-2 border-white rounded-l-lg"
               initial={{ opacity: 0, x: 50 }}
@@ -117,11 +118,9 @@ export default function ImageSwipeTutorial({ isVisible, onComplete, imageCount }
 
         {/* Animated hand gesture */}
         <AnimatePresence>
-          {showHandAnimation && (currentStep.highlight === "left" || currentStep.highlight === "right") && (
+          {showHandAnimation && currentStep.highlight === "left" && (
             <motion.div
-              className={`absolute top-1/2 transform -translate-y-1/2 pointer-events-none ${
-                currentStep.highlight === "left" ? "left-[15%]" : "right-[15%]"
-              }`}
+              className="absolute top-1/2 transform -translate-y-1/2 pointer-events-none left-[15%]"
               initial={{ opacity: 0, scale: 0.5 }}
               animate={{ 
                 opacity: [0, 1, 1, 0], 

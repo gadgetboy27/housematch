@@ -1,0 +1,881 @@
+# HouseMatch - Title Reports API & Payment Setup Guide
+
+## Quick Answer
+
+✅ **LINZ API is 100% FREE** - No payment needed for API access
+💰 **You charge users** for the value-added title reports you create
+🔄 **Fully automated** - API → Generate Report → Payment → Deliver
+
+---
+
+## Part 1: Setting Up Your API Key
+
+### Environment Variables (.env file)
+
+**Never** put API keys directly in your code. Use environment variables:
+
+```bash
+# .env (root of your project)
+
+# LINZ API Configuration
+LINZ_API_KEY=your_actual_api_key_here_abc123xyz
+
+# Your API Base URLs
+LINZ_WFS_URL=https://data.linz.govt.nz/services
+LINZ_ARCGIS_URL=https://services.arcgis.com/xdsHIIxuCWByZiCB/arcgis/rest/services/LINZ_NZ_Property_Titles/FeatureServer/0
+
+# Payment Configuration (we'll set these up next)
+STRIPE_SECRET_KEY=sk_test_...
+STRIPE_PUBLISHABLE_KEY=pk_test_...
+STRIPE_WEBHOOK_SECRET=whsec_...
+
+# Your App Configuration
+NEXT_PUBLIC_APP_URL=http://localhost:3000
+NODE_ENV=development
+```
+
+### Access API Key in Your Code
+
+**Backend (Node.js/Next.js):**
+
+```javascript
+// lib/linz-config.js
+export const LINZ_CONFIG = {
+  apiKey: process.env.LINZ_API_KEY,
+  wfsBaseUrl: process.env.LINZ_WFS_URL,
+  arcgisBaseUrl: process.env.LINZ_ARCGIS_URL
+};
+
+// Validate on app startup
+if (!LINZ_CONFIG.apiKey) {
+  throw new Error('LINZ_API_KEY is not configured in environment variables');
+}
+```
+
+**Usage in your API routes:**
+
+```javascript
+// app/api/property/title/route.js
+import { LINZ_CONFIG } from '@/lib/linz-config';
+import axios from 'axios';
+
+export async function GET(request) {
+  const { searchParams } = new URL(request.url);
+  const titleNumber = searchParams.get('titleNumber');
+  
+  const url = `${LINZ_CONFIG.wfsBaseUrl};key=${LINZ_CONFIG.apiKey}/wfs`;
+  
+  const params = {
+    service: 'WFS',
+    version: '2.0.0',
+    request: 'GetFeature',
+    typeNames: 'layer-50804',
+    outputFormat: 'json',
+    cql_filter: `title_no='${titleNumber}'`
+  };
+  
+  const response = await axios.get(url, { params });
+  
+  return Response.json(response.data);
+}
+```
+
+### Security Best Practices
+
+```javascript
+// lib/linz-api.js - Create a secure wrapper
+
+import { LINZ_CONFIG } from './linz-config';
+import NodeCache from 'node-cache';
+
+const cache = new NodeCache({ stdTTL: 86400 }); // 24 hour cache
+
+export class LINZApi {
+  constructor() {
+    if (!LINZ_CONFIG.apiKey) {
+      throw new Error('LINZ API key not configured');
+    }
+  }
+  
+  async getTitleByNumber(titleNumber) {
+    // Check cache first
+    const cacheKey = `title:${titleNumber}`;
+    const cached = cache.get(cacheKey);
+    if (cached) return cached;
+    
+    // Fetch from LINZ
+    const url = `${LINZ_CONFIG.wfsBaseUrl};key=${LINZ_CONFIG.apiKey}/wfs`;
+    
+    const params = {
+      service: 'WFS',
+      version: '2.0.0',
+      request: 'GetFeature',
+      typeNames: 'layer-50804',
+      outputFormat: 'json',
+      cql_filter: `title_no='${titleNumber}'`
+    };
+    
+    try {
+      const response = await axios.get(url, { params });
+      
+      if (response.data.features && response.data.features.length > 0) {
+        const titleData = this.parseTitle(response.data.features[0]);
+        cache.set(cacheKey, titleData);
+        return titleData;
+      }
+      
+      return null;
+    } catch (error) {
+      console.error('Error fetching title:', error);
+      throw new Error('Failed to fetch title data from LINZ');
+    }
+  }
+  
+  parseTitle(feature) {
+    return {
+      titleNumber: feature.properties.title_no,
+      landDistrict: feature.properties.land_district,
+      type: feature.properties.type,
+      status: feature.properties.status,
+      issueDate: feature.properties.issue_date,
+      legalDescription: feature.properties.legal_desc,
+      area: feature.properties.area,
+      geometry: feature.geometry
+    };
+  }
+}
+
+// Export singleton instance
+export const linzApi = new LINZApi();
+```
+
+---
+
+## Part 2: Understanding the Costs
+
+### What's FREE 🎉
+
+**LINZ API Access (what we just set up):**
+- ✅ FREE - No charges for API calls
+- ✅ FREE - Basic title information (without owner names)
+- ✅ FREE - Property boundaries
+- ✅ FREE - Legal descriptions
+- ✅ FREE - Title numbers, status, issue dates
+- ✅ FREE - Unlimited API calls (standard rate limits apply)
+
+### What COSTS Money 💰
+
+**Official LINZ Documents (if you want to offer these):**
+- Title search with owner names: **$1.10 NZD** per document
+- Copy of title document: **$6.60 NZD** per document
+- Survey plans: **$3.30 NZD** per document
+
+**Your Value-Add Services:**
+- Title Report (basic): **$15 NZD** (your pricing)
+- Title Report (comprehensive): **$29 NZD** (your pricing)
+- Title Report + Official LINZ Document: **$35 NZD** (your pricing + pass through LINZ cost)
+
+---
+
+## Part 3: Your Business Model Options
+
+### Option 1: Free LINZ Data Only (Simplest) ⭐ RECOMMENDED FOR MVP
+
+**What you offer:**
+- Display title information from free LINZ API
+- Show on property cards during swiping
+- No payment required from users
+
+**Monetization:**
+- Free feature to attract users
+- Upsell other services (LIM reports, inspections, etc.)
+
+**Implementation:**
+```javascript
+// Just call the API, no payment needed!
+const titleData = await linzApi.getTitleByNumber(titleNumber);
+```
+
+### Option 2: Paid Title Reports (Value-Added)
+
+**What you offer:**
+- Enhanced title report with analysis
+- PDF download
+- Property insights
+- Email delivery
+
+**Pricing:**
+- Basic Title Report: **$15 NZD**
+- Comprehensive Title Report: **$29 NZD**
+
+**What's included:**
+- All free LINZ data formatted nicely
+- Your analysis and insights
+- Comparison with similar properties
+- Potential issues flagged
+- Professional PDF report
+
+**Implementation:** See Part 4 below
+
+### Option 3: Official LINZ Documents (Pass-Through)
+
+**What you offer:**
+- Official title document with owner names
+- Survey plans
+- You order from LINZ on behalf of user
+
+**Pricing:**
+- Cost + markup: e.g., **$20 NZD** for title (includes $1.10 LINZ cost + $18.90 your service fee)
+
+**Implementation:**
+- User pays you
+- You programmatically order from LINZ
+- You deliver to user
+- **Note:** This requires business account with LINZ Landonline
+
+---
+
+## Part 4: Automated Payment Flow (Stripe)
+
+### Setup Stripe Account
+
+1. **Create Stripe Account:** https://dashboard.stripe.com/register
+2. **Get API Keys:**
+   - Test keys: Start with test mode
+   - Live keys: Switch after testing
+
+### Install Stripe SDK
+
+```bash
+npm install stripe @stripe/stripe-js
+```
+
+### Backend Payment API
+
+```javascript
+// app/api/checkout/title-report/route.js
+
+import Stripe from 'stripe';
+import { linzApi } from '@/lib/linz-api';
+
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+
+export async function POST(request) {
+  try {
+    const { propertyId, titleNumber, reportType } = await request.json();
+    
+    // Define your pricing
+    const prices = {
+      basic: 1500, // $15.00 in cents
+      comprehensive: 2900 // $29.00 in cents
+    };
+    
+    const amount = prices[reportType] || prices.basic;
+    
+    // Create Stripe checkout session
+    const session = await stripe.checkout.sessions.create({
+      payment_method_types: ['card'],
+      line_items: [
+        {
+          price_data: {
+            currency: 'nzd',
+            product_data: {
+              name: `${reportType === 'basic' ? 'Basic' : 'Comprehensive'} Title Report`,
+              description: `Property title report for ${titleNumber}`,
+              images: ['https://housematch.co.nz/images/title-report.png']
+            },
+            unit_amount: amount
+          },
+          quantity: 1
+        }
+      ],
+      mode: 'payment',
+      success_url: `${process.env.NEXT_PUBLIC_APP_URL}/property/${propertyId}/title-report?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/property/${propertyId}`,
+      metadata: {
+        propertyId,
+        titleNumber,
+        reportType
+      }
+    });
+    
+    return Response.json({ sessionId: session.id });
+    
+  } catch (error) {
+    console.error('Error creating checkout session:', error);
+    return Response.json(
+      { error: 'Failed to create checkout session' },
+      { status: 500 }
+    );
+  }
+}
+```
+
+### Frontend Payment Button
+
+```tsx
+// components/TitleReportPurchase.tsx
+
+'use client';
+
+import { useState } from 'react';
+import { loadStripe } from '@stripe/stripe-js';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+
+const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
+
+interface Props {
+  propertyId: string;
+  titleNumber: string;
+}
+
+export function TitleReportPurchase({ propertyId, titleNumber }: Props) {
+  const [loading, setLoading] = useState(false);
+  const [selectedPlan, setSelectedPlan] = useState<'basic' | 'comprehensive'>('basic');
+  
+  const handlePurchase = async () => {
+    setLoading(true);
+    
+    try {
+      // Create checkout session
+      const response = await fetch('/api/checkout/title-report', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          propertyId,
+          titleNumber,
+          reportType: selectedPlan
+        })
+      });
+      
+      const { sessionId } = await response.json();
+      
+      // Redirect to Stripe Checkout
+      const stripe = await stripePromise;
+      const { error } = await stripe!.redirectToCheckout({ sessionId });
+      
+      if (error) {
+        console.error('Stripe error:', error);
+        alert('Payment failed. Please try again.');
+      }
+      
+    } catch (error) {
+      console.error('Error:', error);
+      alert('Something went wrong. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  return (
+    <div className="space-y-6">
+      <h2 className="text-2xl font-bold">Get Detailed Title Report</h2>
+      
+      <div className="grid md:grid-cols-2 gap-4">
+        {/* Basic Plan */}
+        <Card 
+          className={`p-6 cursor-pointer border-2 ${
+            selectedPlan === 'basic' ? 'border-blue-500' : 'border-gray-200'
+          }`}
+          onClick={() => setSelectedPlan('basic')}
+        >
+          <h3 className="text-xl font-semibold mb-2">Basic Report</h3>
+          <p className="text-3xl font-bold mb-4">$15 <span className="text-sm text-gray-500">NZD</span></p>
+          <ul className="space-y-2 text-sm">
+            <li>✅ Full title information</li>
+            <li>✅ Legal description</li>
+            <li>✅ Property boundaries</li>
+            <li>✅ Title status & history</li>
+            <li>✅ PDF download</li>
+          </ul>
+        </Card>
+        
+        {/* Comprehensive Plan */}
+        <Card 
+          className={`p-6 cursor-pointer border-2 ${
+            selectedPlan === 'comprehensive' ? 'border-blue-500' : 'border-gray-200'
+          }`}
+          onClick={() => setSelectedPlan('comprehensive')}
+        >
+          <div className="flex justify-between items-start mb-2">
+            <h3 className="text-xl font-semibold">Comprehensive Report</h3>
+            <span className="bg-blue-500 text-white text-xs px-2 py-1 rounded">POPULAR</span>
+          </div>
+          <p className="text-3xl font-bold mb-4">$29 <span className="text-sm text-gray-500">NZD</span></p>
+          <ul className="space-y-2 text-sm">
+            <li>✅ Everything in Basic</li>
+            <li>✅ Comparable sales analysis</li>
+            <li>✅ Zoning information</li>
+            <li>✅ Potential issues flagged</li>
+            <li>✅ Investment insights</li>
+            <li>✅ Priority email support</li>
+          </ul>
+        </Card>
+      </div>
+      
+      <Button 
+        onClick={handlePurchase}
+        disabled={loading}
+        className="w-full"
+        size="lg"
+      >
+        {loading ? 'Processing...' : `Purchase ${selectedPlan === 'basic' ? 'Basic' : 'Comprehensive'} Report`}
+      </Button>
+      
+      <p className="text-xs text-gray-500 text-center">
+        Secure payment powered by Stripe. You'll receive your report via email instantly after payment.
+      </p>
+    </div>
+  );
+}
+```
+
+### Webhook Handler (Generate Report After Payment)
+
+```javascript
+// app/api/webhooks/stripe/route.js
+
+import Stripe from 'stripe';
+import { headers } from 'next/headers';
+import { linzApi } from '@/lib/linz-api';
+import { generateTitleReportPDF } from '@/lib/report-generator';
+import { sendTitleReportEmail } from '@/lib/email';
+
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+
+export async function POST(request) {
+  const body = await request.text();
+  const signature = headers().get('stripe-signature');
+  
+  let event;
+  
+  try {
+    event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
+  } catch (err) {
+    console.error('Webhook signature verification failed:', err);
+    return Response.json({ error: 'Webhook error' }, { status: 400 });
+  }
+  
+  // Handle successful payment
+  if (event.type === 'checkout.session.completed') {
+    const session = event.data.object;
+    
+    // Get metadata from session
+    const { propertyId, titleNumber, reportType } = session.metadata;
+    const customerEmail = session.customer_details.email;
+    
+    try {
+      // 1. Fetch title data from LINZ
+      const titleData = await linzApi.getTitleByNumber(titleNumber);
+      
+      if (!titleData) {
+        throw new Error('Title not found');
+      }
+      
+      // 2. Generate PDF report
+      const pdfBuffer = await generateTitleReportPDF({
+        titleData,
+        reportType,
+        propertyId
+      });
+      
+      // 3. Store report in database
+      await db.titleReport.create({
+        data: {
+          propertyId: parseInt(propertyId),
+          titleNumber,
+          reportType,
+          customerEmail,
+          stripeSessionId: session.id,
+          pdfUrl: await uploadPDFToStorage(pdfBuffer, titleNumber),
+          createdAt: new Date()
+        }
+      });
+      
+      // 4. Send email with PDF attachment
+      await sendTitleReportEmail({
+        to: customerEmail,
+        titleNumber,
+        reportType,
+        pdfBuffer
+      });
+      
+      console.log(`Title report generated and sent to ${customerEmail}`);
+      
+    } catch (error) {
+      console.error('Error processing title report:', error);
+      // Send error notification to admin
+    }
+  }
+  
+  return Response.json({ received: true });
+}
+```
+
+---
+
+## Part 5: Generate PDF Report
+
+### Install PDF Library
+
+```bash
+npm install pdfkit
+```
+
+### PDF Generator
+
+```javascript
+// lib/report-generator.js
+
+import PDFDocument from 'pdfkit';
+import { format } from 'date-fns';
+
+export async function generateTitleReportPDF({ titleData, reportType, propertyId }) {
+  return new Promise((resolve, reject) => {
+    const doc = new PDFDocument({ 
+      size: 'A4',
+      margins: { top: 50, bottom: 50, left: 50, right: 50 }
+    });
+    
+    const chunks = [];
+    
+    doc.on('data', chunk => chunks.push(chunk));
+    doc.on('end', () => resolve(Buffer.concat(chunks)));
+    doc.on('error', reject);
+    
+    // Header
+    doc.fontSize(24)
+       .font('Helvetica-Bold')
+       .text('Property Title Report', { align: 'center' });
+    
+    doc.moveDown();
+    doc.fontSize(12)
+       .font('Helvetica')
+       .text(`Generated: ${format(new Date(), 'PPpp')}`, { align: 'center' });
+    
+    doc.moveDown(2);
+    
+    // Title Information
+    doc.fontSize(16)
+       .font('Helvetica-Bold')
+       .text('Title Information');
+    
+    doc.moveDown(0.5);
+    
+    addField(doc, 'Title Number:', titleData.titleNumber);
+    addField(doc, 'Land District:', titleData.landDistrict);
+    addField(doc, 'Title Type:', titleData.type);
+    addField(doc, 'Status:', titleData.status);
+    addField(doc, 'Issue Date:', titleData.issueDate ? format(new Date(titleData.issueDate), 'PP') : 'N/A');
+    
+    if (titleData.area) {
+      addField(doc, 'Area:', `${titleData.area.toLocaleString()} m²`);
+    }
+    
+    doc.moveDown(1);
+    
+    // Legal Description
+    doc.fontSize(16)
+       .font('Helvetica-Bold')
+       .text('Legal Description');
+    
+    doc.moveDown(0.5);
+    doc.fontSize(10)
+       .font('Helvetica')
+       .text(titleData.legalDescription || 'Not available', {
+         align: 'justify'
+       });
+    
+    // Comprehensive report extras
+    if (reportType === 'comprehensive') {
+      doc.addPage();
+      
+      doc.fontSize(16)
+         .font('Helvetica-Bold')
+         .text('Additional Insights');
+      
+      doc.moveDown(0.5);
+      
+      // Add more analysis here
+      doc.fontSize(10)
+         .font('Helvetica')
+         .text('This comprehensive report includes additional analysis and insights...');
+    }
+    
+    // Footer
+    doc.fontSize(8)
+       .fillColor('#666')
+       .text(
+         'This report is provided by HouseMatch and is based on data from Land Information New Zealand. ' +
+         'For official purposes, please order an official title document from LINZ.',
+         50,
+         doc.page.height - 100,
+         { align: 'center', width: doc.page.width - 100 }
+       );
+    
+    doc.end();
+  });
+}
+
+function addField(doc, label, value) {
+  doc.fontSize(10)
+     .font('Helvetica-Bold')
+     .text(label, { continued: true })
+     .font('Helvetica')
+     .text(' ' + value);
+  doc.moveDown(0.3);
+}
+```
+
+---
+
+## Part 6: Email Delivery
+
+### Setup Email Service (Resend)
+
+```bash
+npm install resend
+```
+
+```javascript
+// lib/email.js
+
+import { Resend } from 'resend';
+
+const resend = new Resend(process.env.RESEND_API_KEY);
+
+export async function sendTitleReportEmail({ to, titleNumber, reportType, pdfBuffer }) {
+  try {
+    const data = await resend.emails.send({
+      from: 'HouseMatch <reports@housematch.co.nz>',
+      to: [to],
+      subject: `Your ${reportType === 'basic' ? 'Basic' : 'Comprehensive'} Title Report - ${titleNumber}`,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h1>Your Title Report is Ready!</h1>
+          
+          <p>Thank you for purchasing a title report from HouseMatch.</p>
+          
+          <p><strong>Title Number:</strong> ${titleNumber}</p>
+          <p><strong>Report Type:</strong> ${reportType === 'basic' ? 'Basic' : 'Comprehensive'}</p>
+          
+          <p>Your detailed title report is attached to this email as a PDF.</p>
+          
+          <div style="background: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
+            <h3>What's Next?</h3>
+            <ul>
+              <li>Review your title report carefully</li>
+              <li>Share with your lawyer or conveyancer</li>
+              <li>Contact us if you have any questions</li>
+            </ul>
+          </div>
+          
+          <p>Need help? Reply to this email or visit <a href="https://housematch.co.nz/support">our support page</a>.</p>
+          
+          <p style="color: #666; font-size: 12px; margin-top: 30px;">
+            This report is based on data from Land Information New Zealand and is current as of the generation date.
+            For official legal purposes, please order an official title document from LINZ.
+          </p>
+        </div>
+      `,
+      attachments: [
+        {
+          filename: `title-report-${titleNumber}.pdf`,
+          content: pdfBuffer
+        }
+      ]
+    });
+    
+    console.log('Email sent:', data);
+    return data;
+    
+  } catch (error) {
+    console.error('Error sending email:', error);
+    throw error;
+  }
+}
+```
+
+---
+
+## Part 7: Database Schema
+
+```sql
+-- PostgreSQL schema for title reports
+
+CREATE TABLE title_reports (
+  id SERIAL PRIMARY KEY,
+  property_id INTEGER REFERENCES properties(id),
+  title_number VARCHAR(50) NOT NULL,
+  report_type VARCHAR(20) NOT NULL, -- 'basic' or 'comprehensive'
+  customer_email VARCHAR(255) NOT NULL,
+  stripe_session_id VARCHAR(255) UNIQUE,
+  amount_paid INTEGER NOT NULL, -- in cents
+  pdf_url TEXT,
+  created_at TIMESTAMP DEFAULT NOW(),
+  
+  INDEX idx_property_id (property_id),
+  INDEX idx_title_number (title_number),
+  INDEX idx_customer_email (customer_email),
+  INDEX idx_stripe_session (stripe_session_id)
+);
+
+-- Track LINZ API usage (optional)
+CREATE TABLE linz_api_logs (
+  id SERIAL PRIMARY KEY,
+  endpoint VARCHAR(255),
+  query_params JSONB,
+  response_time_ms INTEGER,
+  success BOOLEAN,
+  created_at TIMESTAMP DEFAULT NOW(),
+  
+  INDEX idx_created_at (created_at)
+);
+```
+
+---
+
+## Part 8: Environment Variables Checklist
+
+```bash
+# .env.local (for local development)
+# .env.production (for production)
+
+# LINZ API
+LINZ_API_KEY=your_linz_api_key_here
+
+# Stripe
+STRIPE_SECRET_KEY=sk_test_...  # Use sk_live_... for production
+STRIPE_PUBLISHABLE_KEY=pk_test_...  # Use pk_live_... for production
+STRIPE_WEBHOOK_SECRET=whsec_...
+
+# Email (Resend)
+RESEND_API_KEY=re_...
+
+# Database
+DATABASE_URL=postgresql://user:password@localhost:5432/housematch
+
+# App
+NEXT_PUBLIC_APP_URL=https://housematch.co.nz
+NODE_ENV=production
+```
+
+---
+
+## Part 9: Testing the Flow
+
+### Test Mode (No Real Money)
+
+1. **Use Stripe Test Keys**
+2. **Test Card Numbers:**
+   - Success: `4242 4242 4242 4242`
+   - Decline: `4000 0000 0000 0002`
+   - Any future expiry date (e.g., 12/34)
+   - Any 3-digit CVC
+
+3. **Test the Flow:**
+```bash
+# 1. User clicks "Purchase Title Report"
+# 2. Stripe checkout opens
+# 3. Enter test card: 4242 4242 4242 4242
+# 4. Complete payment
+# 5. Webhook triggers
+# 6. Report generated
+# 7. Email sent
+# 8. User receives PDF
+```
+
+---
+
+## Part 10: Go Live Checklist
+
+### Before Launch:
+
+- [ ] Get LINZ API key (done ✓)
+- [ ] Create Stripe account
+- [ ] Switch to Stripe live keys
+- [ ] Set up Stripe webhook endpoint
+- [ ] Configure Resend for email
+- [ ] Test full payment flow
+- [ ] Set up database
+- [ ] Add error monitoring (Sentry)
+- [ ] Test PDF generation
+- [ ] Create terms & conditions
+- [ ] Add refund policy
+- [ ] Set up customer support email
+
+### Security:
+
+- [ ] Never commit `.env` files
+- [ ] Use environment variables
+- [ ] Validate webhook signatures
+- [ ] Rate limit API endpoints
+- [ ] Add CORS protection
+- [ ] Enable HTTPS in production
+- [ ] Sanitize user inputs
+
+---
+
+## Pricing Recommendations
+
+### Suggested Pricing Tiers:
+
+**Free Tier:**
+- Basic title info displayed on property cards
+- No download or PDF
+
+**Basic Report - $15 NZD:**
+- PDF download
+- All LINZ title data formatted
+- Email delivery
+
+**Comprehensive Report - $29 NZD:**
+- Everything in Basic
+- Comparable sales
+- Zoning analysis
+- Potential issues flagged
+
+**Official Documents - $20+ NZD:**
+- Official LINZ title with owner names ($1.10 LINZ cost)
+- Survey plans ($3.30 LINZ cost)
+- Your service fee on top
+
+---
+
+## Summary
+
+### What's FREE:
+✅ LINZ API access (unlimited)
+✅ Basic title data
+✅ No ongoing costs
+
+### What You Charge:
+💰 Value-added reports ($15-$29)
+💰 Optional: Official documents (pass-through + markup)
+
+### Fully Automated:
+1. User selects report type
+2. Stripe payment
+3. Webhook triggers
+4. Fetch LINZ data
+5. Generate PDF
+6. Email to customer
+7. Store in database
+
+**No manual work needed!** 🎉
+
+---
+
+## Need Help?
+
+Questions about:
+- API key setup?
+- Payment integration?
+- PDF generation?
+- Email delivery?
+
+Let me know and I'll help you implement it!

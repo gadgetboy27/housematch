@@ -1,0 +1,274 @@
+🔧 ACTION PLAN: RESTRUCTURE YOUR FORM
+STEP 1: ADD MISSING CRITICAL FIELDS
+New Section: "Your Details" (Add BEFORE Step 1)
+javascript// Add these required fields at the very start:
+
+Full Legal Name(s) of Buyer(s) [REQUIRED]
+└─ Input: text field (allow multiple via "+Add Another Buyer" button)
+
+Contact Phone Number [REQUIRED]
+└─ Input: tel field with NZ format validation
+
+Contact Email Address [REQUIRED]
+└─ Input: email field
+
+Current Residential Address [REQUIRED]
+└─ Input: address autocomplete or text fields
+
+Buying As: [REQUIRED]
+└─ Radio buttons: 
+   ○ Individual(s)
+   ○ Trust (Trust name: _______)
+   ○ Company (Company name: ______)
+In Step 1: Add Property Confirmation Fields
+javascript// After showing the property address, ADD:
+
+Property Address [REQUIRED - Read-only, pre-filled]
+└─ Display: {address from listing}
+
+Please confirm the legal description:
+Legal Description / Lot Number [REQUIRED]
+└─ Input: text field
+└─ Help text: "Found on property title - e.g., Lot 5 DP 12345"
+
+Certificate of Title Reference [REQUIRED]
+└─ Input: text field
+└─ Help text: "e.g., NA123/456 or 654321"
+
+Is this property Freehold? [REQUIRED]
+└─ Radio buttons: ○ Yes  ○ No
+└─ If No → Dropdown: "What type?" 
+   [Leasehold | Cross-lease | Unit title | Stratum | Other]
+In Step 1: Convert Finance to Required Toggle
+javascript// REPLACE your optional finance condition with:
+
+Do you require finance to purchase this property? [REQUIRED]
+└─ Radio buttons: ○ Yes  ○ No
+
+└─ If Yes:
+    How much finance do you need? [REQUIRED]
+    └─ Input: currency field ($)
+    └─ Help text: "Typical: 80% of purchase price"
+    
+    Finance approval deadline:
+    └─ Input: date picker
+    └─ Default: 10 working days from today
+In Step 1: Convert Reports to Required Toggles
+javascript// REPLACE optional conditions with:
+
+Do you want a LIM report? [REQUIRED]
+└─ Radio buttons: ○ Yes  ○ No
+└─ Help text: "Land Information Memorandum - council records. Recommended: Yes"
+
+Do you want a building inspection? [REQUIRED]
+└─ Radio buttons: ○ Yes  ○ No
+└─ Help text: "Professional building report. Highly recommended: Yes"
+
+Do you want a methamphetamine test? [REQUIRED]
+└─ Radio buttons: ○ Yes  ○ No
+└─ Help text: "Tests for drug contamination. Cost: ~$500"
+NEW Step: "Tenancy Information" (Add AFTER Chattels)
+javascript// New step between chattels and solicitor:
+
+Is this property currently tenanted? [REQUIRED]
+└─ Radio buttons: ○ Yes  ○ No
+
+└─ If Yes:
+    Tenant Name(s): [REQUIRED]
+    └─ Input: text field
+    
+    Weekly Rent: [REQUIRED]
+    └─ Input: currency field ($)
+    
+    Lease End Date: [REQUIRED]
+    └─ Input: date picker
+    
+    Bond Amount:
+    └─ Input: currency field ($)
+    
+    Are you buying with existing tenancy? [REQUIRED]
+    └─ Radio buttons: 
+       ○ Yes - keep tenant (property sold "subject to tenancy")
+       ○ No - vacant possession required
+
+STEP 2: SIMPLIFY/REMOVE EXCESSIVE FIELDS
+Solicitor Section - DRASTICALLY SIMPLIFY
+javascript// CURRENT: Name, firm, email, phone, address (6 fields)
+// REPLACE WITH:
+
+Do you have a lawyer? [REQUIRED]
+└─ Radio buttons:
+   ○ Yes, I have one
+   ○ Not yet, need to find one
+   ○ Need a recommendation
+
+└─ If "Yes, I have one":
+    Law Firm or Lawyer Name:
+    └─ Input: text field
+    
+    Lawyer's Email:
+    └─ Input: email field
+    
+    [That's it - just 2 fields instead of 6]
+```
+
+#### **REMOVE These Fields Entirely:**
+```
+❌ Buyer occupation - Not needed
+❌ Solicitor phone number - Email is enough
+❌ Solicitor physical address - Not needed at this stage
+❌ Solicitor postal address - Not needed at this stage
+❌ Detailed custom conditions - Move to Phase 2 (you handle)
+```
+
+---
+
+### **STEP 3: REORGANIZE FLOW**
+
+**New Step Order:**
+```
+Step 0: "Your Details" [NEW]
+└─ Buyer name(s), contact info, buying entity
+
+Step 1: "Your Offer" [MODIFIED]
+└─ Property confirmation (address, title, type)
+└─ Purchase price, deposit, settlement date
+└─ Finance required? Y/N + amount
+└─ LIM required? Y/N
+└─ Building inspection required? Y/N
+└─ Meth test required? Y/N
+
+Step 2: "What's Included?" [KEEP AS IS]
+└─ Chattels checklist
+
+Step 3: "Tenancy Information" [NEW]
+└─ Currently tenanted? Y/N + details
+
+Step 4: "Your Lawyer" [SIMPLIFIED]
+└─ Have lawyer? Y/N + name/email only
+
+Step 5: "Review & Submit" [KEEP]
+└─ Summary of everything
+
+STEP 4: UPDATE VALIDATION
+javascript// NEW Required field list (30 total):
+
+[Step 0 - Your Details] (4-6 fields)
+✓ Buyer name(s)
+✓ Phone
+✓ Email  
+✓ Address
+✓ Buying as
+✓ Trust/Company name (conditional)
+
+[Step 1 - Your Offer] (13-15 fields)
+✓ Property address (pre-filled)
+✓ Legal description
+✓ Title reference
+✓ Property type
+✓ Purchase price
+✓ Deposit amount
+✓ Settlement date
+✓ Finance required? Y/N
+✓ Finance amount (conditional)
+✓ Finance deadline (conditional)
+✓ LIM required? Y/N
+✓ Building inspection required? Y/N
+✓ Meth test required? Y/N
+
+[Step 2 - Chattels] (1 field)
+✓ Chattels selection (can be "none")
+
+[Step 3 - Tenancy] (1-5 fields)
+✓ Currently tenanted? Y/N
+✓ Tenant details (conditional)
+
+[Step 4 - Lawyer] (1-3 fields)
+✓ Have lawyer? Y/N
+✓ Lawyer details (conditional)
+
+TOTAL: ~20-30 essential fields ✅
+```
+
+---
+
+### **STEP 5: UPDATE UI/UX**
+
+**Progress Bar:**
+```
+Old: [Step 1] [Step 2] [Step 3] [Review]
+New: [Your Details] [Your Offer] [Included Items] [Tenancy] [Lawyer] [Review]
+Help Text Strategy:
+
+Add tooltips with "Why is this needed?"
+Provide examples for legal description, title reference
+Show "Recommended: Yes/No" for inspection questions
+Link to "What's a LIM?" explainer
+
+Conditional Logic:
+javascript// Show/hide fields based on answers:
+if (financeRequired === 'Yes') → show amount + deadline
+if (propertyFreehold === 'No') → show property type dropdown
+if (currentlyTenanted === 'Yes') → show tenant details
+if (haveLawyer === 'Yes') → show lawyer name/email
+if (buyingAs === 'Trust') → show trust name
+if (buyingAs === 'Company') → show company name
+
+STEP 6: BACKEND UPDATES
+Data Model Changes:
+javascript// Add new fields to your database schema:
+buyerFullName: String (required)
+buyerPhone: String (required)
+buyerEmail: String (required)
+buyerAddress: String (required)
+buyingEntityType: String (required) // 'individual' | 'trust' | 'company'
+trustOrCompanyName: String (optional)
+
+propertyLegalDescription: String (required)
+propertyTitleReference: String (required)
+propertyType: String (required) // 'freehold' | 'leasehold' | etc
+
+financeRequired: Boolean (required)
+financeAmount: Number (optional)
+financeDeadline: Date (optional)
+
+limRequired: Boolean (required)
+buildingInspectionRequired: Boolean (required)
+methTestRequired: Boolean (required)
+
+currentlyTenanted: Boolean (required)
+tenantName: String (optional)
+weeklyRent: Number (optional)
+leaseEndDate: Date (optional)
+bondAmount: Number (optional)
+keepTenant: Boolean (optional)
+
+// Simplify solicitor fields:
+haveLawyer: Boolean (required)
+lawyerName: String (optional) // was separate name + firm
+lawyerEmail: String (optional)
+// Remove: lawyerPhone, lawyerAddress, lawyerPostalAddress
+
+// Remove entirely:
+buyerOccupation: String // ❌ Delete
+```
+
+---
+
+## **📋 IMPLEMENTATION CHECKLIST**
+```
+□ 1. Add "Your Details" section (buyer info) as new Step 0
+□ 2. Add property confirmation fields to Step 1
+□ 3. Convert finance to required Y/N toggle in Step 1
+□ 4. Convert LIM/inspections to required Y/N toggles in Step 1
+□ 5. Create new "Tenancy" step between chattels and lawyer
+□ 6. Simplify lawyer section to just 3 fields max
+□ 7. Remove buyer occupation field entirely
+□ 8. Remove 4 solicitor detail fields (phone, addresses)
+□ 9. Update progress bar to show 6 steps instead of 4
+□ 10. Add conditional field logic for all Y/N questions
+□ 11. Update database schema with new fields
+□ 12. Remove old database fields (occupation, etc)
+□ 13. Update form validation rules
+□ 14. Add help text/tooltips to new fields
+□ 15. Test full flow with real listing

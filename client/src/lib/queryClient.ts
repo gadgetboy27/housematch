@@ -2,8 +2,22 @@ import { QueryClient, QueryFunction } from "@tanstack/react-query";
 
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
-    const text = (await res.text()) || res.statusText;
-    throw new Error(`${res.status}: ${text}`);
+    const contentType = res.headers.get('content-type');
+    let errorMessage = res.statusText;
+    
+    // Try to extract error message based on content type
+    if (contentType?.includes('application/json')) {
+      try {
+        const json = await res.json();
+        errorMessage = json.message || JSON.stringify(json);
+      } catch {
+        errorMessage = await res.text();
+      }
+    } else {
+      errorMessage = await res.text();
+    }
+    
+    throw new Error(`${res.status}: ${errorMessage || res.statusText}`);
   }
 }
 
@@ -34,14 +48,26 @@ async function ensureCSRFToken(): Promise<string | null> {
   return token;
 }
 
+// Helper to safely parse JSON responses
+async function safeJsonParse(res: Response): Promise<any> {
+  const text = await res.text();
+  if (!text) {
+    return null;
+  }
+  try {
+    return JSON.parse(text);
+  } catch (error) {
+    console.error('Failed to parse JSON response:', text);
+    throw new Error(`Invalid JSON response from server: ${text.substring(0, 100)}`);
+  }
+}
+
 export async function apiRequest(
   method: string,
   url: string,
   data?: unknown | undefined,
 ): Promise<Response> {
-  const headers: Record<string, string> = {
-    "x-user-id": "demo-user", // Demo user for development
-  };
+  const headers: Record<string, string> = {};
   
   if (data) {
     headers["Content-Type"] = "application/json";
@@ -64,6 +90,16 @@ export async function apiRequest(
 
   await throwIfResNotOk(res);
   return res;
+}
+
+// Helper to make API requests and automatically parse JSON
+export async function apiRequestJson<T = any>(
+  method: string,
+  url: string,
+  data?: unknown | undefined,
+): Promise<T> {
+  const res = await apiRequest(method, url, data);
+  return safeJsonParse(res);
 }
 
 type UnauthorizedBehavior = "returnNull" | "throw";

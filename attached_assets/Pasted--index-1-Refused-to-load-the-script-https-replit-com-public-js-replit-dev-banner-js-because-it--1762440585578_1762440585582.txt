@@ -1,0 +1,86 @@
+(index):1 Refused to load the script 'https://replit.com/public/js/replit-dev-banner.js' because it violates the following Content Security Policy directive: "script-src 'self' https://www.googletagmanager.com https://www.google-analytics.com 'nonce-wmEmDgQXM8o2qXHmDa9FeA=='". Note that 'script-src-elem' was not explicitly set, so 'script-src' is used as a fallback.
+Understand this error
+index-BgAa5F4A.js:39 Refused to create a worker from 'blob:https://www.housematch.co.nz/53a7e1df-baf5-4764-bb9c-9d5533d2729e' because it violates the following Content Security Policy directive: "script-src 'self' https://www.googletagmanager.com https://www.google-analytics.com 'nonce-wmEmDgQXM8o2qXHmDa9FeA=='". Note that 'worker-src' was not explicitly set, so 'script-src' is used as a fallback.
+
+TY @ index-BgAa5F4A.js:39
+kY @ index-BgAa5F4A.js:39
+_initializeRecording @ index-BgAa5F4A.js:40
+initializeSampling @ index-BgAa5F4A.js:40
+_initialize @ index-BgAa5F4A.js:40
+afterAllSetup @ index-BgAa5F4A.js:40
+z1 @ index-BgAa5F4A.js:25
+_setupIntegrations @ index-BgAa5F4A.js:25
+init @ index-BgAa5F4A.js:25
+A7 @ index-BgAa5F4A.js:26
+mK @ index-BgAa5F4A.js:37
+pX @ index-BgAa5F4A.js:40
+hX @ index-BgAa5F4A.js:40
+(anonymous) @ index-BgAa5F4A.js:549Understand this error
+index-BgAa5F4A.js:33 ✅ Sentry initialized for frontend error tracking
+index-BgAa5F4A.js:33 📊 GA: Tracked page view - Property Discovery Home {page_category: 'discovery', user_type: 'property_browser'}
+index-BgAa5F4A.js:33 [Violation] 'setTimeout' handler took 93ms
+index-BgAa5F4A.js:33  GET https://www.housematch.co.nz/api/auth/user 401 (Unauthorized)
+(anonymous) @ index-BgAa5F4A.js:33
+(anonymous) @ index-BgAa5F4A.js:71
+a @ index-BgAa5F4A.js:71
+h @ index-BgAa5F4A.js:71
+start @ index-BgAa5F4A.js:71
+fetch @ index-BgAa5F4A.js:71
+Wu @ index-BgAa5F4A.js:71
+onSubscribe @ index-BgAa5F4A.js:71
+subscribe @ index-BgAa5F4A.js:71
+(anonymous) @ index-BgAa5F4A.js:71
+RL @ index-BgAa5F4A.js:61
+Lx @ index-BgAa5F4A.js:63
+Wc @ index-BgAa5F4A.js:63
+VT @ index-BgAa5F4A.js:63
+Do @ index-BgAa5F4A.js:61
+lJ @ index-BgAa5F4A.js:63
+Uo @ index-BgAa5F4A.js:63
+u4 @ index-BgAa5F4A.js:63
+S @ index-BgAa5F4A.js:48
+L @ index-BgAa5F4A.js:48Understand this error
+index-BgAa5F4A.js:33 📊 GA: Tracked page view - Property Discovery Home {page_category: 'discovery', user_type: 'property_browser'}
+index-BgAa5F4A.js:33 📊 GA: Tracked page view - Property Discovery Home {page_category: 'discovery', user_type: 'property_browser'}
+index-BgAa5F4A.js:63 [Violation] 'setTimeout' handler took 121ms
+index-BgAa5F4A.js:39 Refused to apply inline style because it violates the following Content Security Policy directive: "style-src 'self' https://fonts.googleapis.com https://cdnjs.cloudflare.com 'nonce-wmEmDgQXM8o2qXHmDa9FeA=='". Either the 'unsafe-inline' keyword, a hash ('sha256-CbmjNSu2URodpxvmeTPtEu3XLMaKCLNAspZvUHnq2VI='), or a nonce ('nonce-...') is required to enable inline execution. Note that hashes do not apply to event handlers, style attributes and javascript: navigations unless the 'unsafe-hashes' keyword is present.
+
+processMutation @ index-BgAa5F4A.js:39
+processMutations @ index-BgAa5F4A.js:39
+(anonymous) @ index-BgAa5F4A.js:39
+(anonymous) @ index-BgAa5F4A.js:39
+attributes
+$3 @ index-BgAa5F4A.js:406
+Q3.render @ index-BgAa5F4A.js:406
+l @ index-BgAa5F4A.js:406
+process @ index-BgAa5F4A.js:406
+p @ index-BgAa5F4A.js:406
+setTimeout
+(anonymous) @ index-BgAa5F4A.js:37
+i @ index-BgAa5F4A.js:71
+o @ index-BgAa5F4A.js:71
+batch @ index-BgAa5F4A.js:71
+Li @ index-BgAa5F4A.js:71
+setData @ index-BgAa5F4A.js:71
+onSuccess @ index-BgAa5F4A.js:71
+f @ index-BgAa5F4A.js:71
+Promise.then
+h @ index-BgAa5F4A.js:71
+start @ index-BgAa5F4A.js:71
+fetch @ index-BgAa5F4A.js:71
+Wu @ index-BgAa5F4A.js:71
+onSubscribe @ index-BgAa5F4A.js:71
+subscribe @ index-BgAa5F4A.js:71
+(anonymous) @ index-BgAa5F4A.js:71
+RL @ index-BgAa5F4A.js:61
+Lx @ index-BgAa5F4A.js:63
+Wc @ index-BgAa5F4A.js:63
+VT @ index-BgAa5F4A.js:63
+Do @ index-BgAa5F4A.js:61
+lJ @ index-BgAa5F4A.js:63
+Uo @ index-BgAa5F4A.js:63
+u4 @ index-BgAa5F4A.js:63
+S @ index-BgAa5F4A.js:48
+L @ index-BgAa5F4A.js:48Understand this error
+favicon.png:1  GET https://www.housematch.co.nz/favicon.png 403 (Forbidden)Understand this error
+index-BgAa5F4A.js:33  GET https://www.housematch.co.nz/api/auth/user 401 (Unauthorized)

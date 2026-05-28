@@ -1,0 +1,44 @@
+@sentry_react.js?v=214b71d8:15131 Fetch API cannot load https://o4510273389068288.ingest.us.sentry.io/api/4510273407614976/envelope/?sentry_version=7&sentry_key=aaa1a747e8fc9ed53c0f0b7e660414d3&sentry_client=sentry.javascript.react%2F10.22.0. Refused to connect because it violates the document's Content Security Policy.
+makeRequest @ @sentry_react.js?v=214b71d8:15131
+requestTask @ @sentry_react.js?v=214b71d8:6125
+add @ @sentry_react.js?v=214b71d8:6019
+send @ @sentry_react.js?v=214b71d8:6139
+sendEnvelope @ @sentry_react.js?v=214b71d8:5553
+sendEvent @ @sentry_react.js?v=214b71d8:5480
+(anonymous) @ @sentry_react.js?v=214b71d8:5761
+(anonymous) @ @sentry_react.js?v=214b71d8:3989
+(anonymous) @ @sentry_react.js?v=214b71d8:4055
+_executeHandlers @ @sentry_react.js?v=214b71d8:4050
+(anonymous) @ @sentry_react.js?v=214b71d8:4007
+_runExecutor @ @sentry_react.js?v=214b71d8:4084
+_SyncPromise @ @sentry_react.js?v=214b71d8:3977
+then @ @sentry_react.js?v=214b71d8:3981
+_processEvent @ @sentry_react.js?v=214b71d8:5730
+_captureEvent @ @sentry_react.js?v=214b71d8:5671
+captureEvent @ @sentry_react.js?v=214b71d8:5343
+captureEvent @ @sentry_react.js?v=214b71d8:1631
+_onSpanEnded @ @sentry_react.js?v=214b71d8:3267
+end @ @sentry_react.js?v=214b71d8:3183
+apply @ @sentry_react.js?v=214b71d8:3824
+(anonymous) @ @sentry_react.js?v=214b71d8:3838
+sentryWrapped @ @sentry_react.js?v=214b71d8:12736
+setTimeout
+(anonymous) @ @sentry_react.js?v=214b71d8:15616
+_restartIdleTimeout @ @sentry_react.js?v=214b71d8:3835
+_popActivity @ @sentry_react.js?v=214b71d8:3862
+(anonymous) @ @sentry_react.js?v=214b71d8:3926
+uniqueCallback @ @sentry_react.js?v=214b71d8:5529
+(anonymous) @ @sentry_react.js?v=214b71d8:5542
+emit @ @sentry_react.js?v=214b71d8:5542
+_onSpanEnded @ @sentry_react.js?v=214b71d8:3247
+end @ @sentry_react.js?v=214b71d8:3183
+(anonymous) @ @sentry_react.js?v=214b71d8:13846
+(anonymous) @ @sentry_react.js?v=214b71d8:3563
+withScope @ @sentry_react.js?v=214b71d8:1681
+withScope @ @sentry_react.js?v=214b71d8:1750
+withScope2 @ @sentry_react.js?v=214b71d8:1810
+withActiveSpan @ @sentry_react.js?v=214b71d8:3561
+startAndEndSpan @ @sentry_react.js?v=214b71d8:13840
+(anonymous) @ @sentry_react.js?v=214b71d8:14186
+auth-modal.tsx:40 🔐 LOGIN ATTEMPT: {email: 'fairladysman@gmail.com', timestamp: '2025-11-02T02:05:37.217Z'}
+queryClient.ts:56  POST https://1c4801d3-b756-4547-addf-b0b2f4dd5ffd-00-2fclfcq5sewjy.kirk.replit.dev/api/auth/login 400 (Bad Request)
