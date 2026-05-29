@@ -197,13 +197,10 @@ const lawyerDetailsSchema = z.object({
 });
 
 const buyerDetailsSchema = z.object({
-  hasSolicitor: z.boolean().default(false),
-  solicitorName: z.string().optional(),
-  solicitorFirm: z.string().optional(),
-  solicitorEmail: z.string().email().optional().or(z.literal('')),
-  solicitorPhone: z.string().optional(),
-  solicitorAddress: z.string().optional(),
-  buyerOccupation: z.string().optional(),
+  haveLawyer: z.boolean().default(false),
+  lawyerStatus: z.enum(['have_one', 'need_one', 'need_recommendation']).optional(),
+  lawyerName: z.string().optional(),
+  lawyerEmail: z.string().email().optional().or(z.literal('')),
 });
 
 const conditionSchema = z.object({
@@ -507,13 +504,9 @@ export function OfferWizard({ propertyId, onClose }: OfferWizardProps) {
   const buyerDetailsForm = useForm<z.infer<typeof buyerDetailsSchema>>({
     resolver: zodResolver(buyerDetailsSchema),
     defaultValues: {
-      hasSolicitor: false,
-      solicitorName: '',
-      solicitorFirm: '',
-      solicitorEmail: '',
-      solicitorPhone: '',
-      solicitorAddress: '',
-      buyerOccupation: '',
+      haveLawyer: false,
+      lawyerName: '',
+      lawyerEmail: '',
     },
   });
 
@@ -740,37 +733,43 @@ export function OfferWizard({ propertyId, onClose }: OfferWizardProps) {
               <form onSubmit={buyerDetailsForm.handleSubmit((data) => saveBuyerDetailsMutation.mutate(data))} className="space-y-4">
                 <div className="bg-yellow-50 dark:bg-yellow-900/20 p-4 rounded-lg mb-4">
                   <p className="text-sm text-yellow-800 dark:text-yellow-200">
-                    <strong>Important:</strong> It's highly recommended to have a solicitor or conveyancer review your offer before submission
+                    <strong>Important:</strong> It's highly recommended to have a lawyer review your offer before submission
                   </p>
                 </div>
 
                 <FormField
                   control={buyerDetailsForm.control}
-                  name="hasSolicitor"
+                  name="lawyerStatus"
                   render={({ field }) => (
-                    <FormItem className="flex items-center space-x-3">
-                      <FormControl>
-                        <Checkbox
-                          checked={field.value}
-                          onCheckedChange={field.onChange}
-                          data-testid="checkbox-has-solicitor"
-                        />
-                      </FormControl>
-                      <FormLabel className="!mt-0">I have a solicitor/conveyancer</FormLabel>
+                    <FormItem>
+                      <FormLabel>Do you have a lawyer?</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger data-testid="select-lawyer-status">
+                            <SelectValue placeholder="Select an option" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="have_one">Yes, I have a lawyer</SelectItem>
+                          <SelectItem value="need_one">No, I need to find one</SelectItem>
+                          <SelectItem value="need_recommendation">No, I'd like a recommendation</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
                     </FormItem>
                   )}
                 />
 
-                {buyerDetailsForm.watch('hasSolicitor') && (
+                {buyerDetailsForm.watch('lawyerStatus') === 'have_one' && (
                   <>
                     <FormField
                       control={buyerDetailsForm.control}
-                      name="solicitorName"
+                      name="lawyerName"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Solicitor Name</FormLabel>
+                          <FormLabel>Lawyer / Firm Name</FormLabel>
                           <FormControl>
-                            <Input placeholder="John Smith" {...field} data-testid="input-solicitor-name" />
+                            <Input placeholder="John Smith or Smith & Partners Law" {...field} data-testid="input-lawyer-name" />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -779,56 +778,12 @@ export function OfferWizard({ propertyId, onClose }: OfferWizardProps) {
 
                     <FormField
                       control={buyerDetailsForm.control}
-                      name="solicitorFirm"
+                      name="lawyerEmail"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Law Firm</FormLabel>
+                          <FormLabel>Lawyer Email</FormLabel>
                           <FormControl>
-                            <Input placeholder="Smith & Partners Law" {...field} data-testid="input-solicitor-firm" />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <FormField
-                        control={buyerDetailsForm.control}
-                        name="solicitorEmail"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Solicitor Email</FormLabel>
-                            <FormControl>
-                              <Input type="email" placeholder="john@smithlaw.co.nz" {...field} data-testid="input-solicitor-email" />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-
-                      <FormField
-                        control={buyerDetailsForm.control}
-                        name="solicitorPhone"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Solicitor Phone</FormLabel>
-                            <FormControl>
-                              <Input placeholder="09 123 4567" {...field} data-testid="input-solicitor-phone" />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-
-                    <FormField
-                      control={buyerDetailsForm.control}
-                      name="solicitorAddress"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Solicitor Address</FormLabel>
-                          <FormControl>
-                            <Textarea placeholder="123 Queen Street, Auckland" {...field} data-testid="input-solicitor-address" />
+                            <Input type="email" placeholder="john@smithlaw.co.nz" {...field} data-testid="input-lawyer-email" />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -836,20 +791,6 @@ export function OfferWizard({ propertyId, onClose }: OfferWizardProps) {
                     />
                   </>
                 )}
-
-                <FormField
-                  control={buyerDetailsForm.control}
-                  name="buyerOccupation"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Your Occupation (Optional)</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Software Engineer" {...field} data-testid="input-buyer-occupation" />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
 
                 <div className="flex justify-between pt-4">
                   <Button type="button" variant="outline" onClick={() => setCurrentStep(1)} data-testid="button-back">
@@ -1216,12 +1157,12 @@ export function OfferWizard({ propertyId, onClose }: OfferWizardProps) {
                   )}
                 </div>
 
-                {buyerDetails?.hasSolicitor && (
+                {buyerDetails?.lawyerStatus === 'have_one' && (
                   <div className="border-b pb-2">
-                    <h3 className="font-semibold text-lg">Solicitor Details</h3>
+                    <h3 className="font-semibold text-lg">Lawyer Details</h3>
                     <div className="text-sm mt-2">
-                      <p>{buyerDetails.solicitorName} - {buyerDetails.solicitorFirm}</p>
-                      <p className="text-gray-600 dark:text-gray-400">{buyerDetails.solicitorEmail}</p>
+                      <p>{buyerDetails.lawyerName}</p>
+                      <p className="text-gray-600 dark:text-gray-400">{buyerDetails.lawyerEmail}</p>
                     </div>
                   </div>
                 )}
@@ -1232,7 +1173,7 @@ export function OfferWizard({ propertyId, onClose }: OfferWizardProps) {
                 <h3 className="font-semibold text-red-900 dark:text-red-100 mb-2">⚠️ Important Legal Notice</h3>
                 <ul className="text-sm text-red-800 dark:text-red-200 space-y-1 list-disc list-inside">
                   <li>This offer uses ADLS Form 11th Edition (2022) - cost $136.85</li>
-                  <li>Have your solicitor review the offer before signing</li>
+                  <li>Have your lawyer review the offer before signing</li>
                   <li>HouseMatch.nz does not provide legal advice</li>
                   <li>This offer becomes legally binding once accepted</li>
                 </ul>
