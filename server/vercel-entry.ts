@@ -38,17 +38,6 @@ const ready = (async () => {
       if (status >= 500) Sentry.captureException(err);
       res.status(status).json({ message });
     });
-
-    // Serve static assets and SPA fallback
-    if (fs.existsSync(distPublic)) {
-      app.use(express.static(distPublic));
-      app.use((_req, res) => {
-        if (_req.path.startsWith('/api/')) {
-          return res.status(404).json({ error: 'Not Found' });
-        }
-        res.sendFile(path.join(distPublic, 'index.html'));
-      });
-    }
   } catch (err) {
     initError = err;
     console.error('[FATAL]', err);
