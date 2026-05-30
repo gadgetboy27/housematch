@@ -88,11 +88,19 @@ function getPublicBaseUrl(req?: { headers?: { host?: string } }): string {
 
 export async function registerRoutes(app: Express): Promise<Server> {
   
-  // Serve generated PDFs statically (create directory if it doesn't exist)
+  // Serve generated PDFs statically. In serverless environments (Lambda) the project
+  // root is read-only, so fall back to /tmp which is always writable.
   const path = await import('path');
   const fs = await import('fs/promises');
-  const pdfsDir = path.join(process.cwd(), 'generated_pdfs');
-  await fs.mkdir(pdfsDir, { recursive: true });
+  const isReadOnlyRoot = !process.env.WRITABLE_ROOT && process.env.AWS_LAMBDA_FUNCTION_NAME !== undefined || process.env.VERCEL === '1';
+  const pdfsDir = isReadOnlyRoot
+    ? '/tmp/generated_pdfs'
+    : path.join(process.cwd(), 'generated_pdfs');
+  try {
+    await fs.mkdir(pdfsDir, { recursive: true });
+  } catch (e: any) {
+    console.warn('⚠️  Could not create PDFs directory:', pdfsDir, e.message);
+  }
   // H-004: Gate the generated_pdfs static mount behind requireAuth so offer PDFs are not
   // world-readable. Full ownership checks are enforced per-file by the individual PDF generation
   // routes; this provides a blanket auth wall as an interim measure.
