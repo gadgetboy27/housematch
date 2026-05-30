@@ -7,6 +7,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
 import { registerRoutes } from '../server/routes';
+import marketRoutes from '../server/routes/market.js';
 
 const app = express();
 app.use('/api/webhooks/stripe', express.raw({ type: 'application/json' }));
@@ -25,18 +26,8 @@ const ready = (async () => {
     await initializeSubscriptionPlans();
     await registerRoutes(app);
 
-    // Test: log all requests to understand Vercel path behavior
-    app.use((req, res, next) => {
-      if (req.path.includes('test') || req.path.includes('market')) {
-        console.log(`[REQ] path=${req.path}, url=${req.url}, originalUrl=${req.originalUrl}`);
-      }
-      next();
-    });
-
-    // Test: mount a simple route after registerRoutes
-    app.get('/api/test-direct', (_req, res) => {
-      res.json({ ok: true, msg: 'Direct route after registerRoutes' });
-    });
+    // Mount market routes directly (workaround for Vercel routing issue)
+    app.use('/api/market', marketRoutes);
 
     app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
       const status = err.status || err.statusCode || 500;
