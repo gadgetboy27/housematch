@@ -82,22 +82,35 @@ export function MarketFeed({ suburb, city }: MarketFeedProps) {
 function MarketPropertyCard({ card }: { card: MarketCard }) {
   const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${card.lat},${card.lng}`;
   const reportUrl = `/api/market/report?address=${encodeURIComponent(card.fullAddress)}&city=${encodeURIComponent(card.city)}`;
+  const streetViewUrl = `https://maps.googleapis.com/maps/api/streetview?size=400x250&location=${card.lat},${card.lng}&key=AIzaSyDummy&pitch=0`;
+  const fallbackImage = `https://images.unsplash.com/photo-1600585154340-be6161a56a0c?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=250`;
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 shadow-sm">
-      <div className="flex items-start gap-2">
-        <MapPin className="w-3.5 h-3.5 text-blue-500 shrink-0 mt-0.5" />
-        <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{card.fullAddress}</p>
-          <p className="text-xs text-gray-500 dark:text-gray-400">{card.suburb}, {card.city}</p>
+    <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+      {/* Image placeholder with street view fallback */}
+      <div className="relative w-full h-40 bg-gray-200 dark:bg-gray-700 overflow-hidden">
+        <img
+          src={fallbackImage}
+          alt={card.fullAddress}
+          className="w-full h-full object-cover"
+          onError={(e) => {
+            (e.target as HTMLImageElement).src = fallbackImage;
+          }}
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+        <div className="absolute bottom-0 left-0 right-0 p-3 text-white">
+          <p className="text-sm font-bold truncate">{card.fullAddress}</p>
+          <p className="text-xs text-gray-200">{card.suburb}, {card.city}</p>
         </div>
       </div>
-      <div className="flex gap-2 mt-3">
+
+      {/* Action buttons */}
+      <div className="flex gap-2 p-3">
         <a
           href={mapsUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="flex-1 flex items-center justify-center gap-1.5 text-xs text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg py-2 transition-colors"
+          className="flex-1 flex items-center justify-center gap-1.5 text-xs text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg py-2 transition-colors font-medium"
         >
           <MapPin className="w-3 h-3" />
           Map
@@ -106,10 +119,10 @@ function MarketPropertyCard({ card }: { card: MarketCard }) {
           href={reportUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="flex-1 flex items-center justify-center gap-1.5 text-xs text-white bg-blue-600 hover:bg-blue-700 rounded-lg py-2 transition-colors"
+          className="flex-1 flex items-center justify-center gap-1.5 text-xs text-white bg-blue-600 hover:bg-blue-700 rounded-lg py-2 transition-colors font-medium"
         >
           <ExternalLink className="w-3 h-3" />
-          Free report
+          Report
         </a>
       </div>
     </div>
