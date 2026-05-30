@@ -27,8 +27,10 @@ const ready = (async () => {
 
     // Test: mount a simple route after registerRoutes
     app.get('/api/test-direct', (_req, res) => {
+      console.log('[TEST-ROUTE] handler called!');
       res.json({ ok: true, msg: 'Direct route after registerRoutes' });
     });
+    console.log('[INIT] Test route mounted');
 
     app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
       const status = err.status || err.statusCode || 500;
