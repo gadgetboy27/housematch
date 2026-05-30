@@ -40,9 +40,12 @@ const ready = (async () => {
     if (fs.existsSync(distPublic)) {
       app.use(express.static(distPublic));
       app.use((_req, res) => {
+        console.log(`[FALLBACK] path=${_req.path}, url=${_req.url}, originalUrl=${_req.originalUrl}`);
         if (_req.path.startsWith('/api/')) {
+          console.log(`[FALLBACK] Returning 404 for API path`);
           return res.status(404).json({ error: 'Not Found' });
         }
+        console.log(`[FALLBACK] Serving SPA for non-API path`);
         res.sendFile(path.join(distPublic, 'index.html'));
       });
     }
