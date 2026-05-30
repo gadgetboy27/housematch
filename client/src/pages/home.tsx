@@ -152,25 +152,16 @@ export default function Home() {
       <HomePageSEO />
       <div className="max-w-sm mx-auto h-screen bg-gradient-to-br from-blue-500 via-grey-500 to-grey-700 relative overflow-hidden">
 
-        {/* Top bar: magnify search icon (always) + admin button */}
+        {/* Top bar: magnify search icon + admin button */}
         <div className="absolute top-4 left-0 right-0 z-50 flex items-center justify-between px-4 pointer-events-none">
           <button
             onClick={() => setShowSearch(true)}
-            className="pointer-events-auto w-9 h-9 flex items-center justify-center rounded-full bg-white/90 dark:bg-gray-800/90 shadow-md text-gray-600 dark:text-gray-300 hover:bg-white dark:hover:bg-gray-700 transition-colors"
+            className="pointer-events-auto w-10 h-10 flex items-center justify-center rounded-full bg-white/90 dark:bg-gray-800/90 shadow-md text-gray-600 dark:text-gray-300 hover:bg-white dark:hover:bg-gray-700 transition-colors"
             aria-label="Search properties"
             data-testid="button-market-search"
           >
-            <Search className="w-4 h-4" />
+            <Search className="w-5 h-5" />
           </button>
-          {(marketSuburb || priceMin || priceMax) && (
-            <button
-              onClick={handleClearSearch}
-              className="pointer-events-auto flex items-center gap-1 text-xs bg-blue-600 text-white px-2.5 py-1 rounded-full shadow-md"
-            >
-              <X className="w-3 h-3" />
-              {marketSuburb || 'Filtered'}
-            </button>
-          )}
           {user?.isAdmin && (
             <button
               onClick={() => setLocation('/admin')}
@@ -182,8 +173,21 @@ export default function Home() {
           )}
         </div>
 
-        {/* Main content */}
-        <div className="relative overflow-hidden" style={{ height: 'calc(100vh - 80px - env(safe-area-inset-bottom))' }}>
+        {/* Active filter chip - separated below top bar */}
+        {(marketSuburb || priceMin || priceMax) && (
+          <div className="absolute top-16 left-4 z-50 pointer-events-none">
+            <button
+              onClick={handleClearSearch}
+              className="pointer-events-auto flex items-center gap-2 text-sm bg-blue-600 text-white px-3 py-1.5 rounded-full shadow-md hover:bg-blue-700 transition-colors"
+            >
+              <X className="w-4 h-4" />
+              <span className="font-medium">{marketSuburb || 'Filtered'}</span>
+            </button>
+          </div>
+        )}
+
+        {/* Main content - adjusted for filter chip height when present */}
+        <div className="relative overflow-hidden" style={{ height: 'calc(100vh - 80px - env(safe-area-inset-bottom))', marginTop: (marketSuburb || priceMin || priceMax) ? '32px' : '0' }}>
           {marketSuburb || properties.length === 0 ? (
             <MarketFeed suburb={marketSuburb} city={marketCity} />
           ) : (
