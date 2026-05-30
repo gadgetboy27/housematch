@@ -42,7 +42,6 @@ const ready = (async () => {
 })();
 
 export default async (req: Request, res: Response) => {
-  console.log('[vercel] handler:', req.method, req.url, req.path);
   await ready;
   return app(req, res);
 };
