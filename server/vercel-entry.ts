@@ -20,13 +20,6 @@ const distPublic = path.resolve(__dirname, '..', 'dist', 'public');
 const ready = (async () => {
   const { initializeSubscriptionPlans } = await import('../server/services/subscription-service');
   await initializeSubscriptionPlans();
-
-  // Test: log all requests to /api/market
-  app.use('/api/market', (req, res, next) => {
-    console.log('[MARKET] ' + req.method + ' ' + req.url);
-    next();
-  });
-
   await registerRoutes(app);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
@@ -40,6 +33,7 @@ const ready = (async () => {
   if (fs.existsSync(distPublic)) {
     app.use(express.static(distPublic));
     app.use((req, res) => {
+      console.log(`[SPA] path=${req.path}, originalUrl=${req.originalUrl}, url=${req.url}`);
       // Avoid serving SPA for /api routes — 404 instead
       if (req.path.startsWith('/api/')) {
         return res.status(404).json({ error: 'Not Found' });
