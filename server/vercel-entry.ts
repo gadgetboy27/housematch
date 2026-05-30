@@ -19,6 +19,11 @@ app.use(cookieParser());
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const distPublic = path.resolve(__dirname, '..', 'dist', 'public');
 
+// Definitive URL test: does Vercel preserve the original path or rewrite to /api/index?
+app.get('/api/market/url-test', (req, res) => {
+  res.json({ ok: true, url: req.url, path: req.path, originalUrl: req.originalUrl });
+});
+
 const ready = (async () => {
   const { initializeSubscriptionPlans } = await import('../server/services/subscription-service');
   await initializeSubscriptionPlans();
