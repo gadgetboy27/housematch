@@ -120,22 +120,23 @@ export default function PropertyCard({ property, isBackground = false, onPropert
       });
     },
     onError: (error: Error) => {
-      // Handle not logged in error
-      if (error.message.includes("401") || error.message.includes("Unauthorized")) {
-        toast({
-          title: "Login required",
-          description: "Please login to save properties",
-          variant: "destructive",
-        });
-      } else {
-        toast({
-          title: "Failed to save",
-          description: "Please try again",
-          variant: "destructive",
-        });
-      }
+      toast({
+        title: "Failed to save",
+        description: "Please try again",
+        variant: "destructive",
+      });
     },
   });
+
+  const handleSaveClick = () => {
+    if (!user && !userProp) {
+      // Not logged in: open auth modal instead of showing error
+      onOpenAuth?.();
+    } else {
+      // Logged in: save the property
+      saveMutation.mutate();
+    }
+  };
 
   // Track view on mount (only once per property card instance)
   useEffect(() => {
@@ -460,7 +461,7 @@ export default function PropertyCard({ property, isBackground = false, onPropert
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
-                    saveMutation.mutate();
+                    handleSaveClick();
                   }}
                   className="flex flex-col items-center gap-0.5 transition-transform active:scale-95"
                   data-testid="button-save-property"
