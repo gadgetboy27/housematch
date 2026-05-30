@@ -8,3 +8,5 @@ vite.config.ts.*
 .env
 .env.local
 generated_pdfs/
+.vercel
+api/index.js
