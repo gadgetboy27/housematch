@@ -25,6 +25,11 @@ const ready = (async () => {
     await initializeSubscriptionPlans();
     await registerRoutes(app);
 
+    // Test: mount a simple route after registerRoutes
+    app.get('/api/test-direct', (_req, res) => {
+      res.json({ ok: true, msg: 'Direct route after registerRoutes' });
+    });
+
     app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
       const status = err.status || err.statusCode || 500;
       const message = err.message || 'Internal Server Error';
