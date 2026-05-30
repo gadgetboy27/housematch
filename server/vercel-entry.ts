@@ -25,12 +25,18 @@ const ready = (async () => {
     await initializeSubscriptionPlans();
     await registerRoutes(app);
 
+    // Test: log all requests to understand Vercel path behavior
+    app.use((req, res, next) => {
+      if (req.path.includes('test') || req.path.includes('market')) {
+        console.log(`[REQ] path=${req.path}, url=${req.url}, originalUrl=${req.originalUrl}`);
+      }
+      next();
+    });
+
     // Test: mount a simple route after registerRoutes
     app.get('/api/test-direct', (_req, res) => {
-      console.log('[TEST-ROUTE] handler called!');
       res.json({ ok: true, msg: 'Direct route after registerRoutes' });
     });
-    console.log('[INIT] Test route mounted');
 
     app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
       const status = err.status || err.statusCode || 500;
