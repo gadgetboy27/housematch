@@ -20,6 +20,13 @@ const distPublic = path.resolve(__dirname, '..', 'dist', 'public');
 const ready = (async () => {
   const { initializeSubscriptionPlans } = await import('../server/services/subscription-service');
   await initializeSubscriptionPlans();
+
+  // Test: log all requests to /api/market
+  app.use('/api/market', (req, res, next) => {
+    console.log('[MARKET] ' + req.method + ' ' + req.url);
+    next();
+  });
+
   await registerRoutes(app);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
