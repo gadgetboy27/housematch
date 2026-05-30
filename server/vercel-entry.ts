@@ -17,40 +17,42 @@ app.use(cookieParser());
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const distPublic = path.resolve(__dirname, '..', 'dist', 'public');
 
+let initError: any = null;
+
 const ready = (async () => {
   try {
     const { initializeSubscriptionPlans } = await import('../server/services/subscription-service');
     await initializeSubscriptionPlans();
-    console.log('[READY] registerRoutes starting');
     await registerRoutes(app);
-    console.log('[READY] registerRoutes complete');
-  } catch (err) {
-    console.error('[READY] Error during initialization:', err);
-    throw err;
-  }
 
-  app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
-    const status = err.status || err.statusCode || 500;
-    const message = err.message || 'Internal Server Error';
-    if (status >= 500) Sentry.captureException(err);
-    res.status(status).json({ message });
-  });
-
-  // Serve static assets and SPA fallback (only for non-/api routes)
-  if (fs.existsSync(distPublic)) {
-    app.use(express.static(distPublic));
-    app.use((req, res) => {
-      console.log(`[SPA] path=${req.path}, originalUrl=${req.originalUrl}, url=${req.url}`);
-      // Avoid serving SPA for /api routes — 404 instead
-      if (req.path.startsWith('/api/')) {
-        return res.status(404).json({ error: 'Not Found' });
-      }
-      res.sendFile(path.join(distPublic, 'index.html'));
+    app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
+      const status = err.status || err.statusCode || 500;
+      const message = err.message || 'Internal Server Error';
+      if (status >= 500) Sentry.captureException(err);
+      res.status(status).json({ message });
     });
+
+    // Serve static assets and SPA fallback
+    if (fs.existsSync(distPublic)) {
+      app.use(express.static(distPublic));
+      app.use((_req, res) => {
+        if (_req.path.startsWith('/api/')) {
+          return res.status(404).json({ error: 'Not Found' });
+        }
+        res.sendFile(path.join(distPublic, 'index.html'));
+      });
+    }
+  } catch (err) {
+    initError = err;
+    console.error('[FATAL]', err);
   }
 })();
 
 export default async (req: Request, res: Response) => {
   await ready;
+  if (initError) {
+    res.status(500).json({ error: 'Server initialization failed', details: String(initError) });
+    return;
+  }
   return app(req, res);
 };
