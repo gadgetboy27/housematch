@@ -33,6 +33,15 @@ const ready = (async () => {
   });
 
   // Serve Vite-built frontend assets and SPA fallback
+  // Log all registered API routes for debugging
+  const stack = (app as any)._router?.stack ?? [];
+  const routes: string[] = [];
+  stack.forEach((layer: any) => {
+    if (layer.route) routes.push(`${Object.keys(layer.route.methods).join(',').toUpperCase()} ${layer.route.path}`);
+    else if (layer.name === 'router' && layer.regexp) routes.push(`USE ${layer.regexp}`);
+  });
+  console.log('[vercel] registered routes count:', stack.length, '| sample:', routes.slice(0,10));
+
   if (fs.existsSync(distPublic)) {
     app.use(express.static(distPublic));
     app.use('*', (_req, res) => {
