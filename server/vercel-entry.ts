@@ -18,9 +18,16 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const distPublic = path.resolve(__dirname, '..', 'dist', 'public');
 
 const ready = (async () => {
-  const { initializeSubscriptionPlans } = await import('../server/services/subscription-service');
-  await initializeSubscriptionPlans();
-  await registerRoutes(app);
+  try {
+    const { initializeSubscriptionPlans } = await import('../server/services/subscription-service');
+    await initializeSubscriptionPlans();
+    console.log('[READY] registerRoutes starting');
+    await registerRoutes(app);
+    console.log('[READY] registerRoutes complete');
+  } catch (err) {
+    console.error('[READY] Error during initialization:', err);
+    throw err;
+  }
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
