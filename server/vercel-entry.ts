@@ -14,22 +14,14 @@ app.use(express.json({ limit: '256kb' }));
 app.use(express.urlencoded({ extended: false, limit: '256kb' }));
 app.use(cookieParser());
 
-// Resolve the Vite build output relative to this bundle's location.
-// In Vercel Lambda: __dirname = /var/task/api/, so dist/public is one level up.
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const distPublic = path.resolve(__dirname, '..', 'dist', 'public');
-
-// Definitive URL test: does Vercel preserve the original path or rewrite to /api/index?
-app.get('/api/market/url-test', (req, res) => {
-  res.json({ ok: true, url: req.url, path: req.path, originalUrl: req.originalUrl });
-});
 
 const ready = (async () => {
   const { initializeSubscriptionPlans } = await import('../server/services/subscription-service');
   await initializeSubscriptionPlans();
   await registerRoutes(app);
 
-  // Error handler
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
     const message = err.message || 'Internal Server Error';
@@ -37,7 +29,6 @@ const ready = (async () => {
     res.status(status).json({ message });
   });
 
-  // Serve Vite-built frontend assets and SPA fallback
   if (fs.existsSync(distPublic)) {
     app.use(express.static(distPublic));
     app.use('*', (_req, res) => {
@@ -47,6 +38,11 @@ const ready = (async () => {
 })();
 
 export default async (req: Request, res: Response) => {
+  // Raw URL diagnostic — bypasses Express routing entirely
+  if (req.url?.includes('/api/raw-debug')) {
+    (res as any).end(JSON.stringify({ url: req.url, method: req.method }));
+    return;
+  }
   await ready;
   return app(req, res);
 };
