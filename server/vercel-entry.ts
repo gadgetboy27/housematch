@@ -21,9 +21,13 @@ let initError: any = null;
 
 const ready = (async () => {
   try {
+    console.log('[INIT] Starting initialization...');
     const { initializeSubscriptionPlans } = await import('../server/services/subscription-service');
+    console.log('[INIT] Initializing subscription plans...');
     await initializeSubscriptionPlans();
+    console.log('[INIT] Calling registerRoutes...');
     await registerRoutes(app);
+    console.log('[INIT] registerRoutes completed, initialization ready');
 
     app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
       const status = err.status || err.statusCode || 500;
