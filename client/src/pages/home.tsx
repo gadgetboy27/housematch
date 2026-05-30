@@ -184,7 +184,7 @@ export default function Home() {
 
         {/* Main content */}
         <div className="relative overflow-hidden" style={{ height: 'calc(100vh - 80px - env(safe-area-inset-bottom))' }}>
-          {properties.length === 0 ? (
+          {marketSuburb || properties.length === 0 ? (
             <MarketFeed suburb={marketSuburb} city={marketCity} />
           ) : (
             <SwipeContainer
