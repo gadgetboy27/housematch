@@ -12,6 +12,10 @@ import { HomePageSEO } from "@/components/SEO";
 import { AuthModal } from "@/components/auth-modal";
 import { usePageTracking, trackPropertyView, trackPropertyLike } from "@/components/Analytics";
 import { MarketFeed } from "@/components/MarketFeed";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Search, X } from "lucide-react";
 
 export default function Home() {
   // Track homepage view
@@ -32,6 +36,31 @@ export default function Home() {
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [authMode, setAuthMode] = useState<'login' | 'signup' | 'forgot-password'>('signup');
   const [returnToPath, setReturnToPath] = useState<string | null>(null);
+
+  // Market search state — driven by the search Sheet, not visible on main screen
+  const [showSearch, setShowSearch] = useState(false);
+  const [suburbInput, setSuburbInput] = useState('');
+  const [cityInput, setCityInput] = useState('Auckland');
+  const [priceMin, setPriceMin] = useState('');
+  const [priceMax, setPriceMax] = useState('');
+  // Applied filters (only update when user hits Apply)
+  const [marketSuburb, setMarketSuburb] = useState<string | null>(null);
+  const [marketCity, setMarketCity] = useState('Auckland');
+
+  const handleApplySearch = () => {
+    setMarketSuburb(suburbInput.trim() || null);
+    setMarketCity(cityInput.trim() || 'Auckland');
+    setShowSearch(false);
+  };
+
+  const handleClearSearch = () => {
+    setSuburbInput('');
+    setCityInput('Auckland');
+    setPriceMin('');
+    setPriceMax('');
+    setMarketSuburb(null);
+    setMarketCity('Auckland');
+  };
 
   // Check if user is logged in
   const { data: user } = useQuery<{ id: string; name: string; email: string; isAdmin?: boolean } | null>({
@@ -123,24 +152,40 @@ export default function Home() {
       <HomePageSEO />
       <div className="max-w-sm mx-auto h-screen bg-gradient-to-br from-blue-500 via-grey-500 to-grey-700 relative overflow-hidden">
 
-        {/* Admin Button - Only show when logged in as admin */}
-        {user?.isAdmin && (
-          <div className="absolute top-4 right-4 z-50">
+        {/* Top bar: magnify search icon (always) + admin button */}
+        <div className="absolute top-4 left-0 right-0 z-50 flex items-center justify-between px-4 pointer-events-none">
+          <button
+            onClick={() => setShowSearch(true)}
+            className="pointer-events-auto w-9 h-9 flex items-center justify-center rounded-full bg-white/90 dark:bg-gray-800/90 shadow-md text-gray-600 dark:text-gray-300 hover:bg-white dark:hover:bg-gray-700 transition-colors"
+            aria-label="Search properties"
+            data-testid="button-market-search"
+          >
+            <Search className="w-4 h-4" />
+          </button>
+          {(marketSuburb || priceMin || priceMax) && (
+            <button
+              onClick={handleClearSearch}
+              className="pointer-events-auto flex items-center gap-1 text-xs bg-blue-600 text-white px-2.5 py-1 rounded-full shadow-md"
+            >
+              <X className="w-3 h-3" />
+              {marketSuburb || 'Filtered'}
+            </button>
+          )}
+          {user?.isAdmin && (
             <button
               onClick={() => setLocation('/admin')}
-              className="bg-gradient-to-r from-red-600 to-red-700 text-white px-4 py-2 rounded-full font-semibold text-sm shadow-lg hover:from-red-700 hover:to-red-800 hover:scale-105 transition-all duration-200 flex items-center gap-2"
+              className="pointer-events-auto bg-gradient-to-r from-red-600 to-red-700 text-white px-4 py-2 rounded-full font-semibold text-sm shadow-lg"
               data-testid="button-header-admin"
             >
-              <i className="fas fa-shield-alt"></i>
-              Admin
+              <i className="fas fa-shield-alt"></i> Admin
             </button>
-          </div>
-        )}
+          )}
+        </div>
 
-        {/* OLD: <div className="relative h-[calc(100vh-60px)] overflow-hidden"> */}
+        {/* Main content */}
         <div className="relative overflow-hidden" style={{ height: 'calc(100vh - 80px - env(safe-area-inset-bottom))' }}>
           {properties.length === 0 ? (
-            <MarketFeed defaultCity="Auckland" />
+            <MarketFeed suburb={marketSuburb} city={marketCity} />
           ) : (
             <SwipeContainer
               ref={swipeRef}
@@ -188,6 +233,63 @@ export default function Home() {
       )}
 
       {showAISuggestions && <AISuggestionsModal isOpen={showAISuggestions} onClose={() => setShowAISuggestions(false)} />}
+
+      {/* Market search Sheet — opens from magnify icon, no bar visible on main screen */}
+      <Sheet open={showSearch} onOpenChange={setShowSearch}>
+        <SheetContent side="bottom" className="rounded-t-2xl pb-8">
+          <SheetHeader className="mb-4">
+            <SheetTitle>Search Properties</SheetTitle>
+          </SheetHeader>
+          <div className="space-y-4">
+            <div>
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-300 block mb-1">Suburb</label>
+              <Input
+                value={suburbInput}
+                onChange={e => setSuburbInput(e.target.value)}
+                placeholder="e.g. Ponsonby, Grey Lynn, Remuera…"
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-300 block mb-1">City</label>
+              <select
+                value={cityInput}
+                onChange={e => setCityInput(e.target.value)}
+                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+              >
+                {['Auckland', 'Wellington', 'Christchurch', 'Hamilton', 'Tauranga', 'Dunedin', 'Palmerston North'].map(c => (
+                  <option key={c} value={c}>{c}</option>
+                ))}
+              </select>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300 block mb-1">Min price</label>
+                <Input
+                  value={priceMin}
+                  onChange={e => setPriceMin(e.target.value)}
+                  placeholder="$400,000"
+                  type="text"
+                  inputMode="numeric"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300 block mb-1">Max price</label>
+                <Input
+                  value={priceMax}
+                  onChange={e => setPriceMax(e.target.value)}
+                  placeholder="$1,200,000"
+                  type="text"
+                  inputMode="numeric"
+                />
+              </div>
+            </div>
+            <div className="flex gap-3 pt-2">
+              <Button variant="outline" className="flex-1" onClick={handleClearSearch}>Clear</Button>
+              <Button className="flex-1" onClick={handleApplySearch}>Apply</Button>
+            </div>
+          </div>
+        </SheetContent>
+      </Sheet>
 
       {/* Auth Modal */}
       {showAuthModal && (

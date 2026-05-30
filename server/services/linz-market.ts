@@ -54,21 +54,26 @@ class LINZMarketService {
       .replace(/--/g, '');
   }
 
-  async getMarketCards(suburb: string, city: string, limit = 20): Promise<MarketCard[]> {
+  async getMarketCards(suburb: string | null, city: string, limit = 20): Promise<MarketCard[]> {
     if (!this.apiKey) return [];
 
-    const key = `market:${suburb.toLowerCase()}:${city.toLowerCase()}`;
+    const key = `market:${(suburb ?? 'all').toLowerCase()}:${city.toLowerCase()}`;
     const cached = this.cache.get(key);
     if (cached && Date.now() - cached.ts < this.TTL) return cached.data;
 
     try {
+      const cityFilter = `town_city ILIKE '${this.escapeCQL(city)}'`;
+      const cql_filter = suburb
+        ? `suburb_locality ILIKE '${this.escapeCQL(suburb)}' AND ${cityFilter}`
+        : cityFilter;
+
       const params = {
         service: 'WFS',
         version: '2.0.0',
         request: 'GetFeature',
         typeNames: 'layer-105689', // NZ Street Addresses
         outputFormat: 'json',
-        cql_filter: `suburb_locality ILIKE '${this.escapeCQL(suburb)}' AND town_city ILIKE '${this.escapeCQL(city)}'`,
+        cql_filter,
         count: limit,
       };
 

@@ -5,9 +5,9 @@ import { linzMarketService } from '../services/linz-market.js';
 const router = Router();
 
 const cardsQuerySchema = z.object({
-  suburb: z.string().min(1).max(100).trim(),
+  suburb: z.string().max(100).trim().optional(),
   city: z.string().min(1).max(100).trim().default('Auckland'),
-  limit: z.coerce.number().int().min(1).max(50).default(20),
+  limit: z.coerce.number().int().min(1).max(50).default(24),
 });
 
 const suburbsQuerySchema = z.object({
@@ -27,8 +27,8 @@ router.get('/cards', async (req, res) => {
     return res.status(400).json({ error: v.error.errors[0].message });
   }
   const { suburb, city, limit } = v.data;
-  const cards = await linzMarketService.getMarketCards(suburb, city, limit);
-  return res.json({ cards, total: cards.length, suburb, city });
+  const cards = await linzMarketService.getMarketCards(suburb ?? null, city, limit);
+  return res.json({ cards, total: cards.length, suburb: suburb ?? null, city });
 });
 
 // GET /api/market/suburbs?q=Pon&city=Auckland
