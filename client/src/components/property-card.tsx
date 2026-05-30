@@ -506,7 +506,7 @@ export default function PropertyCard({ property, isBackground = false, onPropert
           )}
 
           {/* info */}
-          <div className="absolute bottom-5 left-0 right-0 p-6 text-white">
+          <div className="absolute bottom-24 left-0 right-0 p-6 text-white">
             <div className="flex items-center gap-2 mb-1">
               <h2 className="text-2xl font-bold leading-tight">{property.title}</h2>
               {/* Verification Badge next to title */}
@@ -610,30 +610,25 @@ export default function PropertyCard({ property, isBackground = false, onPropert
               </div>
             </div>
 
-            <div className="flex items-center text-xs text-white/70 mt-2 mb-1">
+            <div className="flex items-center text-xs text-white/70 mt-2">
               <span>{formatLocation(property.suburb, property.city)}</span>
             </div>
 
-            {/* Auth-aware CTA: "Get Started" for non-logged-in, "Express Interest" for logged-in */}
-            <button
-              className="w-full mt-4 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-bold py-3 px-6 rounded-xl shadow-lg transform transition-all duration-200 hover:scale-105 active:scale-95 flex items-center justify-center gap-2"
-              onClick={(e) => {
-                e.stopPropagation();
-                if (userProp || user) {
-                  // Logged in: Open Express Interest modal
+            {/* Express Interest - only for logged-in users */}
+            {(userProp || user) && (
+              <button
+                className="w-full mt-4 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-bold py-2 px-4 rounded-xl shadow-lg transform transition-all duration-200 hover:scale-105 active:scale-95 flex items-center justify-center gap-2 text-sm"
+                onClick={(e) => {
+                  e.stopPropagation();
                   console.log('Express Interest clicked for property:', property.id);
                   setShowOfferModal(true);
-                } else {
-                  // Not logged in: Open auth modal
-                  console.log('Get Started clicked - opening auth modal');
-                  onOpenAuth?.();
-                }
-              }}
-              data-testid={(userProp || user) ? "button-express-interest" : "button-get-started"}
-            >
-              <i className={`fas ${(userProp || user) ? 'fa-envelope' : 'fa-rocket'} text-lg`}></i>
-              <span>{(userProp || user) ? 'Express Interest' : 'Get Started'}</span>
-            </button>
+                }}
+                data-testid="button-express-interest"
+              >
+                <i className="fas fa-envelope text-lg"></i>
+                <span>Express Interest</span>
+              </button>
+            )}
           </div>
 
           {/* Image Swipe Tutorial */}

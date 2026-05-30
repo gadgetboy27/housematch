@@ -1,6 +1,7 @@
 import { useState, useRef, forwardRef, useImperativeHandle, useEffect } from "react";
 import { motion, useMotionValue, useTransform, PanInfo, AnimatePresence, animate } from "framer-motion";
 import PropertyCard from "./property-card";
+import LandingCard from "./landing-card";
 import { Property, PricingPlan } from "@shared/schema";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
@@ -11,8 +12,8 @@ import { PricingCard } from "./pricing-card";
 import { fbTrackViewContent, fbTrackAddToWishlist } from "@/components/FacebookPixel";
 
 interface SwipeCard {
-  type: 'property' | 'pricing';
-  data: Property | PricingPlan;
+  type: 'property' | 'pricing' | 'landing';
+  data: Property | PricingPlan | null;
 }
 
 interface SwipeContainerProps {
@@ -47,14 +48,18 @@ const SwipeContainer = forwardRef<
     queryKey: ["/api/pricing-plans"],
   });
 
-  // Mix properties with pricing cards every 5-7 properties
+  // Mix properties with pricing cards and landing card
   const mixedCards = () => {
     const cards: SwipeCard[] = [];
+
+    // Add landing card as first card
+    cards.push({ type: 'landing', data: null });
+
     let pricingIndex = 0;
-    
+
     properties.forEach((property, index) => {
       cards.push({ type: 'property', data: property });
-      
+
       // Add pricing card every 6 properties (range of 5-7)
       if ((index + 1) % 6 === 0 && pricingPlans.length > 0) {
         const planIndex = pricingIndex % pricingPlans.length;
@@ -62,7 +67,7 @@ const SwipeContainer = forwardRef<
         pricingIndex++;
       }
     });
-    
+
     return cards;
   };
 
@@ -300,16 +305,18 @@ const SwipeContainer = forwardRef<
           velocity: 0     // Start from rest for consistent feel
         }}
       >
-        {currentCard?.type === 'property' ? (
-          <PropertyCard 
-            property={currentCard.data as Property} 
-            onPropertyTypeFilter={onPropertyTypeFilter} 
+        {currentCard?.type === 'landing' ? (
+          <LandingCard />
+        ) : currentCard?.type === 'property' ? (
+          <PropertyCard
+            property={currentCard.data as Property}
+            onPropertyTypeFilter={onPropertyTypeFilter}
             selectedPropertyType={selectedPropertyType}
             user={user}
-            onOpenAuth={onOpenAuth} 
+            onOpenAuth={onOpenAuth}
           />
         ) : currentCard?.type === 'pricing' ? (
-          <PricingCard 
+          <PricingCard
             plan={currentCard.data as PricingPlan}
           />
         ) : null}
