@@ -33,6 +33,7 @@ import { open2viewService } from './open2view-service';
 import { tradeMeService } from './trademe-service';
 import { tradeMeSandboxService } from './trademe-sandbox-service';
 import linzRoutes from './routes/linz.js';
+import marketRoutes from './routes/market.js';
 import propertySnapshotRoutes from './routes/property-snapshot.js';
 import reportDeliveryRoutes from './routes/report-delivery.js';
 import supportRoutes from './routes/support.js';
@@ -549,6 +550,7 @@ Sitemap: ${baseUrl}/sitemap.xml
 
   // Register protected sub-routers (AFTER CSRF middleware)
   app.use('/api/linz', linzRoutes);
+  app.use('/api/market', marketRoutes);
   app.use('/api/property-snapshot', propertySnapshotRoutes);
   app.use('/api/report-delivery', reportDeliveryRoutes);
   app.use('/api/support', supportRoutes);

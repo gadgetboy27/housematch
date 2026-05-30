@@ -11,6 +11,7 @@ import { PropertyDetailsDialog } from "@/components/property-details-dialog";
 import { HomePageSEO } from "@/components/SEO";
 import { AuthModal } from "@/components/auth-modal";
 import { usePageTracking, trackPropertyView, trackPropertyLike } from "@/components/Analytics";
+import { MarketFeed } from "@/components/MarketFeed";
 
 export default function Home() {
   // Track homepage view
@@ -138,17 +139,21 @@ export default function Home() {
 
         {/* OLD: <div className="relative h-[calc(100vh-60px)] overflow-hidden"> */}
         <div className="relative overflow-hidden" style={{ height: 'calc(100vh - 80px - env(safe-area-inset-bottom))' }}>
-        <SwipeContainer
-          ref={swipeRef}
-          properties={properties}
-          onSwipe={handleSwipe}
-          onSwipeAction={handleSwipeAction}
-          onPropertyTypeFilter={handlePropertyTypeFilter}
-          selectedPropertyType={selectedPropertyType}
-          user={user}
-          onOpenAuth={handleOpenAuth}
-        />
-      </div>
+          {properties.length === 0 ? (
+            <MarketFeed defaultCity="Auckland" />
+          ) : (
+            <SwipeContainer
+              ref={swipeRef}
+              properties={properties}
+              onSwipe={handleSwipe}
+              onSwipeAction={handleSwipeAction}
+              onPropertyTypeFilter={handlePropertyTypeFilter}
+              selectedPropertyType={selectedPropertyType}
+              user={user}
+              onOpenAuth={handleOpenAuth}
+            />
+          )}
+        </div>
 
       {/* OLD: <div className="fixed bottom-[63px] left-1/2 transform -translate-x-1/2 z-50"> */}
       <div className="fixed left-1/2 transform -translate-x-1/2 z-50" style={{ bottom: 'calc(64px + env(safe-area-inset-bottom) + 8px)' }}>
