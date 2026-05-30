@@ -73,15 +73,22 @@ export default function Home() {
     enabled: !!propertyIdFromUrl,
   });
 
-  const { data: properties = [], isLoading } = useQuery<any[]>({
+  const { data: propertiesUnsorted = [], isLoading } = useQuery<any[]>({
     queryKey: ["/api/properties", selectedPropertyType],
     queryFn: async () => {
-      const url = selectedPropertyType === "all" 
+      const url = selectedPropertyType === "all"
         ? "/api/properties"
         : `/api/properties?type=${selectedPropertyType}`;
       const res = await fetch(url);
       return res.json();
     }
+  });
+
+  // Sort properties alphabetically by suburb
+  const properties = propertiesUnsorted.sort((a, b) => {
+    const suburbA = (a.suburb || '').toLowerCase();
+    const suburbB = (b.suburb || '').toLowerCase();
+    return suburbA.localeCompare(suburbB);
   });
 
   useEffect(() => {
@@ -152,42 +159,35 @@ export default function Home() {
       <HomePageSEO />
       <div className="max-w-sm mx-auto h-screen bg-gradient-to-br from-blue-500 via-grey-500 to-grey-700 relative overflow-hidden">
 
-        {/* Top bar: magnify search icon + admin button */}
-        <div className="absolute top-4 left-0 right-0 z-50 flex items-center justify-between px-4 pointer-events-none">
-          <button
-            onClick={() => setShowSearch(true)}
-            className="pointer-events-auto w-10 h-10 flex items-center justify-center rounded-full bg-white/90 dark:bg-gray-800/90 shadow-md text-gray-600 dark:text-gray-300 hover:bg-white dark:hover:bg-gray-700 transition-colors"
-            aria-label="Search properties"
-            data-testid="button-market-search"
-          >
-            <Search className="w-5 h-5" />
-          </button>
+        {/* Clean top bar: just title + admin button */}
+        <div className="absolute top-0 left-0 right-0 z-50 flex items-center justify-between px-4 py-3 bg-gradient-to-b from-black/40 to-transparent pointer-events-none">
+          <div className="text-white font-bold text-lg drop-shadow-lg">HouseMatch</div>
           {user?.isAdmin && (
             <button
               onClick={() => setLocation('/admin')}
-              className="pointer-events-auto bg-gradient-to-r from-red-600 to-red-700 text-white px-4 py-2 rounded-full font-semibold text-sm shadow-lg"
+              className="pointer-events-auto bg-gradient-to-r from-red-600 to-red-700 text-white px-3 py-1.5 rounded-full font-semibold text-xs shadow-lg"
               data-testid="button-header-admin"
             >
-              <i className="fas fa-shield-alt"></i> Admin
+              <i className="fas fa-shield-alt text-sm"></i>
             </button>
           )}
         </div>
 
-        {/* Active filter chip - separated below top bar */}
+        {/* Active filter chip - small, subtle */}
         {(marketSuburb || priceMin || priceMax) && (
-          <div className="absolute top-16 left-4 z-50 pointer-events-none">
+          <div className="absolute top-14 left-4 z-50 pointer-events-none">
             <button
               onClick={handleClearSearch}
-              className="pointer-events-auto flex items-center gap-2 text-sm bg-blue-600 text-white px-3 py-1.5 rounded-full shadow-md hover:bg-blue-700 transition-colors"
+              className="pointer-events-auto flex items-center gap-1.5 text-xs bg-blue-600/90 text-white px-2.5 py-1 rounded-full shadow-md hover:bg-blue-700 transition-colors"
             >
-              <X className="w-4 h-4" />
+              <X className="w-3.5 h-3.5" />
               <span className="font-medium">{marketSuburb || 'Filtered'}</span>
             </button>
           </div>
         )}
 
-        {/* Main content - adjusted for filter chip height when present */}
-        <div className="relative overflow-hidden" style={{ height: 'calc(100vh - 80px - env(safe-area-inset-bottom))', marginTop: (marketSuburb || priceMin || priceMax) ? '32px' : '0' }}>
+        {/* Main content */}
+        <div className="relative overflow-hidden" style={{ height: 'calc(100vh - 70px - env(safe-area-inset-bottom))', marginTop: '50px' }}>
           {marketSuburb || properties.length === 0 ? (
             <MarketFeed suburb={marketSuburb} city={marketCity} />
           ) : (
@@ -219,7 +219,7 @@ export default function Home() {
       <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-white/95 via-white/60 via-white/30 to-transparent pointer-events-none"></div>
 
       {showAIBrain && <AIBrainPopup onClick={handleAIBrainClick} />}
-      <BottomNavigation />
+      <BottomNavigation onSearchClick={() => setShowSearch(true)} />
 
       {/* AI Search Drawer */}
       <AIPropertySearch open={showAISearch} onOpenChange={setShowAISearch} />
