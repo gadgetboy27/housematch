@@ -7,7 +7,6 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
 import { registerRoutes } from '../server/routes';
-import marketRoutes from '../server/routes/market.js';
 
 const app = express();
 app.use('/api/webhooks/stripe', express.raw({ type: 'application/json' }));
@@ -25,9 +24,6 @@ const ready = (async () => {
     const { initializeSubscriptionPlans } = await import('../server/services/subscription-service');
     await initializeSubscriptionPlans();
     await registerRoutes(app);
-
-    // Mount market routes directly (workaround for Vercel routing issue)
-    app.use('/api/market', marketRoutes);
 
     app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
       const status = err.status || err.statusCode || 500;
