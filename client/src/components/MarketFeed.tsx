@@ -80,6 +80,9 @@ export function MarketFeed({ suburb, city }: MarketFeedProps) {
 }
 
 function MarketPropertyCard({ card }: { card: MarketCard }) {
+  // Direct Street View URL (opens with street view as primary view)
+  const streetViewUrl = `https://www.google.com/maps/@${card.lat},${card.lng},3a,75y,0h,90t/`;
+  // Regular Map URL
   const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${card.lat},${card.lng}`;
   const reportUrl = `/market-report?address=${encodeURIComponent(card.fullAddress)}&city=${encodeURIComponent(card.city)}`;
   const fallbackImage = `https://images.unsplash.com/photo-1600585154340-be6161a56a0c?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=250`;
@@ -101,22 +104,38 @@ function MarketPropertyCard({ card }: { card: MarketCard }) {
       </div>
 
       {/* Action buttons */}
-      <div className="flex gap-2 p-3">
+      <div className="grid grid-cols-3 gap-2 p-3">
+        {/* Street View - Primary */}
+        <a
+          href={streetViewUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center justify-center gap-1.5 text-xs text-white bg-blue-600 hover:bg-blue-700 rounded-lg py-2 transition-colors font-bold col-span-2"
+          title="View street-level photography"
+        >
+          <MapPin className="w-3 h-3" />
+          Street View
+        </a>
+        {/* Map - Secondary */}
         <a
           href={mapsUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="flex-1 flex items-center justify-center gap-1.5 text-xs text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg py-2 transition-colors font-medium"
+          className="flex items-center justify-center gap-1 text-xs text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg py-2 transition-colors font-medium"
+          title="View on map"
         >
-          <MapPin className="w-3 h-3" />
-          Map
+          🗺️
         </a>
+      </div>
+
+      {/* Report Link */}
+      <div className="px-3 pb-3">
         <a
           href={reportUrl}
-          className="flex-1 flex items-center justify-center gap-1.5 text-xs text-white bg-blue-600 hover:bg-blue-700 rounded-lg py-2 transition-colors font-medium"
+          className="w-full flex items-center justify-center gap-1.5 text-xs text-white bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 rounded-lg py-2.5 transition-colors font-bold"
         >
-          <ExternalLink className="w-3 h-3" />
-          Report
+          <ExternalLink className="w-3.5 h-3.5" />
+          Free Property Report
         </a>
       </div>
     </div>
