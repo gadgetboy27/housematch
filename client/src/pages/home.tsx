@@ -159,32 +159,33 @@ export default function Home() {
       <HomePageSEO />
       <div className="max-w-sm mx-auto h-screen bg-gradient-to-br from-blue-500 via-grey-500 to-grey-700 relative overflow-hidden">
 
-        {/* Clean top bar: just title + admin button */}
+        {/* Clean top bar: title + suburb filter + admin button */}
         <div className="absolute top-0 left-0 right-0 z-50 flex items-center justify-between px-4 py-3 bg-gradient-to-b from-black/40 to-transparent pointer-events-none">
           <div className="text-white font-bold text-lg drop-shadow-lg">HouseMatch</div>
-          {user?.isAdmin && (
-            <button
-              onClick={() => setLocation('/admin')}
-              className="pointer-events-auto bg-gradient-to-r from-red-600 to-red-700 text-white px-3 py-1.5 rounded-full font-semibold text-xs shadow-lg"
-              data-testid="button-header-admin"
-            >
-              <i className="fas fa-shield-alt text-sm"></i>
-            </button>
-          )}
-        </div>
 
-        {/* Active filter chip - small, subtle */}
-        {(marketSuburb || priceMin || priceMax) && (
-          <div className="absolute top-14 left-4 z-50 pointer-events-none">
-            <button
-              onClick={handleClearSearch}
-              className="pointer-events-auto flex items-center gap-1.5 text-xs bg-blue-600/90 text-white px-2.5 py-1 rounded-full shadow-md hover:bg-blue-700 transition-colors"
-            >
-              <X className="w-3.5 h-3.5" />
-              <span className="font-medium">{marketSuburb || 'Filtered'}</span>
-            </button>
+          <div className="flex items-center gap-3">
+            {/* Suburb filter display - appears when search is active */}
+            {marketSuburb && (
+              <button
+                onClick={handleClearSearch}
+                className="pointer-events-auto flex items-center gap-1.5 text-sm text-white bg-blue-600/80 hover:bg-blue-600 px-3 py-1.5 rounded-full font-semibold transition-colors"
+              >
+                <span>{marketSuburb}</span>
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
+
+            {user?.isAdmin && (
+              <button
+                onClick={() => setLocation('/admin')}
+                className="pointer-events-auto bg-gradient-to-r from-red-600 to-red-700 text-white px-3 py-1.5 rounded-full font-semibold text-xs shadow-lg"
+                data-testid="button-header-admin"
+              >
+                <i className="fas fa-shield-alt text-sm"></i>
+              </button>
+            )}
           </div>
-        )}
+        </div>
 
         {/* Main content */}
         <div className="relative overflow-hidden" style={{ height: 'calc(100vh - 70px - env(safe-area-inset-bottom))', marginTop: '50px' }}>
