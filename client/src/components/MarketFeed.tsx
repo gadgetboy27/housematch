@@ -82,14 +82,16 @@ export function MarketFeed({ suburb, city }: MarketFeedProps) {
 function MarketPropertyCard({ card }: { card: MarketCard }) {
   const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${card.lat},${card.lng}`;
   const reportUrl = `/market-report?address=${encodeURIComponent(card.fullAddress)}&city=${encodeURIComponent(card.city)}`;
+  // Google Street View API - shows real street-level imagery
+  const streetViewUrl = `https://maps.googleapis.com/maps/api/streetview?size=400x250&location=${card.lat},${card.lng}&pitch=10&fov=90`;
   const fallbackImage = `https://images.unsplash.com/photo-1600585154340-be6161a56a0c?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=250`;
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm hover:shadow-md transition-shadow">
-      {/* Image placeholder with street view fallback */}
+      {/* Street View Image */}
       <div className="relative w-full h-40 bg-gray-200 dark:bg-gray-700 overflow-hidden">
         <img
-          src={fallbackImage}
+          src={streetViewUrl}
           alt={card.fullAddress}
           className="w-full h-full object-cover"
           onError={(e) => {
