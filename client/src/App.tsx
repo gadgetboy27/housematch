@@ -33,6 +33,7 @@ import PartnerOrders from "@/pages/partner-orders";
 import PartnerProfile from "@/pages/partner-profile";
 import PartnerSignup from "@/pages/partner-signup";
 import ScoutPage from "@/pages/scout";
+import MarketReport from "@/pages/market-report";
 
 function Router() {
   return (
@@ -40,6 +41,7 @@ function Router() {
       {/* Public Routes */}
       <Route path="/" component={Home} />
       <Route path="/property/:id" component={Home} />
+      <Route path="/market-report" component={MarketReport} />
       <Route path="/reports" component={Reports} />
       <Route path="/service-submission" component={ServiceSubmission} />
       <Route path="/partner/signup" component={PartnerSignup} />

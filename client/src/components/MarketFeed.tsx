@@ -81,8 +81,7 @@ export function MarketFeed({ suburb, city }: MarketFeedProps) {
 
 function MarketPropertyCard({ card }: { card: MarketCard }) {
   const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${card.lat},${card.lng}`;
-  const reportUrl = `/api/market/report?address=${encodeURIComponent(card.fullAddress)}&city=${encodeURIComponent(card.city)}`;
-  const streetViewUrl = `https://maps.googleapis.com/maps/api/streetview?size=400x250&location=${card.lat},${card.lng}&key=AIzaSyDummy&pitch=0`;
+  const reportUrl = `/market-report?address=${encodeURIComponent(card.fullAddress)}&city=${encodeURIComponent(card.city)}`;
   const fallbackImage = `https://images.unsplash.com/photo-1600585154340-be6161a56a0c?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=250`;
 
   return (
@@ -117,8 +116,6 @@ function MarketPropertyCard({ card }: { card: MarketCard }) {
         </a>
         <a
           href={reportUrl}
-          target="_blank"
-          rel="noopener noreferrer"
           className="flex-1 flex items-center justify-center gap-1.5 text-xs text-white bg-blue-600 hover:bg-blue-700 rounded-lg py-2 transition-colors font-medium"
         >
           <ExternalLink className="w-3 h-3" />
