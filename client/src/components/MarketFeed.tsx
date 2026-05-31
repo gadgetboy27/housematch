@@ -80,20 +80,13 @@ export function MarketFeed({ suburb, city }: MarketFeedProps) {
 }
 
 function MarketPropertyCard({ card }: { card: MarketCard }) {
-  // Street View URL - using proper Google Maps coordinates format
-  const streetViewUrl = `https://www.google.com/maps/@${card.lat},${card.lng},17z?layer=c`;
-  // Regular Map URL with search
-  const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${card.lat},${card.lng}`;
+  // Search by address - shows property location with pin and Street View option
+  const addressQuery = encodeURIComponent(card.fullAddress);
+  const streetViewUrl = `https://www.google.com/maps/search/${addressQuery}/@${card.lat},${card.lng},17z`;
+  // Regular Map URL with address search
+  const mapsUrl = `https://www.google.com/maps/search/${addressQuery}`;
   const reportUrl = `/market-report?address=${encodeURIComponent(card.fullAddress)}&city=${encodeURIComponent(card.city)}`;
   const fallbackImage = `https://images.unsplash.com/photo-1600585154340-be6161a56a0c?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=250`;
-
-  // Debug logging
-  console.log(`[MarketCard] ${card.fullAddress}`, {
-    lat: card.lat,
-    lng: card.lng,
-    streetViewUrl,
-    mapsUrl
-  });
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm hover:shadow-md transition-shadow">
