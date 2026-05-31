@@ -227,11 +227,11 @@ export default function Home() {
 
       {/* Market search Sheet — opens from magnify icon, no bar visible on main screen */}
       <Sheet open={showSearch} onOpenChange={setShowSearch}>
-        <SheetContent side="bottom" className="rounded-t-2xl pb-8">
-          <SheetHeader className="mb-4">
+        <SheetContent side="bottom" className="rounded-t-2xl pb-8 max-h-[90vh] flex flex-col" style={{ paddingBottom: 'max(2rem, env(keyboard-inset-bottom))' }}>
+          <SheetHeader className="mb-4 flex-shrink-0">
             <SheetTitle>Search Properties</SheetTitle>
           </SheetHeader>
-          <div className="space-y-4">
+          <div className="overflow-y-auto flex-1 pr-4 space-y-4">
             <div>
               <label className="text-sm font-medium text-gray-700 dark:text-gray-300 block mb-1">Suburb</label>
               <Input
@@ -274,7 +274,7 @@ export default function Home() {
                 />
               </div>
             </div>
-            <div className="flex gap-3 pt-2">
+            <div className="flex gap-3 pt-4 pb-4 border-t border-gray-200 dark:border-gray-700 mt-2 -mx-4 px-4 flex-shrink-0">
               <Button variant="outline" className="flex-1" onClick={handleClearSearch}>Clear</Button>
               <Button className="flex-1" onClick={handleApplySearch}>Apply</Button>
             </div>
