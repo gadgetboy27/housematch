@@ -20,7 +20,6 @@ interface ReportData {
 }
 
 export default function MarketReport() {
-  const [, setLocation] = useLocation();
   const search = useSearch();
   const [report, setReport] = useState<ReportData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -28,6 +27,16 @@ export default function MarketReport() {
   const params = new URLSearchParams(search);
   const address = params.get('address');
   const city = params.get('city');
+
+  const handleBack = () => {
+    // Use browser back button for proper history navigation
+    if (window.history.length > 1) {
+      window.history.back();
+    } else {
+      // Fallback to home if no history
+      window.location.href = '/';
+    }
+  };
 
   useEffect(() => {
     if (!address || !city) return;
@@ -77,7 +86,7 @@ export default function MarketReport() {
       <div className="sticky top-0 z-40 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-4">
         <div className="flex items-center gap-3">
           <button
-            onClick={() => setLocation('/')}
+            onClick={handleBack}
             className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
           >
             <ArrowLeft className="w-5 h-5 text-gray-700 dark:text-gray-300" />
