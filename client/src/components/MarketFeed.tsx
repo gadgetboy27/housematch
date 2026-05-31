@@ -86,15 +86,12 @@ function MarketPropertyCard({ card }: { card: MarketCard }) {
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm hover:shadow-md transition-shadow">
-      {/* Street View Image */}
+      {/* Property Image */}
       <div className="relative w-full h-40 bg-gray-200 dark:bg-gray-700 overflow-hidden">
         <img
-          src={streetViewUrl}
+          src={fallbackImage}
           alt={card.fullAddress}
           className="w-full h-full object-cover"
-          onError={(e) => {
-            (e.target as HTMLImageElement).src = fallbackImage;
-          }}
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
         <div className="absolute bottom-0 left-0 right-0 p-3 text-white">
