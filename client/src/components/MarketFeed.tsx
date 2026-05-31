@@ -104,28 +104,17 @@ function MarketPropertyCard({ card }: { card: MarketCard }) {
         </div>
       </div>
 
-      {/* Action buttons */}
-      <div className="grid grid-cols-3 gap-2 p-3">
-        {/* Street View - Primary */}
+      {/* Street View Button */}
+      <div className="p-3 pt-0">
         <a
           href={streetViewUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="flex items-center justify-center gap-1.5 text-xs text-white bg-blue-600 hover:bg-blue-700 rounded-lg py-2 transition-colors font-bold col-span-2"
-          title="View street-level photography"
+          className="w-full flex items-center justify-center gap-1.5 text-sm text-white bg-blue-600 hover:bg-blue-700 rounded-lg py-2.5 transition-colors font-bold"
+          title="View street-level photography and property location"
         >
-          <MapPin className="w-3 h-3" />
-          Street View
-        </a>
-        {/* Map - Secondary */}
-        <a
-          href={mapsUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex items-center justify-center gap-1 text-xs text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg py-2 transition-colors font-medium"
-          title="View on map"
-        >
-          🗺️
+          <MapPin className="w-4 h-4" />
+          Street View & Map
         </a>
       </div>
 
