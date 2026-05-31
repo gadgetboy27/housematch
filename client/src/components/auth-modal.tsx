@@ -72,7 +72,10 @@ export function AuthModal({ isOpen, onClose, onSuccess, mode, onToggleMode, onFo
       if (result.success) {
         // Immediately update auth cache to prevent race conditions
         queryClient.setQueryData(["/api/auth/user"], result.user);
-        
+
+        // Dispatch auth event so all components using useAuth get notified
+        window.dispatchEvent(new CustomEvent('auth:login', { detail: result.user }));
+
         // Sync localStorage liked properties to server
         try {
           await LocalStorageService.syncLikedPropertiesToServer(result.user.id);
@@ -81,7 +84,7 @@ export function AuthModal({ isOpen, onClose, onSuccess, mode, onToggleMode, onFo
           console.warn("⚠️ Failed to sync localStorage likes:", error);
           // Don't block login if sync fails
         }
-        
+
         onSuccess(result.user);
         onClose();
         toast({
@@ -199,9 +202,12 @@ export function AuthModal({ isOpen, onClose, onSuccess, mode, onToggleMode, onFo
           description: "Please check your email to verify your account.",
         });
       } else if (result.success && result.user) {
-        // Old flow - if email verification is disabled
+        // Auto-login flow - if email verification is disabled
         queryClient.setQueryData(["/api/auth/user"], result.user);
-        
+
+        // Dispatch auth event so all components using useAuth get notified
+        window.dispatchEvent(new CustomEvent('auth:login', { detail: result.user }));
+
         // Sync localStorage liked properties to server after registration
         try {
           LocalStorageService.syncLikedPropertiesToServer(result.user.id);
