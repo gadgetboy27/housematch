@@ -1,7 +1,17 @@
 import { useState, useEffect } from 'react';
 import { useSearch } from 'wouter';
-import { ArrowLeft, CheckCircle, MapPin, School, FileText, Loader2 } from 'lucide-react';
+import { ArrowLeft, CheckCircle, MapPin, School, FileText, Loader2, Zap } from 'lucide-react';
 import { useLocation } from 'wouter';
+
+// Service pricing map
+const SERVICE_MAP: { [key: number]: { name: string; service: string; price: string } } = {
+  0: { name: 'LIM Report', service: 'lim-report', price: '$200–$400' },
+  1: { name: 'Building Inspection', service: 'building-inspection', price: '$500–$800' },
+  2: { name: 'Title Search', service: 'title-search', price: '~$20' },
+  3: { name: 'Body Corporate Check', service: 'body-corporate', price: 'Varies' },
+  4: { name: 'Earthquake Assessment', service: 'earthquake-check', price: 'Free' },
+  5: { name: 'Building Consent History', service: 'building-consent', price: 'Varies' },
+};
 
 interface ReportData {
   address: string;
@@ -151,22 +161,52 @@ export default function MarketReport() {
           </div>
         )}
 
-        {/* DIY Checklist */}
+        {/* DIY Checklist with Service Options */}
         <div className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-700">
           <div className="flex items-start gap-3 mb-4">
             <CheckCircle className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
-            <h2 className="text-lg font-bold text-gray-900 dark:text-white">DIY Buyer Checklist</h2>
+            <h2 className="text-lg font-bold text-gray-900 dark:text-white">Buyer Checklist</h2>
           </div>
-          <p className="text-xs text-gray-600 dark:text-gray-400 mb-4">Things to do before making an offer:</p>
-          <div className="space-y-3">
-            {report.manualChecklist.map((item, idx) => (
-              <div key={idx} className="flex gap-3">
-                <div className="w-5 h-5 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center flex-shrink-0 mt-0.5">
-                  <span className="text-xs font-bold text-blue-600 dark:text-blue-300">{idx + 1}</span>
+          <p className="text-xs text-gray-600 dark:text-gray-400 mb-4">Do it yourself or let us handle it:</p>
+          <div className="space-y-4">
+            {report.manualChecklist.map((item, idx) => {
+              const serviceInfo = SERVICE_MAP[idx];
+              return (
+                <div key={idx} className="border-b border-gray-200 dark:border-gray-700 pb-4 last:border-b-0">
+                  <div className="flex gap-3 mb-2">
+                    <div className="w-5 h-5 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <span className="text-xs font-bold text-blue-600 dark:text-blue-300">{idx + 1}</span>
+                    </div>
+                    <p className="text-sm font-medium text-gray-900 dark:text-white">{item}</p>
+                  </div>
+
+                  {/* DIY vs Service Options */}
+                  {serviceInfo && (
+                    <div className="ml-8 flex gap-2 flex-col sm:flex-row">
+                      <button
+                        className="flex-1 text-xs py-1.5 px-2 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors font-medium"
+                      >
+                        📋 DIY
+                      </button>
+                      <a
+                        href={`/service-submission?service=${serviceInfo.service}&address=${encodeURIComponent(address || '')}&city=${encodeURIComponent(city || '')}`}
+                        className="flex-1 text-xs py-1.5 px-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white transition-colors font-medium flex items-center justify-center gap-1"
+                      >
+                        <Zap className="w-3 h-3" />
+                        We'll do it {serviceInfo.price}
+                      </a>
+                    </div>
+                  )}
                 </div>
-                <p className="text-sm text-gray-700 dark:text-gray-300">{item}</p>
-              </div>
-            ))}
+              );
+            })}
+          </div>
+
+          {/* Services CTA */}
+          <div className="mt-6 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+            <p className="text-xs text-blue-900 dark:text-blue-200">
+              💡 <strong>Save time & reduce stress:</strong> Let our experts handle your property checks. All services completed before you make an offer.
+            </p>
           </div>
         </div>
 
