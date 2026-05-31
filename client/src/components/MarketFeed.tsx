@@ -80,9 +80,9 @@ export function MarketFeed({ suburb, city }: MarketFeedProps) {
 }
 
 function MarketPropertyCard({ card }: { card: MarketCard }) {
-  // Direct Street View URL (opens with street view as primary view)
-  const streetViewUrl = `https://www.google.com/maps/@${card.lat},${card.lng},3a,75y,0h,90t/`;
-  // Regular Map URL
+  // Street View API - shows actual street-level photos (opens Google Maps in Street View mode)
+  const streetViewUrl = `https://www.google.com/maps/?q=loc:${card.lat},${card.lng}&layer=c`;
+  // Regular Map URL with search
   const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${card.lat},${card.lng}`;
   const reportUrl = `/market-report?address=${encodeURIComponent(card.fullAddress)}&city=${encodeURIComponent(card.city)}`;
   const fallbackImage = `https://images.unsplash.com/photo-1600585154340-be6161a56a0c?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=250`;
